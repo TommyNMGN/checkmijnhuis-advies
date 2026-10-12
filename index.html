@@ -234,6 +234,10 @@
     <button onclick="newDossier()" class="w-full py-3.5 rounded-2xl bg-blue-600 active:bg-blue-700 text-white text-[16px] font-black flex items-center justify-center gap-2">
       <i data-lucide="plus" class="w-5 h-5"></i> Nieuw advies
     </button>
+    <div id="backupHint" class="hidden flex items-center gap-3 p-3 rounded-2xl bg-amber-950/50 border border-amber-700/60 text-amber-100 text-[13px]">
+      <span class="flex-1"></span>
+      <button onclick="backupMaken()" class="shrink-0 px-3 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-[13px]">Back-up maken</button>
+    </div>
     <p id="dossierCount" class="text-[12px] text-slate-500 px-1"></p>
     <div id="dossierList" class="space-y-2"></div>
     <div class="pt-4 border-t border-slate-800 space-y-2">
@@ -772,6 +776,10 @@
 
       if (!fotoData) w.push("Er is nog geen <strong>gevelfoto</strong> toegevoegd.");
       if (!urgentie.niveau) w.push("Kies de <strong>urgentie</strong> voor de samenvatting op pagina 1.");
+      if (!(getSam(key).oorzaak || "").trim()) w.push("De <strong>oorzaak</strong> op pagina 1 is nog de standaardzin van het dossier. Klopt die voor deze woning? Pas hem anders aan in het paneel 'Samenvatting, foto &amp; tips'.");
+      if (sit && !duid && /\bgeen\b[^.]*\b(schimmel|condens|schade|vochtplek)/i.test(sit) && ['condensatie', 'schimmel', 'opstijgend', 'doorslaand'].includes(key)) {
+        w.push("In de situatie staat dat er <strong>geen schade</strong> is waargenomen, terwijl de standaardduiding uitgaat van een schadebeeld. Pas de <strong>duiding</strong> aan (bijvoorbeeld: preventief advies).");
+      }
       if (!sit) w.push("De <strong>situatie ter plaatse</strong> is nog de standaardtekst. Beschrijf wat je bij déze woning hebt gezien (ruimten, schadebeeld).");
       if (/\[[^\]]*\]/.test(sit + duid)) w.push("In de situatie of duiding staat nog tekst tussen [haken].");
 
@@ -922,7 +930,7 @@
         ],
         totalLabel: "Totaal Optie A (2 kamers, incl. montage)",
         checks: [
-          { title: "1. Inregelrapport Verifiëren", desc: "Vraag de installateur om een meetrapport van de volumestromen (in dm³/s), zodat u zeker weet dat de capaciteit voor de ruimten toereikend is." },
+          { title: "1. Inregelrapport Verifiëren", desc: "Vraag de installateur om een meetrapport van de volumestromen (in dm³/s), zodat aantoonbaar is dat de capaciteit voor de ruimten toereikend is." },
           { title: "2. Geluidsniveau Slaapkamer Toetsen", desc: "Controleer in de offerte dat de unit in de basisstand stil draait (&lt; 25 dB(A)), om hinder tijdens de nachtrust te voorkomen." },
           { title: "3. Overstroom onder Deuren Controleren", desc: "Controleer of het inkorten van de binnendeuren (spleet 1,5 tot 2 cm) in de offerte is opgenomen; zonder overstroom kan de lucht niet circuleren." }
         ]
@@ -983,7 +991,7 @@
         ],
         totalLabel: "Totaal Optie A (ca. 16-20 m¹ muur)",
         checks: [
-          { title: "1. Productspecificatie Verifiëren", desc: "Vraag de aannemer om het technische productblad van de injectiecrème, zodat u zeker weet dat het een professioneel, gecertificeerd middel betreft." },
+          { title: "1. Productspecificatie Verifiëren", desc: "Vraag de aannemer om het technische productblad van de injectiecrème, zodat aantoonbaar is dat het een professioneel, gecertificeerd middel betreft." },
           { title: "2. Afkaphoogte Stucwerk Controleren", desc: "Controleer of in de offerte staat dat het stucwerk tot minimaal 50 cm boven de hoogste schade- of zoutgrens wordt afgekapt." },
           { title: "3. Zoutbestendige Herafwerking Eisen", desc: "Zorg dat een saneerpleistersysteem of zoutblokkerend membraan wordt toegepast in plaats van standaard gipspleister." }
         ]
@@ -1083,7 +1091,7 @@
           {
             name: "Vaste Bouwdroger",
             desc: "Plaatsing van een vaste condensatiedroger met permanente afvoer naar het riool.",
-            pros: "✓ Directe daling van de luchtvochtigheid<br>✕ Hoger stroomverbruik bij continu gebruik<br>✕ Ververst de lucht niet"
+            pros: "✓ Snelle daling van de luchtvochtigheid<br>✕ Hoger stroomverbruik bij continu gebruik<br>✕ Ververst de lucht niet"
           },
           {
             name: "Kelder-WTW-unit",
@@ -1200,12 +1208,12 @@
           {
             name: "Optie A: Lekdetectie + Gerichte Reparatie",
             desc: "Inzet van akoestische apparatuur, traceergas of leidingcamera, gevolgd door één gerichte opening voor de loodgieter.",
-            pros: "✓ Minimaal hak- en breekwerk<br>✓ Vaak (deels) gedekt door de opstalverzekering, afhankelijk van de polis<br>✓ Snelle, zekere lokalisatie"
+            pros: "✓ Minimaal hak- en breekwerk<br>✓ Vaak (deels) gedekt door de opstalverzekering, afhankelijk van de polis<br>✓ Gerichte lokalisatie van het lek"
           },
           {
             name: "Sanitair Kitwerk Vernieuwen",
             desc: "Verwijderen van verouderde kitvoegen rond bad en douche en opnieuw waterdicht afkitten met sanitairkit.",
-            pros: "✓ Directe oplossing bij lekkage via kitvoegen<br>✓ Beperkte ingreep<br>✓ Voorkomt lekkage langs tegelaansluitingen"
+            pros: "✓ Eenvoudige eerste stap bij lekkage via kitvoegen<br>✓ Beperkte ingreep<br>✕ Helpt niet bij een lekkende leiding"
           },
           {
             name: "Professionele Bouwdroging",
@@ -1315,7 +1323,7 @@
     const MOTIVATIE_SJABLONEN = {
       condensatie: [
         [
-          "Bij deze woning schiet de ventilatie vooral tekort in [woonkamer en slaapkamer], terwijl een kanalenstelsel hier alleen met ingrijpend breekwerk is aan te leggen. Decentrale WTW lost het vochtprobleem op zonder tocht of extra warmteverlies.",
+          "Bij deze woning schiet de ventilatie vooral tekort in [woonkamer en slaapkamer], terwijl een kanalenstelsel hier alleen met ingrijpend breekwerk is aan te leggen. Decentrale WTW voert het vocht continu af, zonder tocht en met beperkt warmteverlies.",
           "De slaapkamers liggen aan de [straatzijde / geluidsbelaste zijde]. Optie A vraagt geen open roosters, waardoor tocht en geluidsinval worden voorkomen terwijl het vocht wel continu wordt afgevoerd."
         ],
         [
@@ -1384,13 +1392,13 @@
           "Het vocht ontstaat bij gebruik van [douche / bad] en concentreert zich rond de kitvoegen. Vernieuwen van het kitwerk is hier de eerste, eenvoudige stap; blijft het probleem, dan volgt lekdetectie."
         ],
         [
-          "Het lek is inmiddels hersteld, maar de constructie is nog [nat / verhoogd]. Professionele droging voorkomt schimmelvorming en zorgt dat herafwerking veilig kan plaatsvinden."
+          "Het lek is inmiddels hersteld, maar de constructie is nog [nat / verhoogd]. Professionele droging beperkt de kans op schimmelvorming en zorgt dat herafwerking pas plaatsvindt als de constructie droog is."
         ]
       ],
       schimmel: [
         [
           "De schimmel zit op een duidelijk koude plek ([buitenhoek / latei]), terwijl de luchtvochtigheid in de ruimte zelf acceptabel is. Het isoleren van die koude plek pakt de oorzaak aan.",
-          "De schimmel keert terug op dezelfde plek ondanks eerder schoonmaken. Dat bevestigt een koudebrug; isoleren en dampopen afwerken voorkomt herhaling."
+          "De schimmel keert terug op dezelfde plek ondanks eerder schoonmaken. Dat bevestigt een koudebrug; isoleren en dampopen afwerken verkleint de kans op herhaling sterk."
         ],
         [
           "De schimmel komt op meerdere plekken voor en de luchtvochtigheid in de ruimte is structureel te hoog. Betere ventilatie is hier de belangrijkste maatregel; lokale isolatie kan daarna alsnog nodig zijn."
@@ -1974,7 +1982,7 @@
       const adviesTxt = a.rec === "none"
         ? "Geen uitgesproken voorkeur; zie de keuzematrix (hoofdstuk 5)."
         : `Optie ${OPTION_LETTERS[a.rec]}: ${escHtml(optionName(data.options[a.rec]))}`;
-      const kostenTxt = a.rec === "none" ? "Zie de kostenraming per optie (hoofdstuk 8)." : `${escHtml(getRecPriceText())} incl. btw (indicatief)`;
+      const kostenTxt = a.rec === "none" ? "Zie de kostenraming per optie (hoofdstuk 8)." : `${escHtml(getRecPriceText())} incl. btw (richtprijs; offertes kunnen afwijken)`;
       const u = URGENTIE[urgentie.niveau];
       const urgTxt = u
         ? `<span class="inline-block px-1.5 py-px rounded border ${u.cls} font-black text-[8.5px] uppercase tracking-wide mr-1">${u.label}</span>${escHtml((urgentie.tekst || "").trim() || u.tekst)}`
@@ -2193,7 +2201,10 @@
       const oldTitle = document.title;
       // De browser stelt de titel voor als bestandsnaam bij 'Opslaan als PDF'
       document.title = getExportFilename('pdf').replace(/\.pdf$/, '');
-      showToast("Kies bij 'Bestemming' voor 'Opslaan als PDF' en klik op Opslaan.", true);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      showToast(isIOS
+        ? "Tik in het printvenster op het deelicoon en kies 'Bewaar in Bestanden', Mail of WhatsApp."
+        : "Kies bij 'Bestemming' voor 'Opslaan als PDF' en klik op Opslaan.", true);
       setTimeout(() => {
         window.print();
         setTimeout(() => { document.title = oldTitle; }, 1000);
@@ -2248,6 +2259,9 @@
     }
 
     function switchTemplate(key) {
+      // De situatie ter plaatse gaat over de woning, niet over het type advies: neem hem mee
+      const vorigeSit = (customSituations[currentTemplateKey] || "").trim();
+      if (vorigeSit && !(customSituations[key] || "").trim()) customSituations[key] = customSituations[currentTemplateKey];
       currentTemplateKey = key;
       refreshAdviesPanel();
       refreshSamPanel();
@@ -2297,7 +2311,7 @@
             <!-- TITEL BANNER -->
             <div class="mt-2.5 p-3 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-between">
               <div>
-                <span class="text-[8.5px] font-black uppercase tracking-wider text-indigo-800 block">DEEL I • DIAGNOSTISCHE ANALYSE &amp; OORZAAKBEPALING</span>
+                <span class="text-[8.5px] font-black uppercase tracking-wider text-indigo-800 block">Vochtadvies • Oorzaak &amp; aanpak</span>
                 <h1 class="text-sm font-black text-slate-900 tracking-tight">${data.title}</h1>
                 <p class="text-[10px] text-indigo-950">${data.sub}</p>
               </div>
@@ -2480,7 +2494,7 @@
             <div class="mt-2 p-2 rounded-xl bg-blue-50/70 border border-blue-200 text-[9px] text-blue-950 leading-snug flex items-center gap-2">
               <i data-lucide="info" class="w-4 h-4 text-blue-600 shrink-0"></i>
               <p>
-                <strong>Aanbeveling voor offerteaanvraag &amp; vergelijking:</strong> U kunt dit advies als bouwfysisch uitgangspunt meegeven aan uitvoerende partijen. Vraag hen om hun offerte en werkwijze te specificeren conform deze stappen en kwaliteitsnormen; zo kunt u voorstellen helder vergelijken en bent u verzekerd van een duurzaam resultaat.
+                <strong>Aanbeveling voor offerteaanvraag &amp; vergelijking:</strong> U kunt dit advies als bouwfysisch uitgangspunt meegeven aan uitvoerende partijen. Vraag hen om hun offerte en werkwijze te specificeren conform deze stappen en kwaliteitsnormen; zo kunt u voorstellen helder vergelijken en vergroot u de kans op een duurzaam resultaat.
               </p>
             </div>
 
@@ -2592,8 +2606,25 @@
                 </div>
                 <div class="p-2 rounded-xl border border-slate-200 bg-white space-y-0.5">
                   <span class="font-bold text-slate-900 text-[9.5px] block">3. Resultaat controleren</span>
-                  <p class="text-slate-600 leading-snug">Na uitvoering kan een controlemeting laten zien of het probleem is opgelost. Neem hiervoor gerust contact op.</p>
+                  <p class="text-slate-600 leading-snug">Na uitvoering kan een controlemeting laten zien of het probleem is opgelost. Dit is een aparte dienst; vraag gerust naar de mogelijkheden.</p>
                 </div>
+              </div>
+            </div>
+
+            <!-- WAT U VAN DIT ADVIES MAG VERWACHTEN -->
+            <div class="rounded-xl border border-slate-300 bg-white p-2.5 text-[9.5px] text-slate-700 leading-snug">
+              <p class="font-black text-slate-900 text-[10px] uppercase tracking-wider mb-1.5">Wat u van dit advies mag verwachten</p>
+              <div class="grid grid-cols-2 gap-3">
+                <ul class="space-y-1">
+                  <li class="flex gap-1.5"><span class="text-emerald-600 font-black">✓</span><span>Een onafhankelijke beoordeling van de waarschijnlijke oorzaak, op basis van wat tijdens het bezoek zichtbaar en meetbaar was.</span></li>
+                  <li class="flex gap-1.5"><span class="text-emerald-600 font-black">✓</span><span>Een advies voor de aanpak, een werkvoorschrift voor de uitvoerder en een kostenindicatie om offertes mee te vergelijken.</span></li>
+                  <li class="flex gap-1.5"><span class="text-emerald-600 font-black">✓</span><span>Het tarief is een vast bedrag voor het hele traject: voorbereiding, onderzoek ter plaatse, meetapparatuur, reistijd en de uitwerking van dit advies.</span></li>
+                </ul>
+                <ul class="space-y-1">
+                  <li class="flex gap-1.5"><span class="text-slate-400 font-black">✕</span><span>Geen bouwkundige keuring van de hele woning en geen destructief onderzoek (zoals openbreken of boren).</span></li>
+                  <li class="flex gap-1.5"><span class="text-slate-400 font-black">✕</span><span>Geen offerte en geen uitvoering; de kosten zijn richtprijzen en offertes kunnen afwijken.</span></li>
+                  <li class="flex gap-1.5"><span class="text-slate-400 font-black">✕</span><span>Geen garantie op het resultaat van de uitvoering; die ligt bij de uitvoerende partij.</span></li>
+                </ul>
               </div>
             </div>
 
@@ -2706,6 +2737,7 @@
       customSituations = {}; customDuidingen = {};
       kb = JSON.parse(KB_DEFAULT_JSON);
       adviesState = {}; samenvatting = {}; urgentie = { niveau: "", tekst: "" }; fotoData = "";
+      kb.datum = new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
     }
     function applyState(s) {
       resetState();
@@ -2784,6 +2816,17 @@
       const list = document.getElementById('dossierList');
       if (!list || !db) return;
       const items = (await dbAll()).sort((a, b) => b.updated - a.updated);
+      // herinnering aan een back-up (adviezen staan alleen op dit toestel)
+      let last = 0; try { last = parseInt(localStorage.getItem('cmh_backup') || '0', 10); } catch (e) {}
+      const dagen = last ? Math.floor((Date.now() - last) / 86400000) : null;
+      const hint = document.getElementById('backupHint');
+      if (hint) {
+        const toon = items.length > 0 && (dagen === null || dagen >= 14);
+        hint.classList.toggle('hidden', !toon);
+        hint.querySelector('span').textContent = dagen === null
+          ? "Je hebt nog geen back-up gemaakt. Je adviezen staan alleen op dit toestel."
+          : `Je laatste back-up is ${dagen} dagen oud. Maak een nieuwe, zodat je niets kwijtraakt.`;
+      }
       document.getElementById('dossierCount').textContent = items.length ? `${items.length} advies${items.length === 1 ? '' : 'en'} op dit toestel` : "";
       if (!items.length) {
         list.innerHTML = `<p class="text-slate-400 text-sm py-8 text-center">Nog geen adviezen. Tik op <strong class="text-white">Nieuw advies</strong> om te beginnen.</p>`;
@@ -2852,6 +2895,7 @@
       try {
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], title: naam });
+          backupGemaakt();
           return;
         }
       } catch (e) { if (e && e.name === 'AbortError') return; }
@@ -2859,6 +2903,11 @@
       a.href = URL.createObjectURL(blob); a.download = naam;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      backupGemaakt();
+    }
+    function backupGemaakt() {
+      try { localStorage.setItem('cmh_backup', String(Date.now())); } catch (e) {}
+      renderDossierList();
     }
 
     function backupTerugzetten(input) {

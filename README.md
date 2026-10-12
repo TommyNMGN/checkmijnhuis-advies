@@ -32,6 +32,8 @@ Is de repository openbaar? Dan kan iedereen de code van de app zien. Klantgegeve
 2. Tik op het deelicoon en kies **Zet op beginscherm**.
 3. Open de app voortaan via het icoon op je beginscherm.
 
+**Let op:** op de iPhone heeft de app op je beginscherm een eigen opslag, los van Safari. Gebruik daarom altijd het icoon op je beginscherm. Adviezen die je in een gewoon Safari-tabblad maakt, zie je niet terug in de app.
+
 ## Gebruik
 
 - **Adviezen:** het overzicht van al je adviezen. Hier start je een nieuw advies, open of verwijder je er een, en maak je een back-up.
