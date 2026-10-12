@@ -1,0 +1,2949 @@
+<!DOCTYPE html>
+<html lang="nl"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#020617">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CheckMijnHuis">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="stylesheet" href="app.css">
+  <title>CheckMijnHuis Advies</title>
+  
+  <script src="icons.js"></script>
+  <!-- Hulpelement voor het inladen van een dossier -->
+  <script id="savedState" type="application/json"></script>
+  
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f172a;
+      color: #0f172a;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Invoervelden kernbevindingen */
+    .kb-lbl {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .kb-inp {
+      width: 100%;
+      background: #020617;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 5px 9px;
+      color: #fff;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    .kb-inp:focus { outline: none; border-color: #f59e0b; }
+    .kb-inp::placeholder { color: #475569; font-weight: 500; }
+    #kbPanel > summary { list-style: none; }
+
+    /* Lege velden in het document tonen een opvallende invulhint */
+    /* Invulhints zijn alleen hulpmiddel op het scherm: nooit in de PDF of op papier */
+    .ph-mark { background: #fef3c7; color: #92400e; }
+    body.exporting .ph-mark { background: none; color: inherit; }
+    body.exporting .ph-hint { display: none !important; }
+    body.exporting [contenteditable][data-ph]:empty::before { content: none !important; }
+    @media print {
+      .ph-hint { display: none !important; }
+      .ph-mark { background: none !important; color: inherit !important; }
+      [contenteditable][data-ph]:empty::before { content: none !important; }
+    }
+
+    [contenteditable][data-ph]:empty::before {
+      content: attr(data-ph);
+      color: #d97706;
+      font-style: italic;
+    }
+    #kbPanel > summary::-webkit-details-marker { display: none; }
+
+    /* Vaste, gekalibreerde A4-afmetingen (exact 210mm x 297mm bij 96 DPI = 794px x 1122px) */
+    .a4-page {
+      width: 794px;
+      height: 1122px;
+      max-height: 1122px;
+      margin: 20px auto;
+      background: white;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+      padding: 32px 38px 24px 38px;
+      box-sizing: border-box;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-inside: avoid;
+    }
+
+    .page-body {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      justify-content: flex-start;
+      gap: 10px;
+    }
+
+    /* Automatische paginavulling: lettergrootte schaalt met --s, tussenruimte met --g (gezet door fitPages) */
+    .a4-page .page-body .text-\[7\.5px\] { font-size: calc(7.5px * var(--s, 1)); }
+    .a4-page .page-body .text-\[8px\] { font-size: calc(8px * var(--s, 1)); }
+    .a4-page .page-body .text-\[8\.5px\] { font-size: calc(8.5px * var(--s, 1)); }
+    .a4-page .page-body .text-\[9px\] { font-size: calc(9px * var(--s, 1)); }
+    .a4-page .page-body .text-\[9\.5px\] { font-size: calc(9.5px * var(--s, 1)); }
+    .a4-page .page-body .text-\[10px\] { font-size: calc(10px * var(--s, 1)); }
+    .a4-page .page-body .text-\[10\.5px\] { font-size: calc(10.5px * var(--s, 1)); }
+    .a4-page .page-body .text-\[11px\] { font-size: calc(11px * var(--s, 1)); }
+    .a4-page .page-body .text-xs { font-size: calc(12px * var(--s, 1)); line-height: calc(16px * var(--s, 1)); }
+    .a4-page .page-body .text-sm { font-size: calc(14px * var(--s, 1)); line-height: calc(20px * var(--s, 1)); }
+    .a4-page .page-body .text-xl { font-size: calc(20px * var(--s, 1)); line-height: calc(28px * var(--s, 1)); }
+    .a4-page .page-body { gap: var(--g, 10px); }
+    .a4-page .page-body > * { margin-top: 0 !important; }
+
+
+    /* Subtiele hover voor bewerkbare vlakken op het document */
+    [contenteditable="true"] {
+      outline: none;
+      transition: background-color 0.15s ease;
+      border-radius: 4px;
+    }
+    [contenteditable="true"]:hover {
+      background-color: rgba(59, 130, 246, 0.08);
+    }
+    [contenteditable="true"]:focus {
+      background-color: rgba(59, 130, 246, 0.12);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+    }
+
+    /* ---------- web-app ---------- */
+    html { -webkit-text-size-adjust: 100%; }
+    body { padding-bottom: env(safe-area-inset-bottom); }
+    .app-top { padding-top: env(safe-area-inset-top); }
+    .toast-pos { top: calc(env(safe-area-inset-top) + 110px); }
+    #exportToast.translate-x-full { transform: translateX(calc(100% + 24px)); }
+    .nav-btn { display:flex; align-items:center; justify-content:center; gap:6px; padding:9px 4px; border-radius:9px; color:#94a3b8; }
+    .nav-btn.nav-active { background:#2563eb; color:#fff; }
+    .app-view { display:none; }
+    body.view-dossiers #view-dossiers, body.view-invullen #view-invullen { display:block; }
+    /* rapport: buiten beeld maar wel opgemaakt, zodat het meten van de pagina's blijft werken */
+    #previewWrap { position:absolute; left:-20000px; top:0; visibility:hidden; }
+    #dossierContainer { width:794px; transform-origin: top left; }
+    body.view-voorbeeld #previewWrap { position:relative; left:auto; visibility:visible; padding:8px; overflow:hidden; }
+    body.view-voorbeeld #previewWrap .a4-page { margin: 0 0 16px 0; }
+    @media (min-width: 900px) { body.view-voorbeeld #dossierContainer { margin: 0 auto; } }
+    /* geen inzoomen op iPhone bij het aantikken van een veld */
+    @media (max-width: 900px) {
+      input, select, textarea, .kb-inp { font-size: 16px !important; }
+      .kb-lbl { font-size: 11px; white-space: normal; }
+    }
+
+    /* Print Stijlen */
+    @media print {
+      body {
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      @page { size: A4; margin: 0; }
+      html, body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      #dossierContainer { padding: 0 !important; margin: 0 !important; max-width: none !important; transform: none !important; }
+      #previewWrap { position: static !important; left: auto !important; visibility: visible !important; height: auto !important; padding: 0 !important; overflow: visible !important; }
+      .app-view, .app-top { display: none !important; }
+      .a4-page {
+        /* zelfde afmetingen en marges als op scherm en in de PDF, zodat de opmaak identiek is */
+        width: 794px !important;
+        height: 1121px !important;
+        max-height: 1121px !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        outline: none !important;
+        page-break-after: always;
+        break-after: page;
+      }
+      .a4-page:last-child {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      [contenteditable="true"]:hover,
+      [contenteditable="true"]:focus {
+        background-color: transparent !important;
+        box-shadow: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-blue-100 selection:text-blue-900 pb-20">
+
+  <!-- ============================================================== -->
+  <!-- BEDIENINGSPANEEL BOVENIN (NIET ZICHTBAAR IN PRINT)              -->
+  <!-- ============================================================== -->
+    <!-- ============================================================== -->
+  <!-- APP: BOVENBALK                                                  -->
+  <!-- ============================================================== -->
+  <header class="no-print app-top sticky top-0 z-40 bg-slate-950/95 backdrop-blur border-b border-slate-800">
+    <div class="max-w-3xl mx-auto px-3 pt-2 pb-2 space-y-2">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 p-1 rounded-lg bg-white flex items-center justify-center shrink-0">
+          <svg viewBox="0 0 100 100" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M42 21L12 51L17 56L23 50V74H29V44L42 31L63 52L68 47L42 21Z" fill="#2563eb"></path>
+            <path d="M42 38C42 38 36 47 36 51C36 54.3 38.7 57 42 57C45.3 57 48 54.3 48 51C48 47 42 38 42 38Z" fill="#2563eb"></path>
+            <path d="M47 80L32 65L37 60L47 70L88 29L93 34L47 80Z" fill="#eab308"></path>
+          </svg>
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-[15px] font-black text-white leading-tight">CheckMijn<span class="text-blue-500">Huis</span> <span class="text-slate-400 font-semibold text-[12px]">Advies</span></p>
+          <p id="curLabel" class="text-[12px] text-slate-400 truncate">Nieuw advies</p>
+        </div>
+        <span id="saveState" class="text-[11px] text-emerald-400 font-semibold opacity-0 transition-opacity">Opgeslagen</span>
+        <button id="btnDownloadPdf" onclick="downloadPdfDeterministic()" class="px-3 py-2 rounded-xl bg-emerald-600 active:bg-emerald-700 text-white text-[13px] font-bold flex items-center gap-1.5 shrink-0">
+          <i data-lucide="file-down" class="w-4 h-4"></i><span>PDF</span>
+        </button>
+      </div>
+      <nav class="grid grid-cols-3 gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1 text-[13px] font-bold">
+        <button data-nav="dossiers" onclick="showView('dossiers')" class="nav-btn"><i data-lucide="folder-open" class="w-4 h-4"></i>Adviezen</button>
+        <button data-nav="invullen" onclick="showView('invullen')" class="nav-btn"><i data-lucide="pencil" class="w-4 h-4"></i>Invullen</button>
+        <button data-nav="voorbeeld" onclick="showView('voorbeeld')" class="nav-btn"><i data-lucide="eye" class="w-4 h-4"></i>Voorbeeld</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ============================================================== -->
+  <!-- APP: OVERZICHT VAN ADVIEZEN                                     -->
+  <!-- ============================================================== -->
+  <section id="view-dossiers" class="no-print app-view max-w-3xl mx-auto px-3 py-4 space-y-3">
+    <button onclick="newDossier()" class="w-full py-3.5 rounded-2xl bg-blue-600 active:bg-blue-700 text-white text-[16px] font-black flex items-center justify-center gap-2">
+      <i data-lucide="plus" class="w-5 h-5"></i> Nieuw advies
+    </button>
+    <p id="dossierCount" class="text-[12px] text-slate-500 px-1"></p>
+    <div id="dossierList" class="space-y-2"></div>
+    <div class="pt-4 border-t border-slate-800 space-y-2">
+      <p class="text-[12px] text-slate-400 px-1">Je adviezen staan alleen op dit toestel. Maak regelmatig een back-up, bijvoorbeeld naar iCloud Drive.</p>
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="backupMaken()" class="py-3 rounded-xl bg-slate-800 active:bg-slate-700 border border-slate-700 text-white text-[14px] font-bold flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>Back-up maken</button>
+        <label class="py-3 rounded-xl bg-slate-800 active:bg-slate-700 border border-slate-700 text-white text-[14px] font-bold flex items-center justify-center gap-2 cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i>Terugzetten<input type="file" accept="application/json,.json" class="hidden" onchange="backupTerugzetten(this)"></label>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================== -->
+  <!-- APP: INVULLEN                                                   -->
+  <!-- ============================================================== -->
+  <section id="view-invullen" class="no-print app-view max-w-3xl mx-auto px-3 py-3 space-y-3">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 text-white">
+        <label class="kb-lbl">Type advies (bronoorzaak)</label>
+        <select id="templateSelector" onchange="switchTemplate(this.value)" class="kb-inp">
+            <option value="condensatie">1. Condensatie &amp; Ventilatiedeficiëntie</option>
+            <option value="opstijgend">2. Opstijgend Vocht &amp; Muurbarrières</option>
+            <option value="doorslaand">3. Doorslaand Vocht &amp; Gevelrenovatie</option>
+            <option value="kelderventilatie">4. Kelderventilatie &amp; Dauwpuntsturing</option>
+            <option value="lateraal">5. Lateraal Vocht in Kelderwanden (Bekuiping)</option>
+            <option value="lekkage">6. Lekkages &amp; Lekdetectie</option>
+            <option value="schimmel">7. Schimmelontwikkeling boven Maaiveld</option>
+          </select>
+      </div>
+
+      <!-- ONDERSTE RIJ: OBJECT- EN SITUATIE INVOERBALK -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs text-white">
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+            <i data-lucide="user" class="w-3 h-3 text-blue-400"></i> Opdrachtgever / Naam:
+          </label>
+          <input type="text" id="topClientName" value="" oninput="syncClientName(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-semibold text-xs focus:border-blue-500 focus:outline-none" placeholder="bijv. Familie De Graaf">
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+            <i data-lucide="map-pin" class="w-3 h-3 text-blue-400"></i> Straat &amp; Huisnummer (+ Plaats):
+          </label>
+          <input type="text" id="topClientAddress" value="" oninput="syncClientAddress(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-semibold text-xs focus:border-blue-500 focus:outline-none" placeholder="bijv. Wilhelminasingel 84, Nijmegen">
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+            <i data-lucide="calendar" class="w-3 h-3 text-blue-400"></i> Datum &amp; Adviseur:
+          </label>
+          <input type="text" id="topInspectDate" value="" oninput="syncInspectDate(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-semibold text-xs focus:border-blue-500 focus:outline-none" placeholder="bijv. 24 september 2026">
+        </div>
+      </div>
+
+      
+      <!-- SAMENVATTING, FOTO & TIPS -->
+      <details id="samPanel" open class="bg-slate-900 border border-slate-800 rounded-2xl text-xs text-white">
+        <summary class="cursor-pointer select-none px-3 py-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+          <i data-lucide="clipboard-check" class="w-3.5 h-3.5"></i> Samenvatting, foto &amp; tips (pagina 1 en 3)
+        </summary>
+        <div class="px-3 pb-3 grid grid-cols-1 md:grid-cols-6 gap-2">
+          <div class="md:col-span-6 flex items-center gap-3 flex-wrap">
+            <label class="kb-lbl !mb-0">Gevelfoto</label>
+            <div id="foto_preview"></div>
+            <label class="cursor-pointer px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-[11px] font-bold">
+              Foto kiezen…<input type="file" accept="image/*" class="hidden" onchange="loadFoto(this)">
+            </label>
+            <button id="foto_remove" type="button" onclick="removeFoto()" class="hidden text-[11px] text-red-300 hover:text-red-200 underline">Verwijderen</button>
+            <span class="text-[10px] text-slate-500">Foto van de gevel van het pand; wordt automatisch verkleind en meebewaard.</span>
+          </div>
+          <div class="md:col-span-6">
+            <label class="kb-lbl">Oorzaak in één zin (leeg = standaardtekst van het dossier)</label>
+            <input type="text" id="sam_oorzaak" class="kb-inp" oninput="setSamField('oorzaak', this.value)">
+          </div>
+          <div class="md:col-span-2">
+            <label class="kb-lbl">Urgentie</label>
+            <select id="sam_urgNiveau" class="kb-inp" onchange="setUrgentie('niveau', this.value)">
+              <option value="">— kies —</option>
+              <option value="hoog">Hoog</option>
+              <option value="gemiddeld">Gemiddeld</option>
+              <option value="laag">Laag</option>
+            </select>
+          </div>
+          <div class="md:col-span-4">
+            <label class="kb-lbl">Toelichting urgentie (leeg = standaardtekst)</label>
+            <input type="text" id="sam_urgTekst" class="kb-inp" oninput="setUrgentie('tekst', this.value)">
+          </div>
+          <div class="md:col-span-6">
+            <label class="kb-lbl flex items-center justify-between"><span>Wat de klant zelf kan doen (één tip per regel; leeg = standaardtips)</span>
+              <button type="button" onclick="useStandaardTips()" class="normal-case tracking-normal text-emerald-300 hover:text-emerald-200 underline font-semibold">standaardtips invullen om aan te passen</button></label>
+            <textarea id="sam_tips" rows="3" class="kb-inp" style="resize:vertical" oninput="setSamField('tips', this.value)"></textarea>
+          </div>
+        </div>
+      </details>
+
+      
+      <!-- KERNBEVINDINGEN INVOER (MOMENTOPNAME) -->
+      <details id="kbPanel" open class="bg-slate-900 border border-slate-800 rounded-2xl text-xs text-white">
+        <summary class="cursor-pointer select-none px-3 py-2 flex items-center justify-between gap-2">
+          <span class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-300">
+            <i data-lucide="gauge" class="w-3.5 h-3.5"></i> Kernbevindingen (momentopname) invullen
+          </span>
+          <label class="flex items-center gap-1.5 text-[10px] text-slate-300 font-semibold" onclick="event.stopPropagation()">
+            <input type="checkbox" id="kb_show" checked onchange="setKB('show', this.checked)" class="accent-amber-400"> Tonen in document
+          </label>
+          <label class="flex items-center gap-1.5 text-[10px] text-slate-300 font-semibold" onclick="event.stopPropagation()" title="Toont de absolute luchtvochtigheid binnen en buiten, berekend uit temperatuur en RV">
+            <input type="checkbox" id="kb_vb" checked onchange="setKB('vb', this.checked)" class="accent-amber-400"> Vochtbalans tonen
+          </label>
+        </summary>
+        <div class="px-3 pb-3 grid grid-cols-2 md:grid-cols-6 gap-2">
+          <div class="col-span-2 md:col-span-2">
+            <label class="kb-lbl">Datum &amp; tijd meting</label>
+            <input type="text" id="kb_datum" class="kb-inp" placeholder="bijv. 9 okt 2026, 10:30" oninput="setKB('datum', this.value)">
+          </div>
+          <div class="col-span-2 md:col-span-4">
+            <label class="kb-lbl">Omstandigheden (weer, verwarming, gebruik)</label>
+            <input type="text" id="kb_omst" class="kb-inp" placeholder="bijv. droog weer, verwarming aan, ramen dicht" oninput="setKB('omst', this.value)">
+          </div>
+
+          <div>
+            <label class="kb-lbl">Buiten °C</label>
+            <input type="text" inputmode="decimal" id="kb_buitenT" class="kb-inp" placeholder="12" oninput="setKB('buitenT', this.value)">
+          </div>
+          <div>
+            <label class="kb-lbl">Buiten RV %</label>
+            <input type="text" inputmode="decimal" id="kb_buitenRV" class="kb-inp" placeholder="85" oninput="setKB('buitenRV', this.value)">
+          </div>
+          <div>
+            <label class="kb-lbl">Binnen: ruimte</label>
+            <input type="text" id="kb_binnenRuimte" class="kb-inp" placeholder="slaapkamer" oninput="setKB('binnenRuimte', this.value)">
+          </div>
+          <div>
+            <label class="kb-lbl">Binnen °C</label>
+            <input type="text" inputmode="decimal" id="kb_binnenT" class="kb-inp" placeholder="19" oninput="setKB('binnenT', this.value)">
+          </div>
+          <div>
+            <label class="kb-lbl">Binnen RV %</label>
+            <input type="text" inputmode="decimal" id="kb_binnenRV" class="kb-inp" placeholder="72" oninput="setKB('binnenRV', this.value)">
+          </div>
+          <div class="hidden md:block"></div>
+
+          <div>
+            <label class="kb-lbl">Luchtkwaliteit</label>
+            <select id="kb_lucht" class="kb-inp" onchange="setKB('lucht', this.value)">
+              <option value="">— kies —</option>
+              <option value="goed">Goed</option>
+              <option value="matig">Matig</option>
+              <option value="onvoldoende">Onvoldoende</option>
+            </select>
+          </div>
+          <div class="md:col-span-3">
+            <label class="kb-lbl">Toelichting luchtkwaliteit</label>
+            <input type="text" id="kb_luchtToel" class="kb-inp" placeholder="bijv. CO₂ verhoogd na nacht; fijnstof en TVOC binnen normaal" oninput="setKB('luchtToel', this.value)">
+          </div>
+          <div class="md:col-span-2">
+            <label class="kb-lbl">Standaardtekst toelichting</label>
+            <select id="kb_luchtSjabloon" class="kb-inp" onchange="useLuchtSjabloon(this.value)"></select>
+          </div>
+
+          <div>
+            <label class="kb-lbl">Constructie 1</label>
+            <select id="kb_c1n" class="kb-inp" onchange="setKB('c1n', this.value)">
+              <option value="">— kies —</option>
+              <option value="droog">Droog</option>
+              <option value="verhoogd">Verhoogd</option>
+              <option value="nat">Nat</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="kb-lbl">Locatie 1</label>
+            <input type="text" id="kb_c1l" class="kb-inp" placeholder="bijv. buitenhoek slaapkamer" oninput="setKB('c1l', this.value)">
+          </div>
+          <div>
+            <label class="kb-lbl">Constructie 2 (optioneel)</label>
+            <select id="kb_c2n" class="kb-inp" onchange="setKB('c2n', this.value)">
+              <option value="">— geen —</option>
+              <option value="droog">Droog</option>
+              <option value="verhoogd">Verhoogd</option>
+              <option value="nat">Nat</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="kb-lbl">Locatie 2</label>
+            <input type="text" id="kb_c2l" class="kb-inp" placeholder="bijv. muren begane grond" oninput="setKB('c2l', this.value)">
+          </div>
+
+          <div class="col-span-2 md:col-span-6">
+            <label class="kb-lbl">Gebruikte meetapparatuur bij deze inspectie</label>
+            <div id="kb_app_list" class="flex flex-wrap gap-x-4 gap-y-1.5 pt-0.5"></div>
+          </div>
+        </div>
+      </details>
+
+      
+      <!-- SITUATIE & DUIDING -->
+      <details id="tekstPanel" open class="bg-slate-900 border border-slate-800 rounded-2xl text-xs text-white">
+        <summary class="cursor-pointer select-none px-3 py-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-sky-300">
+          <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Situatie ter plaatse &amp; duiding
+        </summary>
+        <div class="px-3 pb-3 space-y-2">
+          <div>
+            <label class="kb-lbl">Wat heb je bij deze woning gezien? (ruimten, schadebeeld)</label>
+            <textarea id="tx_situatie" rows="4" class="kb-inp" style="resize:vertical" oninput="setSituatieTekst(this.value)"></textarea>
+          </div>
+          <div>
+            <label class="kb-lbl">Bouwfysische duiding (leeg = standaardtekst van het dossier)</label>
+            <textarea id="tx_duiding" rows="4" class="kb-inp" style="resize:vertical" oninput="setDuidingTekst(this.value)"></textarea>
+          </div>
+        </div>
+      </details>
+
+      <!-- AANBEVELING & MOTIVATIE -->
+      <details id="adviesPanel" open class="bg-slate-900 border border-slate-800 rounded-2xl text-xs text-white">
+        <summary class="cursor-pointer select-none px-3 py-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-indigo-300">
+          <i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Aanbeveling &amp; motivatie voor deze woning
+        </summary>
+        <div class="px-3 pb-3 grid grid-cols-1 md:grid-cols-6 gap-2">
+          <div class="md:col-span-3">
+            <label class="kb-lbl">Aanbevolen optie</label>
+            <select id="adv_rec" class="kb-inp" onchange="setAdviesRec(this.value)"></select>
+          </div>
+          <div class="md:col-span-3">
+            <label class="kb-lbl">Prijsindicatie aanbevolen optie (optioneel overschrijven)</label>
+            <input type="text" id="adv_prijs" class="kb-inp" oninput="setAdviesField('prijs', this.value)">
+          </div>
+          <div class="md:col-span-6">
+            <label class="kb-lbl">Sjabloon voor motivatie (daarna aanpassen; tekst tussen [haken] invullen)</label>
+            <select id="adv_sjabloon" class="kb-inp" onchange="useSjabloon(this.value)"></select>
+          </div>
+          <div class="md:col-span-6">
+            <label class="kb-lbl">Motivatie (1 à 2 zinnen, specifiek voor deze woning)</label>
+            <textarea id="adv_motivatie" rows="2" class="kb-inp" style="resize:vertical" oninput="setAdviesField('motivatie', this.value)" placeholder="Waarom past deze optie bij deze woning?"></textarea>
+          </div>
+        </div>
+      </details>
+
+      
+      <div id="checkBox" class="hidden bg-amber-950/40 border border-amber-700/60 rounded-2xl px-3 py-2 text-xs text-amber-100"></div>
+      <button onclick="showView('voorbeeld')" class="w-full py-3.5 rounded-2xl bg-slate-800 active:bg-slate-700 border border-slate-700 text-white text-[15px] font-bold flex items-center justify-center gap-2">
+        <i data-lucide="eye" class="w-5 h-5"></i> Bekijk het rapport
+      </button>
+  </section>
+
+
+  <!-- NOTIFICATIE TOAST -->
+  <div id="exportToast" class="no-print fixed toast-pos right-3 z-50 transform transition-transform duration-300 ease-out bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-slate-700 max-w-sm translate-x-full">
+    <i data-lucide="check-circle" id="toastIcon" class="w-5 h-5 text-emerald-400 shrink-0"></i>
+    <span id="toastMsg" class="font-medium">Dossier geladen</span>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- A4 DOCUMENT CONTAINER: EXACT 3 PAGINA'S                        -->
+  <!-- ============================================================== -->
+  <div id="previewWrap">
+    <main id="dossierContainer">
+      <!-- Wordt dynamisch gerenderd door renderAllPages() -->
+    </main>
+  </div>
+
+  <script>
+    // VECTOR LOGO GENERATOR VOOR CHECKMIJNHUIS
+    function getVectorLogo(size = 36) {
+      return `
+        <div style="width: ${size}px; height: ${size}px;" class="shrink-0 drop-shadow-xs">
+          <svg viewBox="0 0 100 100" class="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M42 21L12 51L17 56L23 50V74H29V44L42 31L63 52L68 47L42 21Z" fill="#2563eb" />
+            <path d="M42 38C42 38 36 47 36 51C36 54.3 38.7 57 42 57C45.3 57 48 54.3 48 51C48 47 42 38 42 38Z" fill="#2563eb" />
+            <path d="M47 80L32 65L37 60L47 70L88 29L93 34L47 80Z" fill="#eab308" />
+          </svg>
+        </div>
+      `;
+    }
+
+    // GLOBALE VARIABELEN VOOR OBJECTGEGEVENS
+    // Bewust leeg: voorkomt dat een rapport met een verkeerde naam of een verkeerd adres de deur uit gaat
+    let clientName = "";
+    let clientAddress = "";
+    let inspectDate = new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }) + " • Tommy Vermeulen";
+    let currentTemplateKey = "condensatie";
+    // GEGEVENS ADVISEUR (onderaan pagina 3)
+    const ADVISEUR = {
+      naam: "Tommy Vermeulen",
+      functie: "vochtexpert & directeur",
+      bedrijf: "Vermeulen Vocht & Binnenklimaat",
+      kvk: "42085552",
+      telefoon: "06-1221 3221",
+      email: "info@checkmijnhuis.nl"
+    };
+
+    let customSituations = {};
+    let customDuidingen = {};
+
+    // KERNBEVINDINGEN (MOMENTOPNAME) — bewust beknopt: omgevingswaarden + niveaus, geen absolute materiaalvochtwaarden
+    let kb = {
+      show: true,
+      datum: "", omst: "",
+      buitenT: "", buitenRV: "",
+      binnenRuimte: "", binnenT: "", binnenRV: "",
+      lucht: "", luchtToel: "",
+      c1n: "", c1l: "", c2n: "", c2l: "",
+      app: { rcm: true, vm128: true, romus: true, testo: true, cam: false },
+      vb: true
+    };
+
+    const KB_LEVELS = {
+      goed:        { label: "Goed",        cls: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+      matig:       { label: "Matig",       cls: "bg-amber-100 text-amber-800 border-amber-300" },
+      onvoldoende: { label: "Onvoldoende", cls: "bg-red-100 text-red-800 border-red-300" },
+      droog:       { label: "Droog",       cls: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+      verhoogd:    { label: "Verhoogd",    cls: "bg-amber-100 text-amber-800 border-amber-300" },
+      nat:         { label: "Nat",         cls: "bg-red-100 text-red-800 border-red-300" }
+    };
+
+    // Vaste meetapparatuur. In het advies alleen type + functie (serienummers horen in het feitenrapport, optie 3).
+    const APPARATUUR = [
+      { key: "rcm",   naam: "PCE-RCM 16",          functie: "temperatuur, RV en CO₂" },
+      { key: "vm128", naam: "Metofix VM128 bolmeter", functie: "indicatieve dieptemeting materiaalvocht" },
+      { key: "romus", naam: "Romus Mini pinmeter",  functie: "oppervlakkig materiaalvocht, relatief" },
+      { key: "testo", naam: "Testo 835-H1",        functie: "oppervlaktetemperatuur en dauwpunt" },
+      { key: "cam",   naam: "HIKMICRO B01S",       functie: "thermografie, ter ondersteuning" }
+    ];
+
+    function getApparatuurHtml() {
+      const used = APPARATUUR.filter(a => kb.app && kb.app[a.key]);
+      if (!used.length) return "";
+      return `<p class="px-2.5 py-1 text-[8px] text-slate-600 bg-white border-t border-slate-200 leading-snug"><strong class="text-slate-800">Gebruikte meetapparatuur:</strong> ${used.map(a => `${a.naam} <span class="text-slate-400">(${a.functie})</span>`).join(' · ')}</p>`;
+    }
+
+    function renderAppList() {
+      const box = document.getElementById('kb_app_list');
+      if (!box) return;
+      box.innerHTML = APPARATUUR.map(a => `
+        <label class="flex items-center gap-1.5 text-[11px] text-slate-200 font-semibold cursor-pointer">
+          <input type="checkbox" class="accent-amber-400" ${kb.app && kb.app[a.key] ? 'checked' : ''} onchange="setApp('${a.key}', this.checked)">
+          ${a.naam} <span class="text-slate-500 font-medium">(${a.functie})</span>
+        </label>`).join('');
+    }
+
+    function setApp(key, on) {
+      kb.app = Object.assign({}, kb.app, { [key]: on });
+      setKB('app', kb.app);
+    }
+
+    const KB_DISCLAIMER = "Indicatieve momentopname op het moment van inspectie. Waarden kunnen variëren met seizoen, weersomstandigheden, stookgedrag en gebruik. Materiaalvochtindicaties zijn relatief (niet-destructief gemeten) en dienen als onderbouwing van dit advies, niet als bewijsvoering.";
+
+    // Bedragen netjes in Nederlandse notatie: 2400 -> "€ 2.400,-"
+    function fmtEuro(n) {
+      return "€ " + Number(n).toLocaleString('nl-NL', { maximumFractionDigits: 0 }) + ",-";
+    }
+
+    // Totaal = som van de regels die meetellen (inTotal), zodat het altijd klopt
+    function getCostTotals(data) {
+      return data.costs.filter(c => c.inTotal).reduce((t, c) => ({ low: t.low + c.low, high: t.high + c.high }), { low: 0, high: 0 });
+    }
+
+    function escHtml(s) {
+      return String(s || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    function kbBadge(level) {
+      const l = KB_LEVELS[level];
+      if (!l) return `<span class="inline-block px-1.5 py-px rounded border border-slate-300 bg-slate-100 text-slate-500 font-bold text-[8.5px] uppercase">—</span>`;
+      return `<span class="inline-block px-1.5 py-px rounded border ${l.cls} font-black text-[8.5px] uppercase tracking-wide">${l.label}</span>`;
+    }
+
+    // Standaardteksten voor de toelichting luchtkwaliteit (kort: ze staan in een smalle kolom)
+    const LUCHT_SJABLONEN = {
+      goed: [
+        "CO₂, fijnstof en TVOC binnen normale waarden.",
+        "CO₂, fijnstof en TVOC normaal op het meetmoment (overdag).",
+        "Luchtkwaliteit goed; het vochtprobleem staat hier los van."
+      ],
+      matig: [
+        "CO₂ verhoogd (> 1.000 ppm); fijnstof en TVOC normaal.",
+        "Fijnstof (PM2,5) verhoogd; CO₂ en TVOC normaal.",
+        "TVOC verhoogd; CO₂ en fijnstof normaal."
+      ],
+      onvoldoende: [
+        "CO₂ sterk verhoogd (> 1.400 ppm): onvoldoende ventilatie.",
+        "Fijnstof sterk verhoogd; bron nader te bepalen.",
+        "TVOC sterk verhoogd; bron nader te bepalen."
+      ]
+    };
+
+    function refreshLuchtSjablonen() {
+      const sel = document.getElementById('kb_luchtSjabloon');
+      if (!sel) return;
+      const list = LUCHT_SJABLONEN[kb.lucht] || [];
+      sel.innerHTML = list.length
+        ? `<option value="">— kies (${list.length}) —</option>` + list.map((t, i) => `<option value="${i}">${escHtml(t)}</option>`).join('')
+        : `<option value="">— kies eerst een niveau —</option>`;
+      sel.disabled = !list.length;
+    }
+
+    function useLuchtSjabloon(idx) {
+      if (idx === "") return;
+      const txt = (LUCHT_SJABLONEN[kb.lucht] || [])[parseInt(idx, 10)];
+      if (!txt) return;
+      document.getElementById('kb_luchtToel').value = txt;
+      document.getElementById('kb_luchtSjabloon').value = "";
+      setKB('luchtToel', txt);
+    }
+
+    function fmtGm3(x) { return x.toFixed(1).replace('.', ','); }
+
+    // Vochtbalans: absolute vochtigheid binnen en buiten (g/m³), berekend uit temperatuur en RV
+    function getVochtbalansHtml() {
+      if (kb.vb === false) return "";
+      const ab = absVocht(kb.buitenT, kb.buitenRV), ai = absVocht(kb.binnenT, kb.binnenRV);
+      if (ab === null || ai === null) return "";
+      const diff = ai - ab;
+      const uitleg = diff <= 0.3
+        ? "Op het meetmoment bevatte de binnenlucht niet meer vocht dan de buitenlucht: er was toen geen meetbaar vochtoverschot in de woning. Vochtproblemen ontstaan doorgaans op momenten met een hoge vochtproductie, zoals 's nachts en bij koken, douchen en wasdrogen."
+        : `De binnenlucht bevatte ca. ${fmtGm3(diff)} g/m³ meer vocht dan de buitenlucht. Dit vochtoverschot moet door ventilatie worden afgevoerd.`;
+      return `<p class="px-2.5 py-1 text-[8px] text-slate-600 bg-white border-t border-slate-200 leading-snug"><strong class="text-slate-800">Vochtbalans:</strong> buiten ca. ${fmtGm3(ab)} g/m³ · binnen ca. ${fmtGm3(ai)} g/m³ (absolute luchtvochtigheid). ${uitleg}</p>`;
+    }
+
+    function kbClimate(t, rv) {
+      const tt = (t || "").trim(), rr = (rv || "").trim();
+      if (!tt && !rr) return `<span class="text-slate-400">—</span>`;
+      return `<strong class="text-slate-950">${tt ? escHtml(tt) + "°C" : "—"}</strong> <span class="text-slate-400">·</span> <strong class="text-slate-950">RV ${rr ? escHtml(rr) + "%" : "—"}</strong>`;
+    }
+
+    function getKBHtml() {
+      if (!kb.show) return "";
+      const constrRows = [[kb.c1n, kb.c1l], [kb.c2n, kb.c2l]]
+        .filter(([n, l], i) => i === 0 || n || (l || "").trim())
+        .map(([n, l]) => `<div class="flex items-start gap-1.5">${kbBadge(n)}<span class="text-slate-700 leading-tight">${escHtml(l) || '<span class="text-slate-400">—</span>'}</span></div>`)
+        .join("");
+      const meta = [kb.datum, kb.omst].map(s => (s || "").trim()).filter(Boolean).map(escHtml).join(" · ");
+      return `
+        <div class="rounded-xl border border-slate-300 overflow-hidden text-[9.5px]">
+          <div class="bg-slate-900 text-white px-2.5 py-1 flex items-center justify-between gap-3">
+            <span class="text-[9px] font-black uppercase tracking-wider shrink-0">Kernbevindingen • Momentopname</span>
+            <span class="text-[8.5px] text-slate-300 truncate">${meta || "Datum &amp; omstandigheden: —"}</span>
+          </div>
+          <div class="grid grid-cols-4 divide-x divide-slate-200 bg-white">
+            <div class="p-2 space-y-0.5">
+              <span class="block text-[8px] font-bold uppercase text-slate-400">Buitenklimaat</span>
+              <div>${kbClimate(kb.buitenT, kb.buitenRV)}</div>
+            </div>
+            <div class="p-2 space-y-0.5">
+              <span class="block text-[8px] font-bold uppercase text-slate-400 leading-tight">Binnenklimaat${(kb.binnenRuimte || "").trim() ? " • " + escHtml(kb.binnenRuimte) : ""}</span>
+              <div>${kbClimate(kb.binnenT, kb.binnenRV)}</div>
+            </div>
+            <div class="p-2 space-y-0.5">
+              <span class="block text-[8px] font-bold uppercase text-slate-400">Luchtkwaliteit</span>
+              <div class="flex items-start gap-1.5">${kbBadge(kb.lucht)}<span class="text-slate-700 leading-tight">${escHtml(kb.luchtToel)}</span></div>
+            </div>
+            <div class="p-2 space-y-1">
+              <span class="block text-[8px] font-bold uppercase text-slate-400">Constructie (relatief)</span>
+              ${constrRows}
+            </div>
+          </div>
+          ${getVochtbalansHtml()}
+          ${getApparatuurHtml()}
+          <p class="px-2.5 py-1 text-[7.5px] italic text-slate-500 bg-slate-50 border-t border-slate-200 leading-snug">${KB_DISCLAIMER}</p>
+        </div>`;
+    }
+
+    function setKB(field, value) {
+      if (field === 'lucht') { kb.lucht = value; refreshLuchtSjablonen(); }
+      kb[field] = value;
+      const holder = document.getElementById('kbHolder');
+      if (holder) holder.innerHTML = getKBHtml();
+      checkPageOverflow();
+    }
+
+    function kbIsIncomplete() {
+      if (!kb.show) return false;
+      return !kb.buitenRV.trim() || !kb.binnenRV.trim() || !kb.buitenT.trim() || !kb.binnenT.trim() || !kb.lucht || !kb.c1n;
+    }
+
+    // AUTOMATISCHE PAGINAVULLING
+    // 1. Zoek de grootste gemeenschappelijke lettergrootte (--s) waarbij alle pagina's passen,
+    //    zodat de tekst zo goed leesbaar mogelijk is en op alle pagina's even groot.
+    // 2. Verdeel de overgebleven ruimte per pagina gelijkmatig over de witruimte tussen de blokken (--g).
+    const FIT = { maxScale: 1.22, minScale: 0.86, step: 0.02, pageBoost: 0.06, baseGap: 14, maxGap: 40 };
+
+    function pageOverflows(p) { return p.scrollHeight > p.clientHeight + 1; }
+
+    function fitPages() {
+      const pages = Array.from(document.querySelectorAll('.a4-page'));
+      if (!pages.length) return;
+      pages.forEach(p => { p.style.setProperty('--g', FIT.baseGap + 'px'); });
+
+      let scale = FIT.minScale;
+      for (let sc = FIT.maxScale; sc >= FIT.minScale - 0.001; sc = Math.round((sc - FIT.step) * 100) / 100) {
+        pages.forEach(p => p.style.setProperty('--s', sc));
+        if (!pages.some(pageOverflows)) { scale = sc; break; }
+      }
+      pages.forEach(p => p.style.setProperty('--s', scale));
+
+      // Pagina's met ruimte over mogen iets grotere letters krijgen (max. +6%, nauwelijks zichtbaar verschil)
+      pages.forEach(p => {
+        let best = scale;
+        for (let sc = Math.round((scale + FIT.step) * 100) / 100; sc <= Math.min(FIT.maxScale + FIT.pageBoost, scale + FIT.pageBoost) + 0.001; sc = Math.round((sc + FIT.step) * 100) / 100) {
+          p.style.setProperty('--s', sc);
+          if (pageOverflows(p)) break;
+          best = sc;
+        }
+        p.style.setProperty('--s', best);
+      });
+
+      pages.forEach(p => {
+        const body = p.querySelector('.page-body');
+        const kids = Array.from(body.children).filter(k => k.offsetHeight > 0);
+        if (kids.length < 2 || pageOverflows(p)) return;
+        const footer = p.lastElementChild;
+        const f = p.getBoundingClientRect().height / p.offsetHeight || 1;
+        const used = (kids[kids.length - 1].getBoundingClientRect().bottom - body.getBoundingClientRect().top) / f;
+        const avail = (footer.getBoundingClientRect().top - body.getBoundingClientRect().top) / f - 8;
+        const spare = Math.max(0, avail - used);
+        const gap = Math.min(FIT.maxGap, FIT.baseGap + spare / (kids.length - 1));
+        p.style.setProperty('--g', gap.toFixed(1) + 'px');
+      });
+      return scale;
+    }
+
+    // Past de inhoud niet meer, ook niet met kleinere letters, dan rood kader + melding (niet zichtbaar in print/PDF)
+    // ============================================================
+    // CONTROLE: SLUITEN TEKST EN METINGEN OP ELKAAR AAN?
+    // Geeft waarschuwingen (geen blokkade) zodat het rapport zichzelf niet tegenspreekt.
+    // ============================================================
+    function absVocht(t, rv) {
+      // absolute luchtvochtigheid in g/m³ (Magnus-formule)
+      const T = parseFloat(String(t).replace(',', '.')), RV = parseFloat(String(rv).replace(',', '.'));
+      if (isNaN(T) || isNaN(RV)) return null;
+      return 6.112 * Math.exp(17.67 * T / (T + 243.5)) * RV * 2.1674 / (273.15 + T);
+    }
+
+    function getConsistencyWarnings() {
+      const w = [];
+      const key = currentTemplateKey;
+      const sit = (customSituations[key] || "").trim();
+      const duid = (customDuidingen[key] || "").trim();
+      const num = v => parseFloat(String(v || "").replace(',', '.'));
+
+      if (!fotoData) w.push("Er is nog geen <strong>gevelfoto</strong> toegevoegd.");
+      if (!urgentie.niveau) w.push("Kies de <strong>urgentie</strong> voor de samenvatting op pagina 1.");
+      if (!sit) w.push("De <strong>situatie ter plaatse</strong> is nog de standaardtekst. Beschrijf wat je bij déze woning hebt gezien (ruimten, schadebeeld).");
+      if (/\[[^\]]*\]/.test(sit + duid)) w.push("In de situatie of duiding staat nog tekst tussen [haken].");
+
+      if (kb.show) {
+        const constr = [kb.c1n, kb.c2n].filter(Boolean);
+        const allDry = constr.length > 0 && constr.every(c => c === 'droog');
+        if (allDry && ['opstijgend', 'doorslaand', 'lateraal', 'lekkage'].includes(key)) {
+          w.push("De <strong>constructie</strong> is overal als droog genoteerd, terwijl dit dossier uitgaat van vocht in de constructie. Vermeld waar het vocht wél zit, of licht in de duiding toe waarom het nu droog is (bijv. weersafhankelijk).");
+        }
+        if (['condensatie', 'schimmel'].includes(key) && kb.lucht === 'goed' && num(kb.binnenRV) < 60 && !duid) {
+          w.push("De metingen (luchtkwaliteit goed, RV onder 60%) ondersteunen de diagnose niet direct. De standaardduiding verwijst daarom naar het <strong>schadebeeld</strong>; controleer of dat voor deze woning klopt, of pas de duiding aan.");
+        }
+        if (['matig', 'onvoldoende'].includes(kb.lucht) && !kb.luchtToel.trim()) {
+          w.push("Luchtkwaliteit is matig of onvoldoende: noem in de toelichting welk aspect afwijkt (CO₂, fijnstof of TVOC).");
+        }
+        const ab = absVocht(kb.buitenT, kb.buitenRV), ai = absVocht(kb.binnenT, kb.binnenRV);
+        if (ab !== null && ai !== null && ab >= ai && ['condensatie', 'kelderventilatie'].includes(key) && !duid && kb.vb === false) {
+          w.push(`INFO|Ter info: op het meetmoment bevatte de buitenlucht evenveel of meer vocht dan de binnenlucht (ca. ${ab.toFixed(1).replace('.', ',')} vs. ${ai.toFixed(1).replace('.', ',')} g/m³). Er was toen dus geen vochtoverschot binnen; laat de duiding steunen op het schadebeeld.`);
+        }
+      }
+      return w;
+    }
+
+    function updateChecks() {
+      const box = document.getElementById('checkBox');
+      if (!box) return;
+      const w = getConsistencyWarnings();
+      box.classList.toggle('hidden', w.length === 0);
+      box.innerHTML = w.length ? `<p class="font-bold uppercase tracking-wider text-[10px] text-amber-300 mb-1">Controle vóór verzending (${w.length})</p><ul class="list-disc pl-4 space-y-0.5">${w.map(x => x.startsWith('INFO|') ? `<li class="text-slate-300">${x.slice(5)}</li>` : `<li>${x}</li>`).join('')}</ul>` : '';
+    }
+
+    function checkPageOverflow() {
+      updateChecks();
+      fitPages();
+      let anyOver = false;
+      document.querySelectorAll('.a4-page').forEach(p => {
+        const over = pageOverflows(p);
+        anyOver = anyOver || over;
+        p.style.outline = over ? '3px solid #ef4444' : '';
+        p.title = over ? 'Let op: inhoud past niet meer op deze pagina en wordt afgesneden. Kort de tekst in.' : '';
+      });
+      if (anyOver && !window.__overflowWarned) {
+        window.__overflowWarned = true;
+        showToast("Let op: een pagina loopt over (rood omkaderd). Kort de tekst in.", false);
+      }
+      if (!anyOver) window.__overflowWarned = false;
+      return anyOver;
+    }
+
+    // OPSLAAN / HERSTELLEN VAN ALLE INVOER
+    function collectState() {
+      return { clientName, clientAddress, inspectDate, currentTemplateKey, customSituations, customDuidingen, kb, adviesState, samenvatting, urgentie, fotoData };
+    }
+
+    function restoreState() {
+      const el = document.getElementById('savedState');
+      if (!el || !el.textContent.trim()) return;
+      try {
+        const s = JSON.parse(el.textContent);
+        if (typeof s.clientName === 'string') clientName = s.clientName;
+        if (typeof s.clientAddress === 'string') clientAddress = s.clientAddress;
+        if (typeof s.inspectDate === 'string') inspectDate = s.inspectDate;
+        if (s.currentTemplateKey && DOSSIERS[s.currentTemplateKey]) currentTemplateKey = s.currentTemplateKey;
+        if (s.customSituations && typeof s.customSituations === 'object') customSituations = s.customSituations;
+        if (s.customDuidingen && typeof s.customDuidingen === 'object') customDuidingen = s.customDuidingen;
+        if (s.kb && typeof s.kb === 'object') kb = Object.assign(kb, s.kb);
+        if (s.adviesState && typeof s.adviesState === 'object') adviesState = s.adviesState;
+        if (s.samenvatting && typeof s.samenvatting === 'object') samenvatting = s.samenvatting;
+        if (s.urgentie && typeof s.urgentie === 'object') urgentie = Object.assign(urgentie, s.urgentie);
+        if (typeof s.fotoData === 'string' && s.fotoData.startsWith('data:image/')) fotoData = s.fotoData;
+      } catch (e) {
+        console.error('Opgeslagen invoer kon niet worden gelezen', e);
+      }
+    }
+
+    function syncInputsFromState() {
+      const setVal = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
+      setVal('topClientName', clientName);
+      setVal('topClientAddress', clientAddress);
+      setVal('topInspectDate', inspectDate);
+      setVal('templateSelector', currentTemplateKey);
+      ['datum','omst','buitenT','buitenRV','binnenRuimte','binnenT','binnenRV','lucht','luchtToel','c1n','c1l','c2n','c2l']
+        .forEach(k => setVal('kb_' + k, kb[k] || ''));
+      renderAppList();
+      refreshLuchtSjablonen();
+      const vbc = document.getElementById('kb_vb');
+      if (vbc) vbc.checked = kb.vb !== false;
+      const cb = document.getElementById('kb_show');
+      if (cb) cb.checked = !!kb.show;
+    }
+
+    // DATABASE VAN DE 7 BOUWFYSISCHE DOSSIERS
+    // Kosten: bedragen als getallen (incl. btw). Rijen met inTotal: true tellen mee in het totaal;
+    // het totaal wordt automatisch berekend, zodat het altijd klopt met de regels erboven.
+    const DOSSIERS = {
+      condensatie: {
+        title: "Condensatie & Ventilatiedeficiëntie Binnenklimaat",
+        sub: "Onafhankelijk Bouwfysisch Advies & Technisch Plan van Aanpak voor effectieve luchtverversing en vochtbeheersing",
+        icon: "wind",
+        framework: "Bbl (luchtverversing) • NEN 8087",
+        defaultSituation: "Geconstateerd in de verblijfsruimten (hoofdslaapkamer, kinderkamers en woonkamer). Schadebeeld: zware condensatie op de beglazing, klamme gevelhoeken, muffe geur en secundaire schimmelontwikkeling achter gordijnen en meubilair.",
+        problem: `Een huishouden produceert dagelijks veel waterdamp door ademen, koken, douchen en het drogen van was: bij een gezin van vier al gauw <strong>circa 10 liter per dag</strong>. In een goed geïsoleerde en kierdichte woning kan dit vocht niet meer vanzelf weg. Zonder continue, gecontroleerde ventilatie stapelt het zich op.<br><br>
+        De luchtvochtigheid kan daardoor, vooral 's nachts en na koken of douchen, langdurig oplopen tot boven de 65%. Wanneer die vochtige lucht een koud oppervlak raakt, zoals glasranden, lateien en buitenhoeken, condenseert de waterdamp tot water. Blijft dit zich herhalen, dan ontstaat een voedingsbodem voor schimmelgroei.`,
+        analysisExtra: `Het schadebeeld (condensatie op koude oppervlakken en schimmelvorming) past bij een onvoldoende afvoer van waterdamp op momenten met een hoge vochtproductie, zoals 's nachts in gesloten slaapkamers en bij koken, douchen en wasdrogen. Een momentopname overdag laat dit niet altijd zien; het schadebeeld is voor deze conclusie leidend.`,
+        risks: [
+          {
+            title: "1. Gezondheid & Binnenklimaat",
+            desc: "Langdurig hoge luchtvochtigheid en schimmelgroei vergroten de kans op luchtwegklachten en verergering van astma. Een hoog CO2-gehalte (> 1.200 ppm) is een signaal van onvoldoende ventilatie en gaat vaak samen met benauwdheid, hoofdpijn en een slechtere nachtrust."
+          },
+          {
+            title: "2. Comfort & Stookkosten",
+            desc: "Een vochtige woning voelt kouder aan, waardoor bewoners vaak hoger stoken. Vochtige materialen isoleren bovendien minder goed. Gecontroleerde ventilatie met warmteterugwinning beperkt het warmteverlies dat bij luchten via ramen optreedt."
+          },
+          {
+            title: "3. Bouwkundige Aantasting",
+            desc: "Aanhoudende condensatie leidt op termijn tot rotting van houten kozijnen, roestvorming op stalen lateien en loslatend stucwerk en behang op koude zones."
+          }
+        ],
+        solution: `Het herstellen van de vochtbalans door een continue, mechanisch ondersteunde basisventilatie met warmteterugwinning (WTW). Dit zorgt voor een permanente afvoer van vocht en CO2 zonder hinderlijke tocht, koudeval of onnodig warmteverlies.`,
+        options: [
+          {
+            name: "Optie A: Decentrale Balans-WTW",
+            desc: "Plaatsing van 2 decentrale WTW-units in de buitengevel van de woonkamer en hoofdslaapkamer, die als paar samenwerken. Voorzien van keramische warmtewisselaar of enthalpiewisselaar en vochtsensoren.",
+            pros: "✓ Geen kanalenstelsel of ingrijpend breekwerk<br>✓ Hoge warmteterugwinning (veelal 80-90% volgens fabrikant)<br>✓ Stil in basisstand (&lt; 25 dB(A)) &amp; volautomatisch"
+          },
+          {
+            name: "Systeem C Vraaggestuurde Afzuiging",
+            desc: "Centrale gelijkstroom afzuigbox met vraagsturing op RV/CO2 in de natte ruimten, gecombineerd met zelfregelende toevoerroosters in de kozijnen.",
+            pros: "✓ Goedkoper in aanschaf<br>✕ Kans op tocht en geluidsinval via open gevelroosters<br>✕ Geen warmteterugwinning (hoger warmteverlies)"
+          },
+          {
+            name: "Centrale Balansventilatie (Systeem D)",
+            desc: "Centrale ventilatie-unit met gesloten dubbel kanalenstelsel voor mechanische toevoer en afvoer in alle verblijfsruimten.",
+            pros: "✓ Hoogste energetische rendement<br>✕ Ingrijpende verbouwing (koof- en breekwerk)<br>✕ Aanzienlijke investering (zie kostenraming)"
+          }
+        ],
+        steps: `<strong>Stap 1: Luchtstroomroutes en overstroom waarborgen</strong><br>
+        Zorg voor een onbelemmerde luchtcirculatie tussen de ruimten. Tussen de onderzijde van de binnendeur en de afgewerkte vloer dient een <strong>vrije spleet van circa 1,5 tot 2 cm</strong> aanwezig te zijn; kort zo nodig de binnendeuren in.<br><br>
+        <strong>Stap 2: Gevelboringen &amp; montage decentrale WTW</strong><br>
+        Realisatie van 2x diamantboring (Ø 160-180 mm, volgens fabrieksopgave) in de buitengevel met 1-2% afschot naar buiten, zodat condenswater niet naar binnen loopt. Plaatsing van de WTW-units met geïsoleerde muurbuis en afsluitklep. Uitvoerder controleert vooraf leidingen en spouwankers.<br><br>
+        <strong>Stap 3: Sensorkoppeling, hygrostaat &amp; opleveringsmeting</strong><br>
+        Aansluiting op een vaste 230V-voeding. Hygrostaat inregelen op circa <strong>55% RV</strong>. Volumestromen meten (in dm³/s) en het inregelrapport overhandigen aan de opdrachtgever.`,
+        costs: [
+          { item: "Decentrale balans-WTW basis (2 kamers compleet incl. boringen & montage)", low: 2400, high: 3400, inTotal: true },
+          { item: "Decentrale WTW in hogere prijsklasse (met enthalpiewisselaar / vochtterugwinning)", low: 3800, high: 5200, note: "alternatief" },
+          { item: "Systeem C vraaggestuurde mechanische afzuiging (centrale box + raamroosters)", low: 1800, high: 2800, note: "alternatief" },
+          { item: "Centrale balansventilatie systeem D (centrale WTW-unit + compleet kanalenstelsel)", low: 5500, high: 9500, note: "alternatief" }
+        ],
+        totalLabel: "Totaal Optie A (2 kamers, incl. montage)",
+        checks: [
+          { title: "1. Inregelrapport Verifiëren", desc: "Vraag de installateur om een meetrapport van de volumestromen (in dm³/s), zodat u zeker weet dat de capaciteit voor de ruimten toereikend is." },
+          { title: "2. Geluidsniveau Slaapkamer Toetsen", desc: "Controleer in de offerte dat de unit in de basisstand stil draait (&lt; 25 dB(A)), om hinder tijdens de nachtrust te voorkomen." },
+          { title: "3. Overstroom onder Deuren Controleren", desc: "Controleer of het inkorten van de binnendeuren (spleet 1,5 tot 2 cm) in de offerte is opgenomen; zonder overstroom kan de lucht niet circuleren." }
+        ]
+      },
+
+      opstijgend: {
+        title: "Opstijgend Vocht & Horizontale Muurbarrières",
+        sub: "Onafhankelijk Bouwfysisch Advies & Technisch Plan van Aanpak voor chemische muurinjectie en zoutbestendig muurherstel",
+        icon: "arrow-up-circle",
+        framework: "WTA 4-10 (injectie) • WTA 2-9 (saneerpleister)",
+        defaultSituation: "Geconstateerd aan dragende muren en gevelzones op de begane grond. Schadebeeld: verpoederend stucwerk, blaasvorming in muurverf, loslatend behang, zoutuitbloeiingen en losgedrukte plinten tot 40-60 cm boven het vloerpeil.",
+        problem: `Metselwerk en kalkvoegen gedragen zich als een spons. Ontbreekt een waterkerende laag in de muur, of wordt die overbrugd, dan trekt grondvocht door de fijne poriën omhoog in de muur.<br><br>
+        <strong>Het zoutmechanisme:</strong> grondvocht bevat opgeloste zouten (nitraten, sulfaten en chloriden). Aan de binnenzijde verdampt het water, maar de zouten blijven achter in de poriën. Bij het uitkristalliseren zetten deze zouten uit en drukken zij stucwerk en voegen van binnenuit kapot. Bovendien trekken ze vocht uit de lucht aan. <em>Een muur injecteren zónder het zoutbelaste stucwerk te vervangen leidt daardoor vrijwel altijd tot herhaalschade.</em>`,
+        analysisExtra: `Het schadebeeld (vocht- en zoutschade in een horizontale zone vanaf de vloer) en de bevindingen ter plaatse passen bij capillair opstijgend vocht dat niet wordt tegengehouden door een functionerende horizontale barrière. Duurzaam herstel vraagt om een injectiebarrière in combinatie met zoutbestendige herafwerking.`,
+        risks: [
+          {
+            title: "1. Aantasting Metselwerk",
+            desc: "Langdurig doorvochtigd metselwerk is gevoeliger voor vorstschade en verwering. Zouten tasten kalkmortelvoegen aan en ingemetselde stalen ankers kunnen gaan roesten."
+          },
+          {
+            title: "2. Houtrot Vloerbalken",
+            desc: "Zijn de balkkoppen van een houten begane grondvloer in een vochtige muur opgelegd, dan ontstaat risico op houtrot en in het ergste geval aantasting door zwammen."
+          },
+          {
+            title: "3. Herhaalschade Afwerking",
+            desc: "Nieuw stucwerk en schilderwerk op een zoutbelaste muur raakt vaak binnen één à twee jaar opnieuw beschadigd, met herhaalkosten tot gevolg."
+          }
+        ],
+        solution: `Het onderbreken van het opstijgende vocht met een doorlopende waterafstotende barrière via muurinjectie (silaan/siloxaan), gecombineerd met het vervangen van zoutbelast stucwerk door een zoutbestendige, dampopen afwerking.`,
+        options: [
+          {
+            name: "Optie A: Chemische Muurinjectie",
+            desc: "Injectie van een gecertificeerde silaan/siloxaan-injectiecrème in voorgeboorde gaten in de laagst bereikbare lintvoeg, waardoor een doorlopende waterafstotende zone ontstaat.",
+            pros: "✓ Minst ingrijpende en meest beproefde werkwijze<br>✓ Duurzame waterafstotende barrière in steen en voeg<br>✓ Geschikt bij hoge doorvochtigingsgraad (zie productblad)"
+          },
+          {
+            name: "Mechanische Onderkapping",
+            desc: "Gefaseerd horizontaal doorzagen van de muur en inschuiven van een kunststof folie of rvs-plaat als fysieke waterkering.",
+            pros: "✓ Fysieke waterkerende barrière<br>✕ Bouwkundig zwaar ingrijpend &amp; stofintensief<br>✕ Risico op scheur- en zakkingsschade in metselwerk"
+          },
+          {
+            name: "Elektro-osmose",
+            desc: "Plaatsing van elektroden in het metselwerk die met een zwak elektrisch veld het opstijgen van vocht moeten tegengaan.",
+            pros: "✓ Weinig breek- en boorwerk<br>✕ Werking in de vakwereld omstreden<br>✕ Onzeker resultaat bij hoog zoutgehalte"
+          }
+        ],
+        steps: `<strong>Stap 1: Verwijderen van zoutbelast stucwerk</strong><br>
+        Mechanisch afkappen van pleister- en verflagen tot op het metselwerk, tot <strong>minimaal 50 cm (bij voorkeur 80 cm) boven de hoogste zichtbare schade- of zoutgrens</strong>. Afval direct afvoeren.<br><br>
+        <strong>Stap 2: Realisatie injectiebarrière</strong><br>
+        Boorgaten (Ø 12 mm, of volgens productblad) in de laagst bereikbare lintvoeg, afgestemd op vloerpeil binnen en maaiveld buiten; hart-op-hart circa 10 tot 12 cm. Boordiepte: muurdikte minus 2-3 cm (uitvoerder controleert vooraf leidingtracés). Vullen met gecertificeerde injectiecrème en dichtzetten met krimpvrije mortel.<br><br>
+        <strong>Stap 3: Droogtijd &amp; zoutbestendige herafwerking</strong><br>
+        Afwerken met een saneerpleistersysteem conform WTA 2-9 of een zoutblokkerend membraan. Houd rekening met een lange uitdroogtijd van de muur (vuistregel circa 1 maand per 2,5 cm muurdikte). <em>Standaard gipspleister is niet geschikt om direct op de behandelde muur aan te brengen, omdat achtergebleven zouten opnieuw schade veroorzaken.</em>`,
+        costs: [
+          { item: "Afkappen stucwerk & puinafvoer (ca. 20-25 m²)", low: 550, high: 950, inTotal: true },
+          { item: "Chemische muurinjectie met silaan/siloxaan-crème (ca. 16-20 m¹)", low: 1400, high: 2400, inTotal: true },
+          { item: "Zoutblokkerend membraan of saneerpleistersysteem", low: 950, high: 1750, inTotal: true },
+          { item: "Nieuw dampopen stuc- en schilderwerk", low: 750, high: 1400, inTotal: true }
+        ],
+        totalLabel: "Totaal Optie A (ca. 16-20 m¹ muur)",
+        checks: [
+          { title: "1. Productspecificatie Verifiëren", desc: "Vraag de aannemer om het technische productblad van de injectiecrème, zodat u zeker weet dat het een professioneel, gecertificeerd middel betreft." },
+          { title: "2. Afkaphoogte Stucwerk Controleren", desc: "Controleer of in de offerte staat dat het stucwerk tot minimaal 50 cm boven de hoogste schade- of zoutgrens wordt afgekapt." },
+          { title: "3. Zoutbestendige Herafwerking Eisen", desc: "Zorg dat een saneerpleistersysteem of zoutblokkerend membraan wordt toegepast in plaats van standaard gipspleister." }
+        ]
+      },
+
+      doorslaand: {
+        title: "Doorslaand Vocht & Gevelrenovatie",
+        sub: "Onafhankelijk Bouwfysisch Advies & Technisch Plan van Aanpak voor gevelherstel & dampopen hydrofobering",
+        icon: "cloud-rain",
+        framework: "Bouwfysische praktijk • productbladen",
+        defaultSituation: "Geconstateerd aan de weerzijde (zuid/west) van de buitengevel. Schadebeeld: verweerd, poreus of gescheurd voegwerk, afbrokkelende stenen en vochtdoorslag met vlekvorming aan de corresponderende binnenzijde.",
+        problem: `Bij slagregen en wind dringt regenwater via poreuze stenen, haarscheurtjes en uitgesleten voegen de gevel binnen. Is de spouw vervuild met mortelresten, of raakt het buitenblad volledig verzadigd, dan kan het vocht oversteken naar de binnenmuur.<br><br>
+        Zonder goede bescherming van de gevel raakt ook eventuele spouwisolatie vochtig. Dat kost isolatiewaarde, en in de winter kan bevriezend water het oppervlak van stenen laten afschilferen.`,
+        analysisExtra: `Het schadebeeld en de bevindingen ter plaatse passen bij vochtindringing via de buitengevel, waarschijnlijk via verweerd voegwerk of poreuze stenen. Doorslaand vocht is weersafhankelijk en daardoor niet bij elke meting even goed waarneembaar. Een eenvoudige wateropnametest (Karsten-buis) kan dit voorafgaand aan de uitvoering bevestigen.`,
+        risks: [
+          {
+            title: "1. Vorstschade Metselwerk",
+            desc: "Water in de poriën van het metselwerk zet bij bevriezing uit. Dit kan op termijn leiden tot het afschilferen van het steenoppervlak."
+          },
+          {
+            title: "2. Minder Isolatiewaarde",
+            desc: "Vochtige isolatiematerialen verliezen een deel van hun isolerende werking (Rc-waarde), wat kan leiden tot een hoger energieverbruik."
+          },
+          {
+            title: "3. Schade aan Binnenafwerking",
+            desc: "Vocht dat doorslaat kan vochtkringen, loslatend stucwerk en schimmelvorming op de binnenmuren veroorzaken."
+          }
+        ],
+        solution: `Het herstellen van de waterkerende werking van de gevel door reiniging, vakkundig voegwerkherstel en een dampopen hydrofobering die regenwater afstoot maar waterdamp van binnenuit laat ontsnappen.`,
+        options: [
+          {
+            name: "Optie A: Reiniging + Voegen + Hydrofobering",
+            desc: "Uithakken van ondeugdelijk voegwerk, reinigen, opnieuw voegen en een diepwerkende hydrofobering op basis van silaan/siloxaan.",
+            pros: "✓ Behoud van het oorspronkelijke gevelaanzicht<br>✓ Waterafstotend én dampopen<br>✓ Verwachte werkingsduur bij vakkundige applicatie 10-15 jaar"
+          },
+          {
+            name: "Vochtwerende Gevelcoating",
+            desc: "Aanbrengen van een elastische, dekkende minerale of siliconenharsverf die haarscheurtjes overbrugt.",
+            pros: "✓ Dekt haarscheurtjes af<br>✓ Strak, egaal aanzicht<br>✕ Verandert het uiterlijk van het metselwerk definitief"
+          },
+          {
+            name: "Buitengevelisolatie + Sierpleister",
+            desc: "Isolatieplaten tegen het buitenblad, afgewerkt met een waterwerende minerale sierpleister.",
+            pros: "✓ Verbetert tegelijk de isolatie<br>✕ Zeer kostbaar (indicatie € 120-180 per m²)<br>✕ Mogelijk vergunningplichtig (wijziging aanzicht)"
+          }
+        ],
+        steps: `<strong>Stap 1: Gevelreiniging &amp; voorbereiding</strong><br>
+        Reinig de gevel met warm water onder beperkte druk om vuil, algen en aanslag te verwijderen, zonder het steenoppervlak te beschadigen. Steiger volgens veiligheidsvoorschriften; kozijnen en glas zorgvuldig afplakken.<br><br>
+        <strong>Stap 2: Uithakken &amp; opnieuw voegen</strong><br>
+        Verweerde, gescheurde en zachte voegen uithakken tot minimaal 15-20 mm diepte. Voegen stofvrij maken en opnieuw voegen met een vorstbestendige voegmortel die past bij steen en bestaand voegwerk.<br><br>
+        <strong>Stap 3: Hydrofobering</strong><br>
+        Laat het nieuwe voegwerk voldoende uitharden en drogen (doorgaans circa 4 weken; volg het productblad). Breng een dampopen silaan/siloxaan-hydrofobering aan bij droog weer, tot verzadiging van het oppervlak.`,
+        costs: [
+          { item: "Gevelreiniging (ca. 50 m² geveloppervlak)", low: 750, high: 1250, inTotal: true },
+          { item: "Uithakken & opnieuw voegen van ondeugdelijk voegwerk", low: 1800, high: 3200, inTotal: true },
+          { item: "Dampopen hydrofobering (silaan/siloxaan, ca. 50 m²)", low: 850, high: 1500, inTotal: true },
+          { item: "Steiger, afplakken kozijnen en eventuele ontheffing openbare weg", low: 400, high: 900, inTotal: true }
+        ],
+        totalLabel: "Totaal Optie A (ca. 50 m² gevel)",
+        checks: [
+          { title: "1. Voegherstel Vooraf Controleren", desc: "Controleer dat beschadigde voegen eerst worden uitgehakt en hersteld, vóórdat de hydrofobering wordt aangebracht." },
+          { title: "2. Dampopen Product Eisen", desc: "Vraag om het productblad en controleer dat het middel dampopen is, zodat vocht niet in de muur wordt opgesloten." },
+          { title: "3. Droogtijd Nieuw Voegwerk Respecteren", desc: "Laat nieuw voegwerk volgens productblad uitharden en drogen (doorgaans circa 4 weken) voordat er gehydrofobeerd wordt." }
+        ]
+      },
+
+      kelderventilatie: {
+        title: "Kelderventilatie & Dauwpuntsturing",
+        sub: "Onafhankelijk Bouwfysisch Advies & Technisch Plan van Aanpak voor het beheersen van zomercondensatie in ondergrondse ruimten",
+        icon: "thermometer-snowflake",
+        framework: "Bouwfysische praktijk • dauwpuntventilatie",
+        defaultSituation: "Geconstateerd in het souterrain of de kelderruimte. Schadebeeld: klamme vloeren, muffe geur, druppelvorming op koude wanden en schimmel op opgeslagen spullen, vooral in de warme zomermaanden.",
+        problem: `Warme zomerlucht bevat veel waterdamp: lucht van 25°C en 70% RV bevat circa 16 gram water per m³. Stroomt die lucht een koele kelder binnen, met wandtemperaturen van 12-15°C, dan koelt hij snel af tegen de koude muren.<br><br>
+        Koude lucht kan veel minder waterdamp vasthouden, waardoor de luchtvochtigheid oploopt tot verzadiging en het vocht condenseert op vloeren en muren. <em>Overdag luchten in de zomer verergert het probleem daardoor juist: elke dag komt er extra vocht de kelder in.</em>`,
+        analysisExtra: `Het schadebeeld past bij zomercondensatie: de kelderwanden zijn in de warme maanden kouder dan het dauwpunt van de binnenstromende buitenlucht. Dit verschijnsel is seizoensgebonden en bij een meting buiten de zomer niet altijd waarneembaar. Zonder sturing op dauwpunt voert elke ventilatieopening dan juist vocht aan in plaats van af.`,
+        risks: [
+          {
+            title: "1. Schimmel op Inboedel",
+            desc: "Kartonnen dozen, textiel, meubels en kleding kunnen binnen enkele weken aangetast raken door schimmel en muffe geur."
+          },
+          {
+            title: "2. Corrosie Leidingen & Installaties",
+            desc: "Condensatie op leidingen, meterkasten en installaties versnelt roestvorming en kan storingen veroorzaken."
+          },
+          {
+            title: "3. Aantasting Vloerbalken",
+            desc: "Vocht in de kelder kan bij houten begane grondvloeren leiden tot rotting van balken en aantasting van de vloerconstructie."
+          }
+        ],
+        solution: `Het installeren van een automatische, dauwpuntgestuurde ventilatie met een binnen- en buitensensor. De ventilator schakelt alleen in wanneer de buitenlucht absoluut droger is dan de kelderlucht.`,
+        options: [
+          {
+            name: "Optie A: Dauwpuntsturing + Ventilator",
+            desc: "Elektronische dauwpuntregelaar gekoppeld aan een toerengeregelde ventilator met elektrische, luchtdichte afsluitkleppen.",
+            pros: "✓ Ventileert alleen op drogende momenten<br>✓ Sluit automatisch af bij vochtige buitenlucht<br>✓ Laag energieverbruik"
+          },
+          {
+            name: "Vaste Bouwdroger",
+            desc: "Plaatsing van een vaste condensatiedroger met permanente afvoer naar het riool.",
+            pros: "✓ Directe daling van de luchtvochtigheid<br>✕ Hoger stroomverbruik bij continu gebruik<br>✕ Ververst de lucht niet"
+          },
+          {
+            name: "Kelder-WTW-unit",
+            desc: "Decentrale ventilatie-unit met warmteterugwinning, afgestemd op koele ondergrondse ruimten.",
+            pros: "✓ Behoud van keldertemperatuur<br>✕ Zonder dauwpuntsturing kans op vochtaanvoer in de zomer<br>✕ Vereist twee muurdoorvoeren"
+          }
+        ],
+        steps: `<strong>Stap 1: Passieve openingen afsluiten</strong><br>
+        Sluit open roosters en kieren af met afsluitbare, geïsoleerde kleppen, zodat warme zomerlucht niet ongecontroleerd binnenstroomt.<br><br>
+        <strong>Stap 2: Doorvoer boren &amp; ventilator monteren</strong><br>
+        Diamantboring (Ø 125-150 mm, volgens fabrieksopgave) door kelderwand of koekoek. Plaatsing van een geluidsarme ventilator met automatische, luchtdichte afsluitklep. Zorg voor een tweede opening voor luchttoevoer.<br><br>
+        <strong>Stap 3: Sensoren plaatsen &amp; regelaar instellen</strong><br>
+        Plaats de binnensensor centraal in de kelder op circa 1 meter hoogte en de buitensensor in de schaduw op de noord- of oostgevel. Stel een veilige marge in van <strong>minimaal 2 tot 3 °C dauwpuntverschil</strong>.`,
+        costs: [
+          { item: "Dauwpuntregelaar met binnen- en buitensensor", low: 300, high: 550, inTotal: true },
+          { item: "Geluidsarme buis- of muurventilator (capaciteit > 150 m³/h)", low: 200, high: 400, inTotal: true },
+          { item: "Elektrische luchtdichte afsluitkleppen", low: 250, high: 500, inTotal: true },
+          { item: "Diamantboring kelderwand, kanaalwerk & montage", low: 800, high: 1450, inTotal: true }
+        ],
+        totalLabel: "Totaal Optie A (compleet)",
+        checks: [
+          { title: "1. Plaats Buitensensor Controleren", desc: "Zorg dat de buitensensor op een schaduwrijke plek hangt (noord- of oostgevel), zodat zon de meting niet verstoort." },
+          { title: "2. Afsluitklep Verifiëren", desc: "Controleer of de ventilator een goed sluitende klep heeft, zodat warme lucht bij stilstand niet binnenkomt." },
+          { title: "3. Instelling Dauwpuntverschil Controleren", desc: "Laat zien dat de regelaar is ingesteld op minimaal 2 tot 3 °C dauwpuntverschil." }
+        ]
+      },
+
+      lateraal: {
+        title: "Lateraal Vocht in Kelderwanden (Binnenbekuiping)",
+        sub: "Onafhankelijk Bouwfysisch Advies & Technisch Plan van Aanpak voor waterdichte kelderafdichting & kimnaadherstel",
+        icon: "shield-alert",
+        framework: "WTA 4-6 (afdichten kelderwanden)",
+        defaultSituation: "Geconstateerd in de kelder of het souterrain tegen grondkerende muren en bij de aansluiting vloer-wand. Schadebeeld: zoutuitbloeiingen, loslatend stucwerk, plasvorming op de keldervloer en vochtdoorslag bij hoge grondwaterstand.",
+        problem: `Ondergrondse muren staan voortdurend in contact met vochtige grond en soms met grondwater dat er van buitenaf tegen drukt. Ontbreekt een waterkering aan de buitenzijde, of is die beschadigd, dan dringt het water door poreuze stenen, voegen en de aansluiting tussen vloer en wand (de kimnaad).<br><br>
+        Zonder drukvaste afdichting blijft het metselwerk verzadigd. Dat maakt de kelder onbruikbaar en tast op termijn het metselwerk aan.`,
+        analysisExtra: `Het schadebeeld en de bevindingen ter plaatse passen bij vocht dat van buitenaf door de kelderwand en de kimnaad binnendringt. De mate van doorvochtiging kan variëren met de grondwaterstand en het seizoen. Duurzaam herstel vraagt om een meerlaagse drukvaste afdichting aan de binnenzijde, met speciale aandacht voor de kimnaad.`,
+        risks: [
+          {
+            title: "1. Verlies van Bruikbaarheid",
+            desc: "Zonder herstel blijft de kelder ongeschikt voor opslag of verblijf door het risico op waterschade en schimmelvorming."
+          },
+          {
+            title: "2. Aantasting Funderingsmuren",
+            desc: "Voortdurende doorvochtiging en uitspoeling van kalk uit oude voegen tasten het metselwerk van de fundering op termijn aan."
+          },
+          {
+            title: "3. Vocht naar de Woonlaag",
+            desc: "Vocht in de kelderwanden kan omhoog trekken naar de begane grond en daar plint- en stucschade veroorzaken."
+          }
+        ],
+        solution: `Het aanbrengen van een drukvaste minerale afdichting aan de binnenzijde (binnenbekuiping) met een afgedichte kimnaad, bestand tegen de optredende waterdruk van buitenaf volgens productblad.`,
+        options: [
+          {
+            name: "Optie A: Meerlaagse Minerale Bekuiping",
+            desc: "Afkappen, kimnaad uitfrezen en dichten met krimpvrije mortel, en aanbrengen van een meerlaagse minerale afdichting conform WTA 4-6.",
+            pros: "✓ Bestand tegen waterdruk van buitenaf (volgens productblad)<br>✓ Mineraal gebonden: goede hechting op steen<br>✓ Waterdicht bij vakkundige uitvoering"
+          },
+          {
+            name: "Drainagesysteem met Pompput",
+            desc: "Noppenbanen op wanden en vloer die binnendringend water gecontroleerd afvoeren naar een pompput.",
+            pros: "✓ Toepasbaar bij zware waterdruk<br>✕ Afhankelijk van pomp en stroomvoorziening<br>✕ Neemt de oorzaak aan de buitenzijde niet weg"
+          },
+          {
+            name: "Afdichting aan de Buitenzijde",
+            desc: "Ontgraven van de buitenzijde tot funderingsdiepte en aanbrengen van een bitumineuze afdichting en isolatie.",
+            pros: "✓ Pakt het water aan de bron aan<br>✕ Zeer ingrijpend en kostbaar (indicatie € 8.000-15.000)<br>✕ Vaak onmogelijk bij stoep, buren of aanbouw"
+          }
+        ],
+        steps: `<strong>Stap 1: Afkappen en ondergrond voorbereiden</strong><br>
+        Verwijder alle oude pleisterlagen, verf en teerlagen tot op gezond metselwerk. Reinig de ondergrond (stralen of staalborstelen) voor een open, draagkrachtig oppervlak.<br><br>
+        <strong>Stap 2: Kimnaad uitfrezen &amp; afdichten</strong><br>
+        Frees de kimnaad over de volle lengte uit tot een groef van circa 3 x 3 cm. Vul deze met een krimpvrije, snelhardende afdichtingsmortel en werk af met een holle hoek (hol-kim).<br><br>
+        <strong>Stap 3: Meerlaagse minerale afdichting aanbrengen</strong><br>
+        Breng minimaal 2 tot 3 lagen minerale afdichtingsmortel kruislings aan, in de laagdikte die het productblad voorschrijft. Laat de afdichting doorlopen tot circa 20 cm boven het hoogste grondwater- of maaiveldniveau.`,
+        costs: [
+          { item: "Afkappen, reinigen en ondergrond voorbereiden (ca. 30 m²)", low: 900, high: 1500, inTotal: true },
+          { item: "Kimnaadafdichting (uitfrezen, afdichtingsmortel & kimband, ca. 18-24 m¹)", low: 1200, high: 2200, inTotal: true },
+          { item: "Meerlaagse minerale afdichting conform verwerkingsvoorschriften", low: 2700, high: 4800, inTotal: true },
+          { item: "Vloerafdichting / waterdichte egalisatie", low: 800, high: 1800, note: "optioneel" }
+        ],
+        totalLabel: "Totaal Optie A (ca. 30 m², excl. optionele vloer)",
+        checks: [
+          { title: "1. Ondergrond Controleren", desc: "Zorg dat oud stucwerk en verfresten volledig tot op gezond metselwerk zijn verwijderd, voor een goede hechting." },
+          { title: "2. Kimnaad Verifiëren", desc: "Controleer of de kimnaad apart is uitgefreesd en gevuld met een krimpvrije afdichtingsmortel." },
+          { title: "3. Laagdikte Toetsen", desc: "Controleer dat de mortellagen kruislings en in de voorgeschreven laagdikte zijn aangebracht (vraag naar het productblad)." }
+        ]
+      },
+
+      lekkage: {
+        title: "Lekkages & Niet-Destructieve Lekdetectie",
+        sub: "Onafhankelijk Bouwfysisch Advies & Technisch Plan van Aanpak voor leiding-, afvoer- en bouwkundige lekkages",
+        icon: "droplet",
+        framework: "Bouwfysische praktijk • lekdetectie",
+        defaultSituation: "Geconstateerd nabij natte ruimten, schachten of plafonds. Schadebeeld: vochtkringen, verkleuringen, vochttoename die niet samenhangt met het weer en mogelijk een doorlopende watermeter.",
+        problem: `Anders dan bij opstijgend of doorslaand vocht wordt een lekkage veroorzaakt door een defect: aan een aanvoer-, afvoer- of cv-leiding, of aan kitwerk in de badkamer.<br><br>
+        Water zoekt de weg van de minste weerstand door holle ruimten en dekvloeren. Daardoor zit de zichtbare schade vaak op een andere plek dan het lek zelf. <em>Niet-destructief zoeken voorkomt onnodig hak- en breekwerk en beperkt de herstelkosten.</em>`,
+        analysisExtra: `Het schadebeeld en de bevindingen ter plaatse passen eerder bij een lekkage (continu of bij gebruik) dan bij een bouwfysische oorzaak. De exacte plek van het lek kan alleen met gerichte lekdetectie worden vastgesteld. Gerichte, niet-destructieve lekdetectie is nodig om onnodig sloopwerk aan tegels en dekvloeren te voorkomen.`,
+        risks: [
+          {
+            title: "1. Aantasting Vloer en Plafond",
+            desc: "Aanhoudend lekwater in dekvloeren, balklagen of plafonds kan bouwmaterialen verzwakken en tot houtrot leiden."
+          },
+          {
+            title: "2. Installatie- en Veiligheidsrisico",
+            desc: "Water langs elektrische leidingen of aansluitpunten kan storingen, kortsluiting of corrosie veroorzaken."
+          },
+          {
+            title: "3. Afhandeling met Verzekeraar",
+            desc: "Snel melden en een professioneel detectierapport zorgen voor een vlotte en duidelijke schadeafhandeling bij de opstalverzekering."
+          }
+        ],
+        solution: `Niet-destructieve lekdetectie (akoestisch, traceergas of camera) om het lek nauwkeurig te lokaliseren, gevolgd door een gerichte reparatie en professionele droging van de constructie.`,
+        options: [
+          {
+            name: "Optie A: Lekdetectie + Gerichte Reparatie",
+            desc: "Inzet van akoestische apparatuur, traceergas of leidingcamera, gevolgd door één gerichte opening voor de loodgieter.",
+            pros: "✓ Minimaal hak- en breekwerk<br>✓ Vaak (deels) gedekt door de opstalverzekering, afhankelijk van de polis<br>✓ Snelle, zekere lokalisatie"
+          },
+          {
+            name: "Sanitair Kitwerk Vernieuwen",
+            desc: "Verwijderen van verouderde kitvoegen rond bad en douche en opnieuw waterdicht afkitten met sanitairkit.",
+            pros: "✓ Directe oplossing bij lekkage via kitvoegen<br>✓ Beperkte ingreep<br>✓ Voorkomt lekkage langs tegelaansluitingen"
+          },
+          {
+            name: "Professionele Bouwdroging",
+            desc: "Plaatsing van bouwdrogers en ventilatoren om dekvloeren en constructies na herstel versneld te drogen.",
+            pros: "✓ Voorkomt schimmelvorming na de lekkage<br>✓ Verkort de hersteltijd aanzienlijk<br>✓ Vaak meeverzekerd als gevolgschade"
+          }
+        ],
+        steps: `<strong>Stap 1: Niet-destructieve lekdetectie</strong><br>
+        Inzet van traceergas, akoestische apparatuur en/of leidingcamera om het defect te lokaliseren zonder onnodig breekwerk. Laat de bevindingen vastleggen in een detectierapport.<br><br>
+        <strong>Stap 2: Gerichte reparatie door installateur</strong><br>
+        Gericht openen van een zo klein mogelijk deel van vloer of wand boven het lekpunt. Herstel van de leiding (solderen, persen of koppelen) en afsluitend een druktest.<br><br>
+        <strong>Stap 3: Droging &amp; vochtmeting vóór herafwerking</strong><br>
+        Bouwdrogers plaatsen totdat vochtmetingen aantonen dat de constructie voldoende droog is. Pas daarna stuc-, tegel- of vloerwerk herstellen.`,
+        costs: [
+          { item: "Niet-destructieve lekdetectie met detectierapport", low: 375, high: 550, inTotal: true },
+          { item: "Leidingherstel door installateur (gericht openen & herstel)", low: 250, high: 650, inTotal: true },
+          { item: "Bouwdroging 1-2 weken (huur droger + ventilator)", low: 100, high: 500, inTotal: true },
+          { item: "Sanitair kitwerk rondom bad/douche vernieuwen", low: 150, high: 350, note: "indien van toepassing" }
+        ],
+        totalLabel: "Totaal detectie, reparatie & droging",
+        checks: [
+          { title: "1. Polis Controleren", desc: "Meld de lekkage direct bij uw opstalverzekering; lekdetectie en gevolgschade worden vaak vergoed, afhankelijk van uw polisvoorwaarden." },
+          { title: "2. Druktest na Reparatie", desc: "Laat de installateur na de reparatie een druktest uitvoeren om te controleren dat de leiding weer dicht is." },
+          { title: "3. Droogtijd Respecteren", desc: "Begin pas met stuc- of tegelherstel als de constructie aantoonbaar droog is gemeten." }
+        ]
+      },
+
+      schimmel: {
+        title: "Schimmelontwikkeling boven Maaiveld",
+        sub: "Onafhankelijk Bouwfysisch Advies & Technisch Plan van Aanpak voor koudebrugsanering & schimmelbeheersing",
+        icon: "biohazard",
+        framework: "Bouwfysische praktijk • koudebruggen",
+        defaultSituation: "Geconstateerd op koude plekken (buitenhoeken, lateien, raamaansluitingen of achter meubels). Schadebeeld: zwarte spikkels, muffe geur en aantasting van afwerklagen.",
+        problem: `Schimmelsporen zitten altijd in de lucht, binnen en buiten. Ze gaan pas groeien als er een voedingsbodem is (zoals stof, behang of verf) én het oppervlak langdurig vochtig is: <strong>een relatieve vochtigheid van circa 80% of hoger direct aan het oppervlak</strong>, voor sommige soorten al vanaf ongeveer 70%.<br><br>
+        Op een plek zonder goede isolatie (een koudebrug) is de muur kouder dan de rest van de ruimte. De lucht vlak bij die muur koelt af, waardoor de vochtigheid daar oploopt tot boven die grens, ook als de ruimte als geheel niet extreem vochtig is. <em>Alleen schoonmaken helpt daarom maar tijdelijk: zolang de koude plek blijft, komt de schimmel terug.</em>`,
+        analysisExtra: `Het schadebeeld past bij schimmelgroei op een lokaal koude plek, waar de oppervlaktetemperatuur laag is ten opzichte van de luchtvochtigheid in de ruimte. Ook bij een acceptabele luchtvochtigheid in de ruimte als geheel kan het oppervlak van zo'n koude plek langdurig vochtig blijven. Afdoend herstel vraagt om het opheffen van de koudebrug én het verwijderen van de schimmel.`,
+        risks: [
+          {
+            title: "1. Gezondheid & Binnenklimaat",
+            desc: "Inademing van schimmelsporen kan leiden tot allergische reacties en luchtwegklachten, vooral bij kinderen, ouderen en mensen met astma."
+          },
+          {
+            title: "2. Huurrechtelijke Aandachtspunten",
+            desc: "Bij huur of verhuur kan ernstige schimmelvorming aanleiding geven tot discussie over onderhoud en gebreken."
+          },
+          {
+            title: "3. Schade aan Stoffering & Meubels",
+            desc: "Schimmel kan zich hechten aan gordijnen, kleding en meubels, met verkleuring en geurhinder tot gevolg."
+          }
+        ],
+        solution: `Het wegnemen van de groeivoorwaarden: schimmel verwijderen, de koudebrug isoleren met een dampopen, capillair actieve isolatie en afwerken met een dampopen, alkalische verf. Waar nodig aangevuld met betere ventilatie.`,
+        options: [
+          {
+            name: "Optie A: Reiniging + Isolatie + Silicaatverf",
+            desc: "Schimmel verwijderen met waterstofperoxide, lokaal isoleren met dampopen minerale platen (bijv. calciumsilicaat of mineraalschuim) en afwerken met silicaatverf.",
+            pros: "✓ Heft de koudebrug op (warmere wand)<br>✓ Hoge pH van silicaatverf remt nieuwe groei<br>✓ Geen chloor of agressieve middelen"
+          },
+          {
+            name: "Decentrale Balans-WTW",
+            desc: "Plaatsing van een vochtgestuurde decentrale ventilatie-unit die de luchtvochtigheid in de ruimte rond of onder 55% RV houdt.",
+            pros: "✓ Verlaagt de luchtvochtigheid continu<br>✓ Voert vocht en CO2 af naar buiten<br>✕ Neemt de koudebrug zelf niet weg"
+          },
+          {
+            name: "Wandverwarming",
+            desc: "Een verwarmingslint achter de plint of in het stucwerk dat de wandtemperatuur boven het dauwpunt houdt.",
+            pros: "✓ Gerichte aanpak bij smalle, moeilijke plekken<br>✕ Continu stroomverbruik<br>✕ Verbetert de luchtkwaliteit niet"
+          }
+        ],
+        steps: `<strong>Stap 1: Schimmel verwijderen</strong><br>
+        Reinig de aangetaste plek met waterstofperoxide (3-5%) of alcohol (70-80%). Vermijd chloor op poreuze ondergronden. Sterk aangetast behang of stucwerk verwijderen; draag hierbij stofmasker (FFP2) en handschoenen.<br><br>
+        <strong>Stap 2: Koudebrug isoleren</strong><br>
+        Breng dampopen, capillair actieve isolatieplaten (bijv. calciumsilicaat, 25-50 mm) aan op de koude hoek of latei. Laat de isolatie een strook doorlopen op de aansluitende wand of het plafond, zodat de koude plek niet simpelweg verschuift. Dit verhoogt de oppervlaktetemperatuur doorgaans met enkele graden.<br><br>
+        <strong>Stap 3: Dampopen, schimmelwerende afwerking</strong><br>
+        Werk af met een dampopen silicaatverf. De hoge pH-waarde van silicaatverf maakt het oppervlak ongunstig voor nieuwe schimmelgroei. Vermijd dampdichte latexverf.`,
+        costs: [
+          { item: "Schimmelreiniging en desinfectie (per kamer)", low: 200, high: 450, inTotal: true },
+          { item: "Isolatie koudebrug met minerale platen (materiaal & montage, ca. 10 m²)", low: 1100, high: 1800, inTotal: true },
+          { item: "Dampopen silicaatverf (per kamer compleet)", low: 350, high: 650, inTotal: true },
+          { item: "Decentrale WTW-unit incl. gevelmontage", low: 1200, high: 1800, note: "optioneel" }
+        ],
+        totalLabel: "Totaal Optie A (per kamer, excl. optionele WTW)",
+        checks: [
+          { title: "1. Reinigingsmethode Toetsen", desc: "Zorg dat de aannemer de schimmel verwijdert met een geschikt middel in plaats van alleen chloorbleekmiddel." },
+          { title: "2. Koudebrug Aanpakken", desc: "Alleen overschilderen zonder de koude plek te isoleren leidt meestal binnen enkele maanden tot nieuwe schimmelgroei." },
+          { title: "3. Dampopen Afwerking Eisen", desc: "Controleer dat er dampopen silicaat- of kalkverf wordt gebruikt in plaats van dampdichte latexverf." }
+        ]
+      }
+    };
+
+
+    // ============================================================
+    // AANBEVELING & MOTIVATIE PER RAPPORT
+    // De adviseur kiest per rapport welke optie de voorkeur krijgt (of geen voorkeur)
+    // en licht dat in één à twee zinnen toe. Sjablonen hieronder zijn een startpunt;
+    // tekst tussen [vierkante haken] altijd aanpassen aan de woning.
+    // ============================================================
+    const OPTION_LETTERS = ["A", "B", "C"];
+
+    // Indicatieve prijs per optie waar die uit de bestaande richtprijzen volgt (incl. btw).
+    // null = geen vaste richtprijs: dan "volgens offerte", of zelf invullen in het paneel.
+    // Prijs per optie = optelsom van de regels in de uitwerking van die optie (altijd consistent)
+    function optionRange(key, i) {
+      const t = getCostTotals({ costs: getOptieInhoud(key, i).costs });
+      return (t.low || t.high) ? [t.low, t.high] : null;
+    }
+
+    const MOTIVATIE_SJABLONEN = {
+      condensatie: [
+        [
+          "Bij deze woning schiet de ventilatie vooral tekort in [woonkamer en slaapkamer], terwijl een kanalenstelsel hier alleen met ingrijpend breekwerk is aan te leggen. Decentrale WTW lost het vochtprobleem op zonder tocht of extra warmteverlies.",
+          "De slaapkamers liggen aan de [straatzijde / geluidsbelaste zijde]. Optie A vraagt geen open roosters, waardoor tocht en geluidsinval worden voorkomen terwijl het vocht wel continu wordt afgevoerd."
+        ],
+        [
+          "Gezien het beschikbare budget en de bestaande afzuigpunten in [keuken en badkamer] is optie B bij deze woning de meest doelmatige stap. Tocht en geluid via toevoerroosters zijn hier naar verwachting goed acceptabel.",
+          "Omdat het om een [huurwoning / tijdelijke situatie] gaat, adviseren wij optie B: de ingreep is beperkt en de investering het laagst, terwijl de vochtafvoer wel structureel verbetert."
+        ],
+        [
+          "Er staat een [verbouwing / renovatie] gepland. Dat is het moment om centrale balansventilatie aan te leggen: het kanalenstelsel kan dan zonder extra breekwerk worden meegenomen.",
+          "Deze woning is goed geïsoleerd en kierdicht. Centrale balansventilatie levert hier het hoogste comfort en energierendement, waardoor de grotere investering verantwoord is."
+        ]
+      ],
+      opstijgend: [
+        [
+          "Het metselwerk is geschikt voor injectie en de vochtschade beperkt zich tot de onderste [40-60] cm. Muurinjectie is hier de minst ingrijpende en meest beproefde oplossing.",
+          "De muur is goed bereikbaar vanaf [binnenzijde / beide zijden], waardoor de injectiebarrière doorlopend kan worden aangebracht. Gecombineerd met zoutbestendige herafwerking pakt dit oorzaak en schade aan."
+        ],
+        [
+          "Gezien de [zeer hoge doorvochtiging / afwijkende muuropbouw] verwachten wij van injectie onvoldoende zekerheid. Een fysieke waterkering via onderkapping biedt hier meer zekerheid, ondanks de grotere ingreep."
+        ],
+        [
+          "Het betreft een [monumentaal pand] waarbij boorwerk in het metselwerk zoveel mogelijk vermeden moet worden. Elektro-osmose kan dan worden overwogen; omdat de werking onzeker is, adviseren wij het effect met vochtmetingen te laten volgen."
+        ]
+      ],
+      doorslaand: [
+        [
+          "Het metselwerk is in redelijke staat; het vocht komt vooral binnen via verweerd voegwerk. Voegherstel met hydrofobering pakt de oorzaak aan en behoudt het aanzicht van de gevel.",
+          "Het probleem concentreert zich op de [zuid-/westgevel], die de meeste slagregen vangt. Wij adviseren deze gevel als eerste aan te pakken met optie A."
+        ],
+        [
+          "De gevel vertoont veel haarscheurtjes in [stenen / pleisterwerk] die met hydrofobering niet worden afgedicht. Een dampopen, scheuroverbruggende coating biedt hier betere bescherming."
+        ],
+        [
+          "De gevel [is niet geïsoleerd / moet toch ingrijpend worden aangepakt]. Buitengevelisolatie combineert vochtwering en isolatie in één ingreep, waardoor de grotere investering hier verantwoord is."
+        ]
+      ],
+      kelderventilatie: [
+        [
+          "De vochtlast in deze kelder komt vooral van zomercondensatie. Dauwpuntgestuurde ventilatie pakt precies dat aan, tegen lage gebruikskosten, en er is een geschikte plek voor een doorvoer via [koekoek / kelderwand].",
+          "De kelder wordt gebruikt voor [opslag], waarbij continu drogen belangrijker is dan verse lucht. Dauwpuntsturing ventileert alleen op drogende momenten en is daarmee de meest doelmatige oplossing."
+        ],
+        [
+          "In deze kelder is [geen geschikte plek voor een doorvoer / te weinig luchtvolume] voor dauwpuntgestuurde ventilatie. Een vaste bouwdroger is dan de meest praktische oplossing, met hogere stroomkosten als nadeel."
+        ],
+        [
+          "De kelder wordt gebruikt als [verblijfs- / werkruimte], waar ook verse lucht en een stabiele temperatuur gewenst zijn. Een kelder-WTW, bij voorkeur met dauwpuntsturing, past daar het best bij."
+        ]
+      ],
+      lateraal: [
+        [
+          "Afdichten aan de buitenzijde is hier niet mogelijk [vanwege stoep / aanbouw / belendende percelen]. Een minerale binnenbekuiping is dan de meest duurzame oplossing en maakt de kelder weer bruikbaar.",
+          "De vochtdoorslag concentreert zich op de wanden en de kimnaad, zonder grote waterdruk. Een meerlaagse binnenbekuiping met afgedichte kimnaad is hier afdoende en minder ingrijpend dan ontgraven."
+        ],
+        [
+          "Er is sprake van [hoge grondwaterstand / zware waterdruk], waarbij een binnenbekuiping onvoldoende zekerheid biedt. Een drainagesysteem met pompput voert het water gecontroleerd af."
+        ],
+        [
+          "De buitenzijde is [vrij bereikbaar], waardoor afdichting aan de buitenkant mogelijk is. Dat pakt het water aan de bron aan en is de meest duurzame oplossing, al is de ingreep groot."
+        ]
+      ],
+      lekkage: [
+        [
+          "Het vochtpatroon wijst op een lekkende leiding waarvan de plek niet zichtbaar is. Lekdetectie voorkomt onnodig breekwerk en levert een rapport dat de afhandeling met de verzekeraar vereenvoudigt.",
+          "Het vocht neemt toe onafhankelijk van gebruik en weer, en [de watermeter loopt door]. Dat wijst op een leidinglek; gerichte lekdetectie is hier de snelste en goedkoopste route naar herstel."
+        ],
+        [
+          "Het vocht ontstaat bij gebruik van [douche / bad] en concentreert zich rond de kitvoegen. Vernieuwen van het kitwerk is hier de eerste, eenvoudige stap; blijft het probleem, dan volgt lekdetectie."
+        ],
+        [
+          "Het lek is inmiddels hersteld, maar de constructie is nog [nat / verhoogd]. Professionele droging voorkomt schimmelvorming en zorgt dat herafwerking veilig kan plaatsvinden."
+        ]
+      ],
+      schimmel: [
+        [
+          "De schimmel zit op een duidelijk koude plek ([buitenhoek / latei]), terwijl de luchtvochtigheid in de ruimte zelf acceptabel is. Het isoleren van die koude plek pakt de oorzaak aan.",
+          "De schimmel keert terug op dezelfde plek ondanks eerder schoonmaken. Dat bevestigt een koudebrug; isoleren en dampopen afwerken voorkomt herhaling."
+        ],
+        [
+          "De schimmel komt op meerdere plekken voor en de luchtvochtigheid in de ruimte is structureel te hoog. Betere ventilatie is hier de belangrijkste maatregel; lokale isolatie kan daarna alsnog nodig zijn."
+        ],
+        [
+          "De koude plek is te smal of te lastig bereikbaar om te isoleren ([bijv. betonlatei boven kozijn]). Wandverwarming houdt de plek boven het dauwpunt, met stroomverbruik als nadeel."
+        ]
+      ]
+    };
+
+    const MOTIVATIE_GEEN_VOORKEUR = [
+      "Bij deze woning zijn de opties technisch gelijkwaardig. De keuze hangt vooral af van uw budget, de gewenste ingreep en uw plannen met de woning. Wij lichten de afweging graag toe.",
+      "Wij adviseren eerst [aanvullend onderzoek / een eerste maatregel] uit te voeren en het effect af te wachten, voordat een definitieve keuze tussen de opties wordt gemaakt."
+    ];
+
+    // Per dossier: rec = index aanbevolen optie (0/1/2) of "none"; motivatie; optionele eigen prijsindicatie
+    let adviesState = {};
+
+    function getAdvies(key = currentTemplateKey) {
+      if (!adviesState[key]) adviesState[key] = { rec: 0, motivatie: "", prijs: "" };
+      return adviesState[key];
+    }
+
+    function optionName(opt) {
+      return opt.name.replace(/^Optie [ABC]:\s*/, "");
+    }
+
+    function getRecPriceText(key = currentTemplateKey) {
+      const a = getAdvies(key);
+      if (a.rec === "none") return "";
+      if ((a.prijs || "").trim()) return a.prijs.trim();
+      const p = optionRange(key, a.rec);
+      return p ? `${fmtEuro(p[0])} tot ${fmtEuro(p[1])}` : "volgens offerte";
+    }
+
+    function adviesIsIncomplete() {
+      const t = (getAdvies().motivatie || "").trim();
+      return !t || /\[[^\]]*\]/.test(t);
+    }
+
+    // Paneel bovenin opnieuw vullen bij laden of wisselen van dossier
+    function refreshAdviesPanel() {
+      const data = DOSSIERS[currentTemplateKey];
+      const a = getAdvies();
+      const recSel = document.getElementById('adv_rec');
+      if (recSel) {
+        recSel.innerHTML = data.options.map((o, i) => `<option value="${i}">Optie ${OPTION_LETTERS[i]}: ${escHtml(optionName(o))}</option>`).join('')
+          + `<option value="none">Geen voorkeur (keuze aan opdrachtgever)</option>`;
+        recSel.value = String(a.rec);
+      }
+      refreshSjabloonList();
+      const mot = document.getElementById('adv_motivatie');
+      if (mot) mot.value = a.motivatie || "";
+      const pr = document.getElementById('adv_prijs');
+      if (pr) {
+        pr.value = a.prijs || "";
+        const p = a.rec === "none" ? null : optionRange(currentTemplateKey, a.rec);
+        pr.placeholder = a.rec === "none" ? "n.v.t. bij geen voorkeur" : (p ? `standaard: ${fmtEuro(p[0])} tot ${fmtEuro(p[1])}` : "bijv. € 2.000,- tot € 3.000,- (anders: volgens offerte)");
+        pr.disabled = a.rec === "none";
+      }
+    }
+
+    function refreshSjabloonList() {
+      const a = getAdvies();
+      const list = a.rec === "none" ? MOTIVATIE_GEEN_VOORKEUR : ((MOTIVATIE_SJABLONEN[currentTemplateKey] || [])[a.rec] || []);
+      const sel = document.getElementById('adv_sjabloon');
+      if (!sel) return;
+      sel.innerHTML = `<option value="">— kies een sjabloon (${list.length}) —</option>` +
+        list.map((t, i) => `<option value="${i}">${escHtml(t.length > 95 ? t.slice(0, 92) + '…' : t)}</option>`).join('');
+    }
+
+    function setAdviesRec(val) {
+      const a = getAdvies();
+      a.rec = val === "none" ? "none" : parseInt(val, 10);
+      a.prijs = "";
+      refreshAdviesPanel();
+      rerenderKeepScroll();
+    }
+
+    function useSjabloon(idx) {
+      if (idx === "") return;
+      const a = getAdvies();
+      const list = a.rec === "none" ? MOTIVATIE_GEEN_VOORKEUR : MOTIVATIE_SJABLONEN[currentTemplateKey][a.rec];
+      const txt = list[parseInt(idx, 10)];
+      if ((a.motivatie || "").trim() && a.motivatie !== txt && !confirm("De huidige motivatie vervangen door dit sjabloon?")) {
+        document.getElementById('adv_sjabloon').value = "";
+        return;
+      }
+      a.motivatie = txt;
+      document.getElementById('adv_motivatie').value = txt;
+      document.getElementById('adv_sjabloon').value = "";
+      updateAdviesBox();
+      const mot = document.getElementById('adv_motivatie');
+      mot.focus();
+      const pos = txt.indexOf('[');
+      if (pos >= 0) mot.setSelectionRange(pos, txt.indexOf(']', pos) + 1);
+    }
+
+    function setAdviesField(field, val) {
+      getAdvies()[field] = val;
+      updateAdviesBox();
+    }
+
+    function updateAdviesBox() {
+      const holder = document.getElementById('adviesHolder');
+      if (holder) holder.innerHTML = getAdviesBoxHtml(DOSSIERS[currentTemplateKey]);
+      const costNote = document.getElementById('costRecHolder');
+      if (costNote) costNote.innerHTML = getCostRecHtml(DOSSIERS[currentTemplateKey]);
+      const sam = document.getElementById('samenvattingHolder');
+      if (sam) sam.innerHTML = getSamenvattingHtml(DOSSIERS[currentTemplateKey]);
+      if (window.lucide) lucide.createIcons();
+      checkPageOverflow();
+    }
+
+    function rerenderKeepScroll() {
+      const y = window.scrollY;
+      renderAllPages();
+      window.scrollTo(0, y);
+    }
+
+    // Adviesblok onder de keuzematrix
+    function getAdviesBoxHtml(data) {
+      const a = getAdvies();
+      const mot = (a.motivatie || "").trim();
+      const motHtml = mot
+        ? escHtml(mot).replace(/\n/g, '<br>').replace(/\[([^\]]*)\]/g, '<span class="ph-mark">[$1]</span>')
+        : '<span class="ph-hint" style="color:#d97706;font-style:italic">[Motivatie invullen]</span>';
+      const head = a.rec === "none"
+        ? `Ons advies: <span class="text-indigo-700">geen uitgesproken voorkeur</span>`
+        : `Ons advies voor deze woning: <span class="text-indigo-700">Optie ${OPTION_LETTERS[a.rec]} – ${escHtml(optionName(data.options[a.rec]))}</span>`;
+      return `
+        <div class="mt-2 p-2.5 rounded-xl border-2 border-indigo-600 bg-white space-y-1">
+          <p class="text-[10.5px] font-black text-slate-950 flex items-center gap-1.5">
+            <i data-lucide="badge-check" class="w-4 h-4 text-indigo-600 shrink-0"></i>${head}
+          </p>
+          <p class="text-[10px] text-slate-800 leading-snug">${motHtml}</p>
+          <p class="text-[8.5px] text-slate-500 leading-snug italic">De keuzematrix toont de alternatieven met hun voor- en nadelen. De uiteindelijke keuze voor een oplossing en uitvoerder ligt bij u als opdrachtgever.</p>
+        </div>`;
+    }
+
+    // Toelichting bij de kostenraming als de aanbevolen optie niet optie A is
+    function optionPriceText(key, i) {
+      const a = getAdvies(key);
+      if (a.rec === i && (a.prijs || "").trim()) return escHtml(a.prijs.trim());
+      const p = optionRange(key, i);
+      return p ? `${fmtEuro(p[0])} tot ${fmtEuro(p[1])}` : "volgens offerte";
+    }
+
+    // Overzicht van alle opties naast elkaar, zodat de klant zelf kan vergelijken
+    function getCostRecHtml(data) {
+      const a = getAdvies();
+      const rows = data.options.map((o, i) => {
+        const isRec = a.rec === i;
+        return `<tr class="${isRec ? 'bg-indigo-50 font-bold text-indigo-950' : 'text-slate-700'}">
+          <td class="p-1.5 w-16 font-black">Optie ${OPTION_LETTERS[i]}</td>
+          <td class="p-1.5">${escHtml(optionName(o))}${isRec ? ' <span class="ml-1 text-[8px] font-black uppercase px-1.5 py-px rounded bg-indigo-600 text-white">Aanbevolen</span>' : ''}</td>
+          <td class="p-1.5 text-right font-semibold whitespace-nowrap">${optionPriceText(currentTemplateKey, i)}</td>
+        </tr>`;
+      }).join('');
+      const detailNote = a.rec === "none"
+        ? 'De detailraming hieronder is uitgewerkt voor optie A en dient als referentie bij het vergelijken van offertes.'
+        : `Hieronder de detailraming van de aanbevolen optie ${OPTION_LETTERS[a.rec]}.`;
+      return `
+        <div class="border border-slate-200 rounded-lg overflow-hidden mb-1.5">
+          <table class="w-full text-left text-[9.5px]">
+            <thead class="bg-slate-100 uppercase text-[8.5px] text-slate-700 font-bold border-b border-slate-200">
+              <tr><th class="p-1.5" colspan="2">Indicatie per optie (totaal, incl. btw)</th><th class="p-1.5 text-right">Bandbreedte</th></tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">${rows}</tbody>
+          </table>
+        </div>
+        <p class="text-[8.5px] text-slate-500 italic mb-1">${detailNote}</p>`;
+    }
+
+    // Opmerking bij het werkvoorschrift als niet optie A wordt aanbevolen
+    function getStepsNoteHtml() {
+      const a = getAdvies();
+      if (a.rec !== "none") return "";
+      return `<p class="text-[8.5px] text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 leading-snug">Onderstaand werkvoorschrift is ter referentie uitgewerkt voor optie A. Bij keuze voor optie B of C stemt de uitvoerder de werkwijze af op die oplossing en de verwerkingsvoorschriften van de gekozen producten.</p>`;
+    }
+
+
+    // ============================================================
+    // UITWERKING VAN OPTIE B EN C PER DOSSIER
+    // Optie A staat in DOSSIERS zelf. Wordt B of C aanbevolen, dan tonen
+    // oplossingsrichting (3), werkvoorschrift (5), detailraming (6) en
+    // opleverprotocol (7) automatisch de uitwerking van die optie.
+    // Bedragen incl. btw; het totaal per optie wordt automatisch opgeteld.
+    // ============================================================
+    const OPTIE_UITWERKING = {
+      condensatie: {
+        1: {
+          solution: `Het herstellen van de vochtbalans door continue, vraaggestuurde mechanische afzuiging in de natte ruimten (keuken, badkamer, toilet), met gecontroleerde luchttoevoer via zelfregelende roosters in de verblijfsruimten. De afzuiging schakelt automatisch op bij een verhoogde luchtvochtigheid of CO2.`,
+          steps: `<strong>Stap 1: Luchttoevoer in de verblijfsruimten</strong><br>
+          Plaats zelfregelende ventilatieroosters in de kozijnen of het glas van de woonkamer en de slaapkamers. Stem de capaciteit af op de grootte van de ruimte (eisen Bbl). Zelfregelende roosters knijpen bij harde wind automatisch af en beperken zo tocht. De roosters blijven permanent open.<br><br>
+          <strong>Stap 2: Vraaggestuurde afzuigunit</strong><br>
+          Plaats een energiezuinige gelijkstroom (EC) afzuigbox met afzuigpunten in keuken, badkamer en toilet. Bestaande kanalen controleren, reinigen en waar nodig vervangen. Vraagsturing op luchtvochtigheid (RV) en/of CO2, zodat de box automatisch opschakelt bij koken, douchen en 's nachts.<br><br>
+          <strong>Stap 3: Overstroom, inregelen &amp; opleveringsmeting</strong><br>
+          Zorg voor een <strong>vrije spleet van circa 1,5 tot 2 cm</strong> onder de binnendeuren. Regel de afzuigventielen in, meet de volumestromen (in dm³/s) en overhandig het inregelrapport aan de opdrachtgever.`,
+          costs: [
+            { item: "Zelfregelende toevoerroosters in de verblijfsruimten (incl. montage)", low: 500, high: 900, inTotal: true },
+            { item: "Vraaggestuurde EC-afzuigbox met RV/CO2-sturing", low: 800, high: 1200, inTotal: true },
+            { item: "Aansluiten op kanalen, ventielen plaatsen & inregelen", low: 500, high: 700, inTotal: true }
+          ],
+          totalLabel: "Totaal Optie B (vraaggestuurde afzuiging)",
+          checks: [
+            { title: "1. Inregelrapport Verifiëren", desc: "Vraag om een meetrapport van de afgezogen volumestromen (in dm³/s) per afzuigpunt, zodat de capaciteit aantoonbaar toereikend is." },
+            { title: "2. Toevoer in Elke Verblijfsruimte", desc: "Controleer dat de woonkamer en elke slaapkamer een zelfregelend toevoerrooster krijgt; zonder toevoer kan de afzuiging niet goed werken." },
+            { title: "3. Vraagsturing Controleren", desc: "Controleer dat de box automatisch opschakelt op vocht en/of CO2 en dat de laagste stand stil genoeg is voor continu gebruik." }
+          ]
+        },
+        2: {
+          solution: `Centrale balansventilatie met warmteterugwinning: mechanische toevoer van verse lucht in de verblijfsruimten en afvoer in de natte ruimten via een gesloten kanalenstelsel. Dit geeft het hoogste comfort en energierendement en is vooral geschikt bij een verbouwing of renovatie.`,
+          steps: `<strong>Stap 1: Ontwerp &amp; capaciteitsberekening</strong><br>
+          Laat de installateur een ventilatieontwerp maken met de benodigde capaciteit per ruimte (eisen Bbl), de plaats van de unit en het kanalentracé. Stem koven en doorvoeren vooraf af met de opdrachtgever.<br><br>
+          <strong>Stap 2: Unit &amp; kanalenstelsel</strong><br>
+          Plaats de WTW-unit op zolder of in een techniekruimte, met condensafvoer en een bypass voor de zomer. Buitenluchtkanalen dampdicht geïsoleerd uitvoeren; geluiddempers opnemen richting de slaapkamers.<br><br>
+          <strong>Stap 3: Inregelen &amp; onderhoudsinstructie</strong><br>
+          Meet en regel de volumestromen per ventiel in (in dm³/s) en overhandig het inregelrapport. Geef een onderhoudsinstructie: filters doorgaans twee keer per jaar reinigen of vervangen.`,
+          costs: [
+            { item: "Centrale WTW-unit met bypass & regeling", low: 2000, high: 3200, inTotal: true },
+            { item: "Kanalenstelsel, ventielen & geluiddempers", low: 2200, high: 3800, inTotal: true },
+            { item: "Bouwkundig werk (koven, doorvoeren, afwerking)", low: 800, high: 1800, inTotal: true },
+            { item: "Inregelen, meetrapport & oplevering", low: 500, high: 700, inTotal: true }
+          ],
+          totalLabel: "Totaal Optie C (centrale balansventilatie)",
+          checks: [
+            { title: "1. Inregelrapport per Ventiel", desc: "Vraag om een meetrapport met de toe- en afgevoerde volumestromen per ventiel (in dm³/s)." },
+            { title: "2. Geluid in Slaapkamers", desc: "Controleer dat geluiddempers zijn opgenomen, zodat de installatie 's nachts niet hoorbaar is in de slaapkamers." },
+            { title: "3. Onderhoud &amp; Bereikbaarheid", desc: "Zorg dat de unit goed bereikbaar is voor filtervervanging en dat u een onderhoudsinstructie ontvangt." }
+          ]
+        }
+      },
+
+      opstijgend: {
+        1: {
+          solution: `Het onderbreken van het opstijgende vocht met een fysieke waterkering (kunststof folie of rvs-plaat) in de muur, gecombineerd met het vervangen van zoutbelast stucwerk door een zoutbestendige, dampopen afwerking.`,
+          steps: `<strong>Stap 1: Constructieve beoordeling &amp; afkappen</strong><br>
+          Laat vooraf de stabiliteit van de muur beoordelen en leg de fasering vast. Kap pleister- en verflagen af tot op het metselwerk, tot <strong>minimaal 50 cm (bij voorkeur 80 cm) boven de hoogste zichtbare schade- of zoutgrens</strong>.<br><br>
+          <strong>Stap 2: Gefaseerd onderkappen</strong><br>
+          Zaag de muur gefaseerd door in korte delen (lengte volgens opgave uitvoerder), schuif de folie of plaat in met voldoende overlap en vul de zaagsnede direct krimpvrij aan, zodat er geen zetting ontstaat.<br><br>
+          <strong>Stap 3: Droogtijd &amp; zoutbestendige herafwerking</strong><br>
+          Afwerken met een saneerpleistersysteem conform WTA 2-9 of een zoutblokkerend membraan. Houd rekening met een lange uitdroogtijd van de muur (vuistregel circa 1 maand per 2,5 cm muurdikte).`,
+          costs: [
+            { item: "Afkappen stucwerk & puinafvoer (ca. 20-25 m²)", low: 550, high: 950, inTotal: true },
+            { item: "Mechanisch onderkappen met folie of rvs-plaat (ca. 16-20 m¹)", low: 2000, high: 3500, inTotal: true },
+            { item: "Zoutblokkerend membraan of saneerpleistersysteem", low: 950, high: 1750, inTotal: true },
+            { item: "Nieuw dampopen stuc- en schilderwerk", low: 750, high: 1400, inTotal: true }
+          ],
+          totalLabel: "Totaal Optie B (ca. 16-20 m¹ muur)",
+          checks: [
+            { title: "1. Constructieve Borging", desc: "Controleer dat de offerte de fasering en de maatregelen voor de stabiliteit van de muur beschrijft." },
+            { title: "2. Doorlopende Waterkering", desc: "Controleer dat de folie of platen met overlap worden aangebracht, zodat er nergens een onderbreking in de kering ontstaat." },
+            { title: "3. Zoutbestendige Herafwerking Eisen", desc: "Zorg dat een saneerpleistersysteem of zoutblokkerend membraan wordt toegepast in plaats van standaard gipspleister." }
+          ]
+        },
+        2: {
+          solution: `Het beperken van opstijgend vocht met een elektro-osmotisch systeem, gecombineerd met zoutbestendige herafwerking. Omdat de werking van elektro-osmose in de vakwereld omstreden is, hoort hier een controle met vochtmetingen bij voordat de muur definitief wordt afgewerkt.`,
+          steps: `<strong>Stap 1: Afkappen &amp; nulmeting</strong><br>
+          Kap het zoutbelaste stucwerk af tot <strong>minimaal 50 cm boven de hoogste schade- of zoutgrens</strong>. Laat vóór plaatsing een nulmeting van het materiaalvocht op vaste meetpunten vastleggen.<br><br>
+          <strong>Stap 2: Plaatsen van het systeem</strong><br>
+          Plaats elektroden en voeding volgens de voorschriften van de fabrikant. Laat de elektrische aansluiting uitvoeren door een erkend installateur.<br><br>
+          <strong>Stap 3: Vervolgmetingen &amp; herafwerking</strong><br>
+          Herhaal de vochtmetingen op dezelfde meetpunten na circa 6 en 12 maanden. Werk af met een zoutbestendig saneerpleistersysteem (WTA 2-9); bij onvoldoende afname van het vocht alsnog een injectie- of onderkapmethode overwegen.`,
+          costs: [
+            { item: "Afkappen stucwerk & puinafvoer (ca. 20-25 m²)", low: 550, high: 950, inTotal: true },
+            { item: "Elektro-osmotisch systeem incl. plaatsing", low: 1000, high: 3500, inTotal: true },
+            { item: "Zoutblokkerend membraan of saneerpleistersysteem", low: 950, high: 1750, inTotal: true },
+            { item: "Nieuw dampopen stuc- en schilderwerk", low: 750, high: 1400, inTotal: true }
+          ],
+          totalLabel: "Totaal Optie C (ca. 16-20 m¹ muur)",
+          checks: [
+            { title: "1. Resultaatafspraak Vastleggen", desc: "Leg schriftelijk vast welk resultaat de leverancier garandeert en wat er gebeurt als het vocht onvoldoende afneemt." },
+            { title: "2. Nul- en Vervolgmetingen", desc: "Zorg voor een nulmeting en vervolgmetingen op dezelfde meetpunten, zodat het effect aantoonbaar is." },
+            { title: "3. Zoutbestendige Herafwerking Eisen", desc: "Zorg dat een saneerpleistersysteem wordt toegepast in plaats van standaard gipspleister." }
+          ]
+        }
+      },
+
+      doorslaand: {
+        1: {
+          solution: `Het beschermen van de gevel met een dampopen, scheuroverbruggende gevelcoating, die regenwater buiten houdt en waterdamp van binnenuit laat ontsnappen.`,
+          steps: `<strong>Stap 1: Reinigen &amp; voorbereiden</strong><br>
+          Reinig de gevel en verwijder losse delen. Herstel scheuren groter dan een haarscheur en beschadigde voegen vooraf. Laat de gevel goed drogen.<br><br>
+          <strong>Stap 2: Grondlaag</strong><br>
+          Breng een voorstrijk of grondlaag aan die bij het coatingsysteem hoort, volgens het productblad.<br><br>
+          <strong>Stap 3: Gevelcoating</strong><br>
+          Breng minimaal twee lagen dampopen gevelcoating aan (bijv. op siliconenharsbasis), bij droog weer en een temperatuur boven circa 5 °C. Kozijnen, glas en dorpels zorgvuldig afplakken.`,
+          costs: [
+            { item: "Gevelreiniging & voorbereiding (ca. 50 m²)", low: 750, high: 1250, inTotal: true },
+            { item: "Dampopen gevelcoating, 2 lagen incl. grondlaag (ca. 50 m²)", low: 1250, high: 2000, inTotal: true },
+            { item: "Steiger, afplakken kozijnen en eventuele ontheffing openbare weg", low: 400, high: 900, inTotal: true }
+          ],
+          totalLabel: "Totaal Optie B (ca. 50 m² gevel)",
+          checks: [
+            { title: "1. Dampopen Product Eisen", desc: "Vraag om het productblad en controleer dat de coating dampopen is, zodat vocht niet in de muur wordt opgesloten." },
+            { title: "2. Scheuren Vooraf Herstellen", desc: "Controleer dat scheuren en slechte voegen vóór het coaten worden hersteld." },
+            { title: "3. Lagen &amp; Weersomstandigheden", desc: "Controleer dat minimaal twee lagen worden aangebracht, bij droog weer en boven circa 5 °C." }
+          ]
+        },
+        2: {
+          solution: `Het aanbrengen van buitengevelisolatie met een waterwerende, dampopen minerale sierpleister. Dit houdt regenwater buiten en verbetert tegelijk de isolatie van de gevel.`,
+          steps: `<strong>Stap 1: Vergunning &amp; voorbereiding</strong><br>
+          Laat vooraf nagaan of een omgevingsvergunning nodig is (wijziging van het aanzicht). Reinig de gevel en herstel losse delen.<br><br>
+          <strong>Stap 2: Isolatie &amp; wapening</strong><br>
+          Bevestig de isolatieplaten volgens het systeem van de leverancier, gevolgd door een wapeningslaag met weefsel.<br><br>
+          <strong>Stap 3: Aansluitingen &amp; afwerking</strong><br>
+          Werk aansluitingen bij kozijnen, dorpels, de sokkel en hemelwaterafvoeren waterdicht af. Afwerken met een dampopen, waterwerende minerale sierpleister.`,
+          costs: [
+            { item: "Steiger, reiniging & voorbereiding", low: 600, high: 900, inTotal: true },
+            { item: "Isolatieplaten, wapening & minerale sierpleister (ca. 50 m²)", low: 4600, high: 7100, inTotal: true },
+            { item: "Aansluitingen kozijnen, dorpels & hemelwaterafvoer", low: 800, high: 1000, inTotal: true }
+          ],
+          totalLabel: "Totaal Optie C (ca. 50 m² gevel)",
+          checks: [
+            { title: "1. Vergunning Nagaan", desc: "Controleer vooraf bij de gemeente of een omgevingsvergunning nodig is." },
+            { title: "2. Waterdichte Aansluitingen", desc: "Controleer dat aansluitingen bij kozijnen, dorpels en sokkel in de offerte zijn uitgewerkt." },
+            { title: "3. Dampopen Systeem met Garantie", desc: "Vraag om een compleet, dampopen gevelisolatiesysteem van één leverancier, met systeemgarantie." }
+          ]
+        }
+      },
+
+      kelderventilatie: {
+        1: {
+          solution: `Het continu drogen van de kelderlucht met een vaste condensdroger met permanente afvoer, ingesteld op een veilige luchtvochtigheid. De kelder wordt hierbij zoveel mogelijk afgesloten van warme, vochtige buitenlucht.`,
+          steps: `<strong>Stap 1: Passieve openingen afsluiten</strong><br>
+          Sluit open roosters en kieren af met afsluitbare kleppen. Een droger werkt alleen doelmatig in een ruimte waar geen vochtige buitenlucht vrij binnenstroomt.<br><br>
+          <strong>Stap 2: Droger plaatsen &amp; afvoer aansluiten</strong><br>
+          Plaats een condensdroger met een capaciteit die past bij de inhoud van de kelder. Sluit de afvoer permanent aan op het riool, zo nodig via een condenspomp. Gebruik een eigen wandcontactdoos.<br><br>
+          <strong>Stap 3: Instellen</strong><br>
+          Stel de hygrostaat in op circa <strong>55 tot 60% RV</strong>. Reinig het filter periodiek volgens de handleiding.`,
+          costs: [
+            { item: "Vaste condensdroger voor kelders (capaciteit passend bij kelderinhoud)", low: 600, high: 1400, inTotal: true },
+            { item: "Permanente afvoer (riool of condenspomp) & elektra", low: 150, high: 400, inTotal: true }
+          ],
+          totalLabel: "Totaal Optie B (vaste droger)",
+          checks: [
+            { title: "1. Capaciteit Passend", desc: "Controleer dat de capaciteit van de droger past bij de inhoud van de kelder." },
+            { title: "2. Permanente Afvoer", desc: "Zorg voor een vaste afvoer naar het riool, zodat de droger niet stilvalt op een volle opvangbak." },
+            { title: "3. Hygrostaat Instellen", desc: "Controleer dat de hygrostaat is ingesteld op circa 55 tot 60% RV." }
+          ]
+        },
+        2: {
+          solution: `Gecontroleerde ventilatie van de kelder met warmteterugwinning, bij voorkeur gekoppeld aan dauwpuntsturing. Zo wordt de kelder ververst zonder in de zomer vochtige buitenlucht binnen te halen.`,
+          steps: `<strong>Stap 1: Passieve openingen afsluiten</strong><br>
+          Sluit open roosters en kieren af met afsluitbare kleppen, zodat de luchtverversing alleen nog gecontroleerd via de unit verloopt.<br><br>
+          <strong>Stap 2: Boringen &amp; montage</strong><br>
+          Diamantboring(en) door kelderwand of koekoek volgens fabrieksopgave. Plaats de WTW-unit(s) met afsluitklep en condensafvoer.<br><br>
+          <strong>Stap 3: Regeling instellen</strong><br>
+          Koppel de unit aan een dauwpunt- of vochtsturing, zodat er in de zomer alleen geventileerd wordt wanneer de buitenlucht droger is dan de kelderlucht.`,
+          costs: [
+            { item: "Decentrale WTW-unit(s) geschikt voor kelders", low: 1500, high: 2200, inTotal: true },
+            { item: "Diamantboringen & montage", low: 550, high: 800, inTotal: true },
+            { item: "Dauwpunt- of vochtsturing & inregelen", low: 350, high: 400, inTotal: true }
+          ],
+          totalLabel: "Totaal Optie C (kelder-WTW)",
+          checks: [
+            { title: "1. Dauwpuntsturing Aanwezig", desc: "Controleer dat de unit gestuurd wordt op dauwpunt of vocht; zonder sturing kan de unit in de zomer juist vocht aanvoeren." },
+            { title: "2. Condensafvoer", desc: "Controleer dat de condensafvoer van de unit goed is aangesloten." },
+            { title: "3. Afsluitklep Verifiëren", desc: "Controleer dat de unit een goed sluitende klep heeft voor momenten dat er niet geventileerd wordt." }
+          ]
+        }
+      },
+
+      lateraal: {
+        1: {
+          solution: `Het gecontroleerd afvoeren van binnendringend water via noppenbanen en een randgoot naar een pompput, zodat de kelder droog en bruikbaar blijft.`,
+          steps: `<strong>Stap 1: Voorbereiden</strong><br>
+          Verwijder losse delen en vervuiling van wanden en vloer. Bepaal de plek van de pompput op het laagste punt van de kelder.<br><br>
+          <strong>Stap 2: Noppenbanen &amp; randgoot</strong><br>
+          Breng noppenbanen aan op de wanden en de vloer, met een randgoot langs de wanden die het water naar de pompput leidt. Naden en aansluitingen afdichten volgens het systeem.<br><br>
+          <strong>Stap 3: Pompput &amp; afwerking</strong><br>
+          Plaats een pompput met dompelpomp, terugslagklep en hoogwateralarm, en sluit de afvoer aan. Werk wanden en vloer af, met de pompput bereikbaar voor onderhoud.`,
+          costs: [
+            { item: "Noppenbanen wanden & vloer met randgoot (ca. 30 m²)", low: 1200, high: 2800, inTotal: true },
+            { item: "Pompput met dompelpomp, terugslagklep & afvoer", low: 1300, high: 3500, inTotal: true },
+            { item: "Afwerking wanden en vloer", low: 500, high: 1200, inTotal: true }
+          ],
+          totalLabel: "Totaal Optie B (ca. 30 m²)",
+          checks: [
+            { title: "1. Hoogwateralarm", desc: "Controleer dat de pomp een hoogwateralarm heeft, zodat een storing direct opvalt." },
+            { title: "2. Onderhoud Pompput", desc: "Zorg dat de pompput bereikbaar blijft en vraag naar het onderhoudsadvies voor pomp en put." },
+            { title: "3. Afvoer &amp; Terugslagklep", desc: "Controleer dat de afvoer een terugslagklep heeft, zodat water niet terug kan stromen." }
+          ]
+        },
+        2: {
+          solution: `Het afdichten van de kelderwanden aan de buitenzijde, waardoor het water bij de bron wordt tegengehouden voordat het de muur binnendringt.`,
+          steps: `<strong>Stap 1: Voorbereiden &amp; ontgraven</strong><br>
+          Doe vooraf een KLIC-melding (kabels en leidingen) en laat de stabiliteit tijdens het ontgraven beoordelen. Graaf de buitenzijde af tot op de fundering, zo nodig gefaseerd.<br><br>
+          <strong>Stap 2: Afdichten</strong><br>
+          Reinig de wanden, vlak oneffenheden uit en breng een bitumineuze afdichting aan, met een holle hoek bij de overgang naar de fundering. Laat de afdichting doorlopen tot boven het maaiveld.<br><br>
+          <strong>Stap 3: Bescherming &amp; aanvullen</strong><br>
+          Breng een beschermlaag of drainageplaat aan, eventueel met perimeterisolatie. Vul de sleuf in lagen aan en herstel bestrating en tuin.`,
+          costs: [
+            { item: "Ontgraven, afvoer & aanvullen", low: 3000, high: 6000, inTotal: true },
+            { item: "Reinigen & bitumineuze afdichting", low: 2500, high: 4500, inTotal: true },
+            { item: "Beschermlaag, drainage & eventuele isolatie", low: 1500, high: 3000, inTotal: true },
+            { item: "Herstel bestrating & tuin", low: 1000, high: 1500, inTotal: true }
+          ],
+          totalLabel: "Totaal Optie C (afdichting buitenzijde)",
+          checks: [
+            { title: "1. KLIC-melding &amp; Stabiliteit", desc: "Controleer dat de uitvoerder een KLIC-melding doet en maatregelen neemt voor de stabiliteit tijdens het graven." },
+            { title: "2. Doorlopende Afdichting", desc: "Controleer dat de afdichting doorloopt tot boven het maaiveld en goed aansluit op de fundering." },
+            { title: "3. Beschermlaag vóór Aanvullen", desc: "Zorg dat de afdichting wordt beschermd voordat de sleuf wordt aangevuld." }
+          ]
+        }
+      },
+
+      lekkage: {
+        1: {
+          solution: `Het opnieuw waterdicht maken van de aansluitingen rond bad en douche door het kitwerk volledig te vernieuwen. Blijft het vocht daarna terugkomen, dan volgt gerichte lekdetectie.`,
+          steps: `<strong>Stap 1: Oude kit volledig verwijderen</strong><br>
+          Verwijder alle oude kitvoegen volledig, inclusief resten. Reinig en ontvet de voegen.<br><br>
+          <strong>Stap 2: Laten drogen</strong><br>
+          Laat de voegen goed drogen (douche of bad bij voorkeur minimaal 24 uur niet gebruiken). Gebruik bij brede voegen een rugvulling.<br><br>
+          <strong>Stap 3: Opnieuw afkitten &amp; controleren</strong><br>
+          Kit af met een schimmelwerende sanitairkit en laat volgens het productblad uitharden. Controleer na enkele weken of de vochtplekken drogen; zo niet, dan alsnog lekdetectie laten uitvoeren.`,
+          costs: [
+            { item: "Sanitair kitwerk rondom bad/douche vernieuwen", low: 150, high: 350, inTotal: true }
+          ],
+          totalLabel: "Totaal Optie B (kitwerk)",
+          checks: [
+            { title: "1. Oude Kit Volledig Weg", desc: "Controleer dat de oude kit volledig is verwijderd en niet is overgekit." },
+            { title: "2. Droge Ondergrond", desc: "Zorg dat de voegen droog zijn voordat er opnieuw wordt gekit." },
+            { title: "3. Effect Controleren", desc: "Controleer na enkele weken of de vochtplekken drogen; blijft het vocht, laat dan lekdetectie uitvoeren." }
+          ]
+        },
+        2: {
+          solution: `Het versneld en gecontroleerd drogen van de constructie nadat het lek is hersteld, om schimmelvorming en gevolgschade te voorkomen.`,
+          steps: `<strong>Stap 1: Lek eerst hersteld</strong><br>
+          Begin pas met drogen als het lek aantoonbaar is hersteld, bijvoorbeeld met een druktest door de installateur.<br><br>
+          <strong>Stap 2: Bouwdrogers plaatsen</strong><br>
+          Plaats bouwdrogers en ventilatoren in de betreffende ruimte, met ramen en deuren dicht. Leeg de drogers regelmatig of sluit ze aan op een afvoer.<br><br>
+          <strong>Stap 3: Meten vóór herafwerking</strong><br>
+          Meet het vocht in de constructie tot deze voldoende droog is. Begin pas daarna met stuc-, tegel- of vloerwerk.`,
+          costs: [
+            { item: "Bouwdroging 1-2 weken (huur droger + ventilator)", low: 100, high: 500, inTotal: true }
+          ],
+          totalLabel: "Totaal Optie C (bouwdroging)",
+          checks: [
+            { title: "1. Lek Eerst Hersteld", desc: "Controleer dat het lek is hersteld voordat er wordt gedroogd." },
+            { title: "2. Meten vóór Herafwerking", desc: "Begin pas met herafwerking als de constructie aantoonbaar droog is gemeten." },
+            { title: "3. Kosten Bewaren", desc: "Bewaar bonnen en facturen; bouwdroging is vaak meeverzekerd als gevolgschade." }
+          ]
+        }
+      },
+
+      schimmel: {
+        1: {
+          solution: `Het verlagen van de luchtvochtigheid in de ruimte met een vochtgestuurde decentrale WTW-unit, gecombineerd met het verwijderen van de schimmel. De koude plek zelf blijft hierbij bestaan; het effect moet daarom na het stookseizoen worden gecontroleerd.`,
+          steps: `<strong>Stap 1: Schimmel verwijderen</strong><br>
+          Reinig de aangetaste plek met waterstofperoxide (3-5%) of alcohol (70-80%). Vermijd chloor op poreuze ondergronden. Draag stofmasker (FFP2) en handschoenen.<br><br>
+          <strong>Stap 2: Gevelboring &amp; montage WTW-unit</strong><br>
+          Diamantboring in de buitengevel volgens fabrieksopgave, met afschot naar buiten. Plaats de unit met afsluitklep en vochtsensor.<br><br>
+          <strong>Stap 3: Instellen &amp; controleren</strong><br>
+          Stel de vochtsturing in op circa <strong>55% RV</strong>. Controleer na het stookseizoen of de schimmel wegblijft; zo niet, alsnog de koude plek isoleren.`,
+          costs: [
+            { item: "Schimmelreiniging en desinfectie (per kamer)", low: 200, high: 450, inTotal: true },
+            { item: "Decentrale WTW-unit incl. gevelboring & montage", low: 1200, high: 1800, inTotal: true }
+          ],
+          totalLabel: "Totaal Optie B (per kamer)",
+          checks: [
+            { title: "1. Vochtsturing Controleren", desc: "Controleer dat de unit automatisch opschakelt bij een hoge luchtvochtigheid." },
+            { title: "2. Geluid in Slaapkamer", desc: "Controleer dat de unit in de basisstand stil draait, vooral in slaapkamers." },
+            { title: "3. Effect na Stookseizoen", desc: "Controleer na de winter of de schimmel wegblijft; zo niet, laat dan de koude plek alsnog isoleren." }
+          ]
+        },
+        2: {
+          solution: `Het warm houden van de koude plek met lokale wandverwarming, zodat het oppervlak boven het dauwpunt blijft. Geschikt voor smalle of lastig bereikbare plekken waar isoleren niet goed mogelijk is.`,
+          steps: `<strong>Stap 1: Schimmel verwijderen</strong><br>
+          Reinig de aangetaste plek met waterstofperoxide (3-5%) of alcohol (70-80%). Verwijder sterk aangetast behang of stucwerk; draag stofmasker (FFP2) en handschoenen.<br><br>
+          <strong>Stap 2: Wandverwarming aanbrengen</strong><br>
+          Breng een verwarmingslint of -folie aan achter de plint of in het stucwerk langs de koude plek. Laat de aansluiting op een aparte groep met thermostaat uitvoeren door een erkend installateur.<br><br>
+          <strong>Stap 3: Afwerken &amp; instellen</strong><br>
+          Werk af met dampopen stuc en silicaatverf. Stel de thermostaat zo in dat het oppervlak boven het dauwpunt blijft, zonder dat het systeem continu op vol vermogen draait.`,
+          costs: [
+            { item: "Schimmelreiniging en desinfectie (per kamer)", low: 200, high: 450, inTotal: true },
+            { item: "Verwarmingslint/-folie incl. thermostaat & aparte groep", low: 400, high: 1000, inTotal: true },
+            { item: "Herafwerking stuc & dampopen verf", low: 100, high: 250, inTotal: true }
+          ],
+          totalLabel: "Totaal Optie C (per kamer)",
+          checks: [
+            { title: "1. Thermostaat &amp; Regeling", desc: "Controleer dat er een thermostaat is, zodat het systeem niet continu op vol vermogen draait." },
+            { title: "2. Erkend Installateur", desc: "Laat de elektrische aansluiting uitvoeren door een erkend installateur, op een aparte groep." },
+            { title: "3. Dampopen Afwerking Eisen", desc: "Controleer dat er dampopen silicaat- of kalkverf wordt gebruikt in plaats van dampdichte latexverf." }
+          ]
+        }
+      }
+    };
+
+    // Welke optie is uitgewerkt in hoofdstuk 3, 5, 6 en 7? (bij 'geen voorkeur': optie A als referentie)
+    function getUitgewerkteOptie(key = currentTemplateKey) {
+      const a = getAdvies(key);
+      return (a.rec === 1 || a.rec === 2) ? a.rec : 0;
+    }
+
+    function getOptieInhoud(key = currentTemplateKey, idx = getUitgewerkteOptie(key)) {
+      const d = DOSSIERS[key];
+      const u = idx > 0 && OPTIE_UITWERKING[key] && OPTIE_UITWERKING[key][idx];
+      if (!u) return { solution: d.solution, steps: d.steps, costs: d.costs, totalLabel: d.totalLabel, checks: d.checks };
+      return u;
+    }
+
+
+    // ============================================================
+    // GEVELFOTO, SAMENVATTING ("IN HET KORT") & ZELF-DOEN-TIPS
+    // ============================================================
+    let fotoData = "";            // verkleinde gevelfoto als data-URL (wordt meebewaard in het HTML-bestand)
+    let samenvatting = {};        // per dossier: { oorzaak, tips }
+    let urgentie = { niveau: "", tekst: "" };
+
+    const OORZAAK_STANDAARD = {
+      condensatie: "Te hoge luchtvochtigheid in de woning door onvoldoende afvoer van waterdamp.",
+      opstijgend: "Grondvocht dat via het metselwerk omhoog trekt (opstijgend vocht), met zoutschade als gevolg.",
+      doorslaand: "Regenwater dat via de gevel naar binnen dringt (doorslaand vocht).",
+      kelderventilatie: "Condensatie in de kelder doordat warme, vochtige buitenlucht afkoelt tegen de koude wanden.",
+      lateraal: "Vocht dat van buitenaf door de kelderwanden en de aansluiting vloer-wand binnendringt.",
+      lekkage: "Een lekkage van leiding, afvoer of kitwerk; geen bouwfysische oorzaak.",
+      schimmel: "Schimmelgroei op een koude plek in de constructie (koudebrug)."
+    };
+
+    const TIPS_STANDAARD = {
+      condensatie: [
+        "Ventileer continu: laat roosters en ventilatie altijd open staan, ook 's nachts, in plaats van af en toe de ramen wijd open te zetten.",
+        "Zet de afzuiging tijdens en tot een halfuur na koken en douchen in de hoogste stand.",
+        "Zet meubels 5 tot 10 cm van buitenmuren en droog geen was binnen zonder afzuiging."
+      ],
+      opstijgend: [
+        "Houd de muurvoet vrij: zet geen kasten of dozen direct tegen de vochtige muur.",
+        "Gebruik tot het herstel geen dampdichte verf of vinylbehang op de vochtige zone.",
+        "Controleer buiten of bestrating of grond niet tegen of boven de onderste steenlagen ligt."
+      ],
+      doorslaand: [
+        "Controleer dakgoten en regenpijpen op lekkage of verstopping; overlopend water belast de gevel extra.",
+        "Zet meubels niet direct tegen de vochtige binnenmuur, zodat die kan drogen.",
+        "Laat geen dampdichte verf of coating op de gevel aanbrengen zonder advies."
+      ],
+      kelderventilatie: [
+        "Houd ramen en luiken van de kelder in de zomer overdag dicht; lucht alleen bij koel, droog weer.",
+        "Zet spullen op rekken, niet tegen wanden of vloer, en gebruik plastic bakken in plaats van karton.",
+        "Hang een eenvoudige hygrometer op en houd de luchtvochtigheid in de gaten."
+      ],
+      lateraal: [
+        "Zet opgeslagen spullen op rekken en in plastic bakken, niet tegen de keldermuren.",
+        "Controleer of regenpijpen buiten het water goed van de gevel weg voeren.",
+        "Ventileer de kelder bij droog weer en houd de luchtvochtigheid in de gaten met een hygrometer."
+      ],
+      lekkage: [
+        "Controleer de watermeter: draai alle kranen dicht en kijk of de meter nog doorloopt.",
+        "Meld de lekkage zo snel mogelijk bij uw opstalverzekering en maak foto's van de schade.",
+        "Gebruik de betreffende douche of het bad zo min mogelijk tot de oorzaak bekend is."
+      ],
+      schimmel: [
+        "Verwijder zichtbare schimmel met waterstofperoxide (3%) of alcohol, niet met chloor; draag handschoenen.",
+        "Zet meubels 5 tot 10 cm van buitenmuren, zodat warme lucht erachter kan komen.",
+        "Ventileer continu en houd de luchtvochtigheid bij voorkeur tussen 40 en 60%."
+      ]
+    };
+
+    const URGENTIE = {
+      hoog: { label: "Hoog", cls: "bg-red-100 text-red-800 border-red-300", tekst: "Binnen enkele weken aanpakken; schade en klachten nemen toe zolang het probleem blijft bestaan." },
+      gemiddeld: { label: "Gemiddeld", cls: "bg-amber-100 text-amber-800 border-amber-300", tekst: "Aanpakken binnen enkele maanden, bij voorkeur vóór de winter." },
+      laag: { label: "Laag", cls: "bg-emerald-100 text-emerald-800 border-emerald-300", tekst: "Meenemen bij gepland onderhoud; geen directe schade te verwachten." }
+    };
+
+    function getSam(key = currentTemplateKey) {
+      if (!samenvatting[key]) samenvatting[key] = { oorzaak: "", tips: "" };
+      return samenvatting[key];
+    }
+    function getOorzaak(key = currentTemplateKey) {
+      const o = (getSam(key).oorzaak || "").trim();
+      return o || OORZAAK_STANDAARD[key] || "";
+    }
+    function getTipsList(key = currentTemplateKey) {
+      const t = (getSam(key).tips || "").trim();
+      return t ? t.split('\n').map(x => x.trim()).filter(Boolean) : (TIPS_STANDAARD[key] || []);
+    }
+
+    function getSamenvattingHtml(data) {
+      const a = getAdvies();
+      const adviesTxt = a.rec === "none"
+        ? "Geen uitgesproken voorkeur; zie de keuzematrix (hoofdstuk 5)."
+        : `Optie ${OPTION_LETTERS[a.rec]}: ${escHtml(optionName(data.options[a.rec]))}`;
+      const kostenTxt = a.rec === "none" ? "Zie de kostenraming per optie (hoofdstuk 8)." : `${escHtml(getRecPriceText())} incl. btw (indicatief)`;
+      const u = URGENTIE[urgentie.niveau];
+      const urgTxt = u
+        ? `<span class="inline-block px-1.5 py-px rounded border ${u.cls} font-black text-[8.5px] uppercase tracking-wide mr-1">${u.label}</span>${escHtml((urgentie.tekst || "").trim() || u.tekst)}`
+        : '<span class="ph-hint" style="color:#d97706;font-style:italic">[Urgentie kiezen]</span>';
+      const row = (lbl, val) => `<div class="grid grid-cols-[110px_1fr] gap-2 py-1 border-t border-indigo-100 first:border-t-0"><span class="text-[8.5px] font-black uppercase tracking-wider text-indigo-800 pt-px">${lbl}</span><span class="text-[10.5px] text-slate-900 leading-snug">${val}</span></div>`;
+      return `
+        <div class="rounded-xl border-2 border-indigo-600 bg-indigo-50/40 px-3 py-2">
+          <p class="text-[10px] font-black uppercase tracking-wider text-slate-950 mb-1 flex items-center gap-1.5"><i data-lucide="clipboard-check" class="w-4 h-4 text-indigo-600"></i>Uw situatie in het kort</p>
+          ${row("Oorzaak", escHtml(getOorzaak()))}
+          ${row("Ons advies", adviesTxt)}
+          ${row("Kosten", kostenTxt)}
+          ${row("Urgentie", urgTxt)}
+        </div>`;
+    }
+
+    function getTipsHtml() {
+      const tips = getTipsList();
+      return `<div class="rounded-xl border border-emerald-200 bg-emerald-50/50 px-3 py-2">
+        <ul class="space-y-1 text-[10px] text-slate-800 leading-snug">
+          ${tips.map(t => `<li class="flex gap-1.5"><span class="text-emerald-600 font-black">✓</span><span>${escHtml(t)}</span></li>`).join('')}
+        </ul>
+      </div>`;
+    }
+
+    function updateSamenvatting() {
+      const data = DOSSIERS[currentTemplateKey];
+      const h = document.getElementById('samenvattingHolder');
+      if (h) h.innerHTML = getSamenvattingHtml(data);
+      const t = document.getElementById('tipsHolder');
+      if (t) t.innerHTML = getTipsHtml();
+      if (window.lucide) lucide.createIcons();
+      checkPageOverflow();
+    }
+
+    function setSamField(field, val) { getSam()[field] = val; updateSamenvatting(); }
+    function setUrgentie(field, val) {
+      urgentie[field] = val;
+      if (field === 'niveau') {
+        const inp = document.getElementById('sam_urgTekst');
+        if (inp) inp.placeholder = (URGENTIE[val] || {}).tekst || "Kies eerst een niveau";
+      }
+      updateSamenvatting();
+    }
+
+    function refreshSamPanel() {
+      const s = getSam();
+      const o = document.getElementById('sam_oorzaak');
+      if (o) { o.value = s.oorzaak || ""; o.placeholder = OORZAAK_STANDAARD[currentTemplateKey] || ""; }
+      const t = document.getElementById('sam_tips');
+      if (t) { t.value = s.tips || ""; t.placeholder = (TIPS_STANDAARD[currentTemplateKey] || []).join('\n'); }
+      const un = document.getElementById('sam_urgNiveau');
+      if (un) un.value = urgentie.niveau || "";
+      const ut = document.getElementById('sam_urgTekst');
+      if (ut) { ut.value = urgentie.tekst || ""; ut.placeholder = (URGENTIE[urgentie.niveau] || {}).tekst || "Kies eerst een niveau"; }
+      refreshFotoPreview();
+    }
+
+    function useStandaardTips() {
+      const t = (TIPS_STANDAARD[currentTemplateKey] || []).join('\n');
+      document.getElementById('sam_tips').value = t;
+      setSamField('tips', t);
+    }
+
+    // Foto inlezen en verkleinen (max. 1200 px, JPEG), zodat het HTML-bestand klein blijft
+    function loadFoto(input) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const max = 1200;
+          const sc = Math.min(1, max / Math.max(img.width, img.height));
+          const c = document.createElement('canvas');
+          c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          fotoData = c.toDataURL('image/jpeg', 0.82);
+          input.value = "";
+          refreshFotoPreview();
+          rerenderKeepScroll();
+          showToast("Gevelfoto toegevoegd", true);
+        };
+        img.onerror = () => showToast("Deze foto kon niet worden gelezen. Probeer een JPG of PNG.", false);
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeFoto() {
+      fotoData = "";
+      refreshFotoPreview();
+      rerenderKeepScroll();
+    }
+
+    function refreshFotoPreview() {
+      const pv = document.getElementById('foto_preview');
+      const rm = document.getElementById('foto_remove');
+      if (pv) pv.innerHTML = fotoData ? `<img src="${fotoData}" class="h-14 w-20 object-cover rounded-md border border-slate-700">` : '<span class="text-[11px] text-slate-500 italic">Nog geen foto</span>';
+      if (rm) rm.classList.toggle('hidden', !fotoData);
+    }
+
+    // FUNCTIE OM DYNAMISCHE BESTANDSNAAM SAMEN TE STELLEN:
+    // [Straat en huisnummer] - [Geconstateerd probleem].ext
+    function getExportFilename(extension = 'pdf') {
+      let rawAddress = (clientAddress || '').trim();
+
+      // Verwijder tekens die niet zijn toegestaan in bestandsnamen (/ \ : * ? " < > |)
+      let cleanAddress = rawAddress
+        .replace(/[\\/:*?"<>|]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (!cleanAddress || cleanAddress.toLowerCase().includes('inspectielocatie') || cleanAddress.toLowerCase().includes('woonhuis')) {
+        cleanAddress = "Adres_Woonhuis";
+      }
+
+      // Geconstateerd probleem ophalen uit de actieve template
+      const currentDossier = DOSSIERS[currentTemplateKey] || DOSSIERS.condensatie;
+      let rawProblem = currentDossier.title || "Bouwfysisch Advies";
+
+      // Schoonmaken voor geldige bestandsnaam
+      let cleanProblem = rawProblem
+        .replace(/[\\/:*?"<>|]/g, '')
+        .replace(/&/g, 'en')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      return `${cleanAddress} - ${cleanProblem}.${extension}`;
+    }
+
+    // TOAST NOTIFICATIE FUNCTIE
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('exportToast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+      if (!toast || !toastMsg) return;
+
+      toastMsg.innerHTML = msg;
+      if (toastIcon) {
+        toastIcon.setAttribute('data-lucide', isSuccess ? 'check-circle' : 'alert-triangle');
+        toastIcon.className = `w-5 h-5 ${isSuccess ? 'text-emerald-400' : 'text-amber-400'} shrink-0`;
+      }
+      if (window.lucide) lucide.createIcons();
+      toast.classList.remove('translate-x-full');
+      setTimeout(() => {
+        toast.classList.add('translate-x-full');
+      }, 3500);
+    }
+
+    // DIRECTE HTML DOWNLOAD NAAR LAPTOP / DOWNLOADS MAP
+    function downloadHtmlDirect() {
+      try {
+        // Alle invoer meeschrijven in het bestand, zodat het bij heropenen niet terugvalt op de standaardwaarden
+        const stateEl = document.getElementById('savedState');
+        if (stateEl) stateEl.textContent = JSON.stringify(collectState()).replace(/</g, '\\u003c');
+        const fullHtml = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+        const blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        const filename = getExportFilename('html');
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast(`Bestand gedownload als: <strong>${filename}</strong>`, true);
+      } catch (err) {
+        console.error(err);
+        showToast("Fout bij opslaan. Probeer opnieuw.", false);
+      }
+    }
+
+    // CONTROLES VOOR PRINTEN / PDF
+    function exportChecksOk(wat) {
+      if (!clientName.trim() || !clientAddress.trim()) {
+        alert("Vul eerst de naam van de opdrachtgever en het adres in.");
+        document.getElementById(!clientName.trim() ? 'topClientName' : 'topClientAddress')?.focus();
+        return false;
+      }
+      if (kbIsIncomplete() && !confirm(`De kernbevindingen zijn nog niet volledig ingevuld (temperatuur/RV, luchtkwaliteit of constructie).\n\nToch ${wat}?`)) {
+        document.getElementById('kbPanel')?.setAttribute('open', '');
+        document.getElementById('kbPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return false;
+      }
+      if (adviesIsIncomplete() && !confirm(`De motivatie van het advies is leeg of bevat nog tekst tussen [haken].\n\nToch ${wat}?`)) {
+        document.getElementById('adviesPanel')?.setAttribute('open', '');
+        document.getElementById('adv_motivatie')?.focus();
+        return false;
+      }
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      if (checkPageOverflow() && !confirm(`Een pagina loopt over: een deel van de tekst valt weg.\n\nToch ${wat}?`)) return false;
+      const warns = getConsistencyWarnings().filter(x => !x.startsWith('INFO|'));
+      if (warns.length) {
+        const plain = warns.map(x => '• ' + x.replace(/<[^>]+>/g, '')).join('\n\n');
+        if (!confirm(`Controle vóór verzending:\n\n${plain}\n\nToch ${wat}?`)) {
+          document.getElementById('checkBox')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function printChecked() {
+      if (!exportChecksOk('printen')) return;
+      window.print();
+    }
+
+    // PDF VIA DE PRINTFUNCTIE VAN DE BROWSER
+    // Dit geeft een scherpe PDF met selecteerbare tekst, exact gelijk aan het scherm, en werkt ook offline.
+    // (De eerdere methode maakte een foto van elke pagina; daarbij verschoof tekst in labels en vakjes.)
+    async function downloadPdfDeterministic() {
+      if (!exportChecksOk('de PDF maken')) return;
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      checkPageOverflow();
+      const oldTitle = document.title;
+      // De browser stelt de titel voor als bestandsnaam bij 'Opslaan als PDF'
+      document.title = getExportFilename('pdf').replace(/\.pdf$/, '');
+      showToast("Kies bij 'Bestemming' voor 'Opslaan als PDF' en klik op Opslaan.", true);
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => { document.title = oldTitle; }, 1000);
+      }, 300);
+    }
+
+    // SYNCHRONISATIE TUSSEN INVOERVELDEN EN DOCUMENT
+    function syncClientName(val) {
+      clientName = val;
+      const el = document.getElementById('docClientName');
+      if (el && el.innerText !== val) el.innerText = val;
+      const topInp = document.getElementById('topClientName');
+      if (topInp && topInp.value !== val) topInp.value = val;
+    }
+
+    function syncClientAddress(val) {
+      clientAddress = val;
+      const el = document.getElementById('docClientAddress');
+      if (el && el.innerText !== val) el.innerText = val;
+      const topInp = document.getElementById('topClientAddress');
+      if (topInp && topInp.value !== val) topInp.value = val;
+      ['hdrObject2', 'hdrObject3', 'hdrObject4'].forEach(id => {
+        const h = document.getElementById(id);
+        if (h) h.innerText = `Object: ${val.trim() || '—'}`;
+      });
+    }
+
+    function syncInspectDate(val) {
+      inspectDate = val;
+      const el = document.getElementById('docInspectDate');
+      if (el && el.innerText !== val) el.innerText = val;
+      const topInp = document.getElementById('topInspectDate');
+      if (topInp && topInp.value !== val) topInp.value = val;
+    }
+
+    function syncDuidingText(val) {
+      customDuidingen[currentTemplateKey] = val;
+      checkPageOverflow();
+    }
+
+    function syncSituationText(val) {
+      customSituations[currentTemplateKey] = val;
+      checkPageOverflow();
+    }
+
+    function focusSituationField() {
+      const el = document.getElementById('docSituation');
+      if (el) {
+        el.focus();
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function switchTemplate(key) {
+      currentTemplateKey = key;
+      refreshAdviesPanel();
+      refreshSamPanel();
+      renderAllPages();
+      showToast(`Dossier geladen: <strong>${DOSSIERS[key].title}</strong>`, true);
+    }
+
+    // RENDER DE EXACTE 3 PAGINA'S
+    function renderAllPages() {
+      const data = DOSSIERS[currentTemplateKey] || DOSSIERS.condensatie;
+      const customSit = customSituations[currentTemplateKey];
+      const activeSituation = (customSit && customSit.trim()) ? escHtml(customSit).replace(/\n/g, '<br>') : data.defaultSituation;
+      const customDuid = customDuidingen[currentTemplateKey];
+      const activeDuiding = (customDuid && customDuid.trim()) ? escHtml(customDuid).replace(/\n/g, '<br>') : data.analysisExtra;
+      const optie = getOptieInhoud();
+      const costTotals = getCostTotals(optie);
+      const advies = getAdvies();
+      const foto = fotoData;
+      const container = document.getElementById('dossierContainer');
+
+      container.innerHTML = `
+        <!-- PAGINA 1: UW SITUATIE -->
+        <div class="a4-page" id="page-1">
+          <div class="page-body">
+            <!-- HEADER MET VECTOR LOGO & KWALITEITSKADER -->
+            <div class="border-b-2 border-slate-900 pb-2.5 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                ${getVectorLogo(40)}
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xl font-black tracking-tight text-slate-950">CheckMijn<span class="text-blue-600">Huis</span></span>
+                    <span class="whitespace-nowrap text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-200">
+                      Advies &amp; Plan van Aanpak
+                    </span>
+                  </div>
+                  <p class="text-[10px] text-slate-500 font-medium">Onafhankelijk Vocht-, Binnenklimaat- en Schade Adviesbureau</p>
+                </div>
+              </div>
+
+              <div class="text-right text-[9px] text-slate-600 space-y-0.5 shrink-0 pl-3 whitespace-nowrap">
+                <p>Status: <span class="text-emerald-700 font-bold">Definitief advies</span></p>
+                <p>Kader: <span class="text-indigo-900 font-bold">${data.framework}</span></p>
+                <p>Rol: <strong class="text-slate-900 font-bold">Onafhankelijk adviseur</strong></p>
+              </div>
+            </div>
+
+            <!-- TITEL BANNER -->
+            <div class="mt-2.5 p-3 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-between">
+              <div>
+                <span class="text-[8.5px] font-black uppercase tracking-wider text-indigo-800 block">DEEL I • DIAGNOSTISCHE ANALYSE &amp; OORZAAKBEPALING</span>
+                <h1 class="text-sm font-black text-slate-900 tracking-tight">${data.title}</h1>
+                <p class="text-[10px] text-indigo-950">${data.sub}</p>
+              </div>
+              <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                <i data-lucide="${data.icon}" class="w-4 h-4"></i>
+              </div>
+            </div>
+
+            <!-- GEVELFOTO & OBJECTGEGEVENS -->
+            <div class="mt-2.5 ${foto ? 'grid grid-cols-[38%_1fr] gap-3' : ''} text-xs">
+              ${foto ? `<div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 min-h-[150px]"><img src="${foto}" alt="Gevel van het object" class="w-full h-full object-cover block"></div>` : ''}
+              <div class="grid ${foto ? 'grid-cols-1' : 'grid-cols-2'} gap-2">
+                <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 space-y-0.5">
+                  <span class="block text-[9px] font-bold text-slate-400 uppercase">Opdrachtgever &amp; Object:</span>
+                  <p id="docClientName" data-ph="[Naam opdrachtgever invullen]" class="font-bold text-slate-900 text-xs px-1" contenteditable="true" oninput="syncClientName(this.innerText.trim())">${escHtml(clientName)}</p>
+                  <p id="docClientAddress" data-ph="[Adres invullen]" class="text-slate-600 text-[11px] px-1" contenteditable="true" oninput="syncClientAddress(this.innerText.trim())">${escHtml(clientAddress)}</p>
+                </div>
+                <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 space-y-0.5">
+                  <span class="block text-[9px] font-bold text-slate-400 uppercase">Inspectie:</span>
+                  <p id="docInspectDate" class="font-bold text-slate-900 text-xs px-1" data-ph="[Datum invullen]" contenteditable="true" oninput="syncInspectDate(this.innerText.trim())">${escHtml(inspectDate)}</p>
+                  <p class="text-slate-600 text-[11px] px-1 font-medium">Niet-destructief vochtonderzoek ter plaatse</p>
+                </div>
+              </div>
+            </div>
+            ${!foto ? '<p class="ph-hint text-[9px] italic text-amber-600 -mt-1">[Gevelfoto toevoegen via het paneel “Samenvatting, foto &amp; tips”]</p>' : ''}
+
+            <!-- IN HET KORT -->
+            <div id="samenvattingHolder">${getSamenvattingHtml(data)}</div>
+
+            <!-- HOOFDSTUK 1: BOUWFYSISCHE ANALYSE & SITUATIE TER PLAATSE -->
+            <div class="mt-2.5 space-y-1.5 text-xs">
+              <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                <span class="w-4 h-4 rounded bg-slate-900 text-white text-[9px] font-black flex items-center justify-center">1</span>
+                Situatie ter Plaatse &amp; Metingen
+              </h2>
+
+              <div class="bg-blue-50/70 border-l-4 border-blue-600 p-2.5 rounded-r-xl space-y-1">
+                <span class="text-[9px] font-black text-blue-900 uppercase tracking-wider block">Specifieke Situatie Ter Plaatse (Inspectiewaarneming):</span>
+                <p id="docSituation" class="text-[10.5px] text-slate-800 leading-snug font-medium p-1 rounded" contenteditable="true" oninput="syncSituationText(this.innerText)">${activeSituation}</p>
+              </div>
+
+              <div id="kbHolder">${getKBHtml()}</div>
+
+              <div class="p-2 rounded-lg bg-slate-50 border border-slate-200 text-[10px] text-slate-700 leading-snug">
+                <strong>Bouwfysische duiding:</strong> <span id="docDuiding" class="rounded" contenteditable="true" title="Klik om de duiding voor deze woning aan te passen" oninput="syncDuidingText(this.innerText)">${activeDuiding}</span>
+              </div>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
+            <span class="shrink-0">CheckMijnHuis • Onafhankelijk Bouwfysisch Advies</span>
+            <span class="min-w-0 truncate text-center">${data.title} • Pagina 1 van 4</span>
+            <span class="shrink-0">www.checkmijnhuis.nl</span>
+          </div>
+        </div>
+
+        <!-- PAGINA 2: ACHTERGROND, RISICO'S & OPLOSSINGEN -->
+        <div class="a4-page" id="page-2">
+          <div class="page-body">
+            <!-- HEADER PAGINA 2 -->
+            <div class="border-b-2 border-slate-900 pb-2 flex items-center justify-between text-xs text-slate-500">
+              <div class="flex items-center gap-2">
+                ${getVectorLogo(24)}
+                <div>
+                  <span class="font-black text-slate-900 text-xs">CheckMijn<span class="text-blue-600">Huis</span></span>
+                  <span class="text-[9px] text-slate-500 block leading-tight">Advies &amp; Plan van Aanpak • ${data.title}</span>
+                </div>
+              </div>
+              <span id="hdrObject2" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
+            </div>
+
+            <!-- HOOFDSTUK 2: ACHTERGROND -->
+            <div class="mt-2.5 space-y-1.5 text-xs">
+              <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                <span class="w-4 h-4 rounded bg-slate-500 text-white text-[9px] font-black flex items-center justify-center">2</span>
+                Achtergrond: hoe ontstaat dit probleem?
+              </h2>
+              <p class="text-[8.5px] italic text-slate-500 -mt-0.5">Algemene uitleg over het verschijnsel; wat specifiek bij uw woning is vastgesteld, staat in hoofdstuk 1.</p>
+              <div class="text-slate-700 leading-relaxed text-[10.5px] space-y-1">
+                <p>${data.problem}</p>
+              </div>
+            </div>
+
+            <!-- HOOFDSTUK 2: RISICO- & GEVOLGENANALYSE -->
+            <div class="mt-2.5 space-y-1.5 text-xs">
+              <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5 text-amber-900">
+                <span class="w-4 h-4 rounded bg-amber-600 text-white text-[9px] font-black flex items-center justify-center">3</span>
+                Risico&#39;s bij Uitstel of Niet-Ingrijpen
+              </h2>
+
+              <div class="grid grid-cols-3 gap-2 text-[9.5px]">
+                ${data.risks.map(r => `
+                  <div class="p-2 rounded-xl border border-slate-200 bg-white shadow-2xs space-y-1 flex flex-col justify-between">
+                    <span class="font-bold text-slate-900 text-[10px] border-b border-slate-100 pb-0.5 block">${r.title}</span>
+                    <p class="text-slate-600 leading-snug flex-1">${r.desc}</p>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- HOOFDSTUK 3: OPLOSSINGSRICHTING -->
+            <div class="mt-2.5 space-y-1 text-xs">
+              <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                <span class="w-4 h-4 rounded bg-slate-900 text-white text-[9px] font-black flex items-center justify-center">4</span>
+                Bouwfysische Oplossingsrichting
+              </h2>
+              <p class="text-slate-700 text-[10.5px] leading-relaxed">${optie.solution}</p>
+            </div>
+
+            <!-- HOOFDSTUK 4: KEUZEMATRIX OPLOSSINGSSYSTEMEN -->
+            <div class="mt-2.5 space-y-1.5 text-xs">
+              <div class="flex items-center justify-between border-b border-slate-200 pb-0.5">
+                <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                  <span class="w-4 h-4 rounded bg-slate-900 text-white text-[9px] font-black flex items-center justify-center">5</span>
+                  Onafhankelijke Keuzematrix Oplossingssystemen
+                </h2>
+                <span class="shrink-0 whitespace-nowrap text-[8.5px] text-slate-500">Bouwfysisch Vergelijkingsoverzicht</span>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 text-[9.5px]">
+                ${data.options.map((opt, i) => {
+                  const isRec = advies.rec === i;
+                  return `
+                  <div class="p-2.5 rounded-xl ${isRec ? 'border-2 border-indigo-600 bg-indigo-50/50' : 'border border-slate-200 bg-slate-50'} space-y-1 flex flex-col justify-between">
+                    <div>
+                      <span class="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded inline-block mb-1 ${isRec ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}">Optie ${OPTION_LETTERS[i]}${isRec ? ' • Aanbevolen' : ''}</span>
+                      <h3 class="font-bold text-slate-950 text-[10.5px] leading-tight">${optionName(opt)}</h3>
+                      <p class="text-slate-600 text-[9px] mt-1 leading-snug">${opt.desc}</p>
+                    </div>
+                    <div class="pt-1.5 border-t border-slate-200 text-[8.5px] text-slate-700 leading-snug space-y-0.5">
+                      ${opt.pros}
+                    </div>
+                  </div>
+                `; }).join('')}
+              </div>
+
+              <div id="adviesHolder">${getAdviesBoxHtml(data)}</div>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
+            <span class="shrink-0">CheckMijnHuis • Onafhankelijk Bouwfysisch Advies</span>
+            <span class="min-w-0 truncate text-center">${data.title} • Pagina 2 van 4</span>
+            <span class="shrink-0">www.checkmijnhuis.nl</span>
+          </div>
+        </div>
+
+        <!-- PAGINA 3: UITVOERING & KOSTEN -->
+        <div class="a4-page" id="page-3">
+          <div class="page-body">
+            <!-- HEADER PAGINA 2 -->
+            <div class="border-b-2 border-slate-900 pb-2 flex items-center justify-between text-xs text-slate-500">
+              <div class="flex items-center gap-2">
+                ${getVectorLogo(24)}
+                <div>
+                  <span class="font-black text-slate-900 text-xs">CheckMijn<span class="text-blue-600">Huis</span></span>
+                  <span class="text-[9px] text-slate-500 block leading-tight">Advies &amp; Plan van Aanpak • Uitvoering &amp; Kosten</span>
+                </div>
+              </div>
+              <span id="hdrObject3" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
+            </div>
+
+            <!-- HOOFDSTUK 5: TECHNISCH WERKVOORSCHRIFT & UITGANGSPUNTEN -->
+            <div class="mt-2.5 space-y-1 text-xs">
+              <div class="flex items-center justify-between border-b border-slate-200 pb-0.5">
+                <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                  <span class="w-4 h-4 rounded bg-indigo-900 text-white text-[9px] font-black flex items-center justify-center">6</span>
+                  Technisch Werkvoorschrift (voor de uitvoerende partij)
+                </h2>
+                <span class="shrink-0 whitespace-nowrap text-[8.5px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                  Technisch Uitgangskader
+                </span>
+              </div>
+
+              ${getStepsNoteHtml()}
+              <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-[9.5px] leading-relaxed text-slate-700 space-y-1.5">
+                ${optie.steps}
+              </div>
+            </div>
+
+            <!-- AANBEVELING VOOR OFFERTEAANVRAAG -->
+            <div class="mt-2 p-2 rounded-xl bg-blue-50/70 border border-blue-200 text-[9px] text-blue-950 leading-snug flex items-center gap-2">
+              <i data-lucide="info" class="w-4 h-4 text-blue-600 shrink-0"></i>
+              <p>
+                <strong>Aanbeveling voor offerteaanvraag &amp; vergelijking:</strong> U kunt dit advies als bouwfysisch uitgangspunt meegeven aan uitvoerende partijen. Vraag hen om hun offerte en werkwijze te specificeren conform deze stappen en kwaliteitsnormen; zo kunt u voorstellen helder vergelijken en bent u verzekerd van een duurzaam resultaat.
+              </p>
+            </div>
+
+            <!-- HOOFDSTUK 7: WAT U NU AL ZELF KUNT DOEN -->
+            <div class="mt-2.5 space-y-1 text-xs">
+              <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5 text-emerald-900">
+                <span class="w-4 h-4 rounded bg-emerald-600 text-white text-[9px] font-black flex items-center justify-center">7</span>
+                Wat u nu al zelf kunt doen
+              </h2>
+              <div id="tipsHolder">${getTipsHtml()}</div>
+            </div>
+
+            <!-- HOOFDSTUK 6: INDICATIEVE KOSTENRAMING UITVOERING -->
+            <div class="mt-2.5 space-y-1 text-xs">
+              <div class="flex items-center justify-between border-b border-slate-200 pb-0.5">
+                <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                  <span class="w-4 h-4 rounded bg-emerald-800 text-white text-[9px] font-black flex items-center justify-center">8</span>
+                  Indicatieve Kostenraming Uitvoering (Richtprijzen 2026)
+                </h2>
+                <span class="shrink-0 whitespace-nowrap text-[8.5px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  Incl. btw &amp; arbeidsloon
+                </span>
+              </div>
+
+              <div id="costRecHolder">${getCostRecHtml(data)}</div>
+              <div class="border border-slate-200 rounded-lg overflow-hidden">
+                <table class="w-full text-left text-[9.5px]">
+                  <thead class="bg-slate-100 uppercase text-[8.5px] text-slate-700 font-bold border-b border-slate-200">
+                    <tr>
+                      <th class="p-1.5">Onderdeel / Werkzaamheid</th>
+                      <th class="p-1.5 text-center w-28">Indicatie Laag</th>
+                      <th class="p-1.5 text-center w-28">Indicatie Hoog</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 text-slate-700">
+                    ${optie.costs.filter(c => c.note !== 'alternatief').map(c => `
+                      <tr class="${c.inTotal ? '' : 'text-slate-500'}">
+                        <td class="p-1.5 font-medium">${c.item}${c.note ? ` <span class="ml-1 text-[8px] font-bold uppercase tracking-wide px-1.5 py-px rounded bg-slate-100 text-slate-500 border border-slate-200">${c.note}</span>` : ''}</td>
+                        <td class="p-1.5 text-center font-semibold ${c.inTotal ? 'text-slate-900' : 'text-slate-500'}">${fmtEuro(c.low)}</td>
+                        <td class="p-1.5 text-center font-semibold ${c.inTotal ? 'text-slate-900' : 'text-slate-500'}">${fmtEuro(c.high)}</td>
+                      </tr>
+                    `).join('')}
+                    <tr class="bg-emerald-50 font-bold text-emerald-950 border-t-2 border-emerald-200">
+                      <td class="p-1.5 uppercase text-[9px]">${optie.totalLabel} <span class="normal-case font-semibold text-emerald-800">(incl. btw)</span></td>
+                      <td class="p-1.5 text-center font-black text-emerald-800">${fmtEuro(costTotals.low)}</td>
+                      <td class="p-1.5 text-center font-black text-emerald-800">${fmtEuro(costTotals.high)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
+            <span class="shrink-0">CheckMijnHuis • Onafhankelijk Bouwfysisch Advies</span>
+            <span class="min-w-0 truncate text-center">${data.title} • Pagina 3 van 4</span>
+            <span class="shrink-0">www.checkmijnhuis.nl</span>
+          </div>
+        </div>
+
+        <!-- PAGINA 4: OPLEVERING, VERVOLG & VERANTWOORDING -->
+        <div class="a4-page" id="page-4">
+          <div class="page-body">
+            <!-- HEADER PAGINA 2 -->
+            <div class="border-b-2 border-slate-900 pb-2 flex items-center justify-between text-xs text-slate-500">
+              <div class="flex items-center gap-2">
+                ${getVectorLogo(24)}
+                <div>
+                  <span class="font-black text-slate-900 text-xs">CheckMijn<span class="text-blue-600">Huis</span></span>
+                  <span class="text-[9px] text-slate-500 block leading-tight">Advies &amp; Plan van Aanpak • Oplevering &amp; Verantwoording</span>
+                </div>
+              </div>
+              <span id="hdrObject4" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
+            </div>
+
+            <!-- HOOFDSTUK 7: OPLEVERINGS- & ACCEPTATIEPROTOCOL -->
+            <div class="mt-2.5 space-y-1 text-xs">
+              <div class="flex items-center justify-between border-b border-slate-200 pb-0.5">
+                <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5 text-blue-900">
+                  <span class="w-4 h-4 rounded bg-blue-700 text-white text-[9px] font-black flex items-center justify-center">9</span>
+                  Opleverings- &amp; Acceptatieprotocol
+                </h2>
+                <span class="text-[8.5px] text-slate-500 shrink-0 whitespace-nowrap pl-3">Controlecriteria voor akkoord</span>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 text-[9px]">
+                ${optie.checks.map(chk => `
+                  <div class="p-2 rounded-xl border border-blue-200 bg-blue-50/40 space-y-0.5">
+                    <span class="font-bold text-blue-950 text-[9.5px] block">${chk.title}</span>
+                    <p class="text-slate-600 leading-snug">${chk.desc}</p>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- HOOFDSTUK 10: VOLGENDE STAPPEN -->
+            <div class="mt-2.5 space-y-1 text-xs">
+              <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                <span class="min-w-[16px] px-0.5 h-4 rounded bg-slate-900 text-white text-[9px] font-black flex items-center justify-center">10</span>
+                Volgende stappen
+              </h2>
+              <div class="grid grid-cols-3 gap-2 text-[9px]">
+                <div class="p-2 rounded-xl border border-slate-200 bg-white space-y-0.5">
+                  <span class="font-bold text-slate-900 text-[9.5px] block">1. Offertes opvragen</span>
+                  <p class="text-slate-600 leading-snug">Vraag bij voorkeur twee of drie offertes op en geef dit advies mee als uitgangspunt.</p>
+                </div>
+                <div class="p-2 rounded-xl border border-slate-200 bg-white space-y-0.5">
+                  <span class="font-bold text-slate-900 text-[9.5px] block">2. Offertes vergelijken</span>
+                  <p class="text-slate-600 leading-snug">Leg de offertes naast het werkvoorschrift (hoofdstuk 6) en de kostenindicatie (hoofdstuk 8).</p>
+                </div>
+                <div class="p-2 rounded-xl border border-slate-200 bg-white space-y-0.5">
+                  <span class="font-bold text-slate-900 text-[9.5px] block">3. Resultaat controleren</span>
+                  <p class="text-slate-600 leading-snug">Na uitvoering kan een controlemeting laten zien of het probleem is opgelost. Neem hiervoor gerust contact op.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- HOOFDSTUK 8: JURIDISCH STATUUT, REIKWIJDTE & VRIJWARING -->
+            <div class="mt-2.5 p-2 rounded-xl bg-slate-50 border border-slate-300 text-[8px] text-slate-700 leading-snug space-y-1 shadow-2xs">
+              <p class="font-bold flex items-center gap-1 text-[8.5px] text-slate-900 border-b border-slate-200 pb-0.5">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-blue-600"></i>
+                11. Juridisch Kader, Reikwijdte &amp; Aansprakelijkheid
+              </p>
+              <div class="grid grid-cols-2 gap-2 pt-0.5">
+                <div class="space-y-0.5">
+                  <p>
+                    <strong>11.1 Aard der Werkzaamheden &amp; Inspanningsverplichting:</strong> CheckMijnHuis treedt op als onafhankelijk bouwfysisch adviseur. Het advies en plan van aanpak vormen een professionele inspanningsverbintenis gebaseerd op een visuele inspectie en niet-destructieve metingen ter plaatse, naar de algemeen aanvaarde bouwfysische praktijk en stand der techniek op de inspectiedatum. De metingen vormen een momentopname. Constructieve berekeningen, leidingtracés achter gesloten constructies en latente/verborgen gebreken vallen buiten het onderzoekskader.
+                  </p>
+                  <p>
+                    <strong>11.2 Zelfstandige Uitvoeringsverantwoordelijkheid:</strong> CheckMijnHuis voert zelf géén herstel-, aannemers- of installatiewerkzaamheden uit. De opdrachtgever behoudt te allen tijde de volledige vrijheid in de selectie en contractering van uitvoerende partijen. De uitvoerende partij draagt zelfstandig de volledige verantwoordelijkheid voor werkopname, constructieve toetsing, verificatie van ondergronden en leidingen, deugdelijke uitvoering conform geldende normen en wettelijke garantieverlening.
+                  </p>
+                </div>
+                <div class="space-y-0.5">
+                  <p>
+                    <strong>11.3 Indicatieve Kostenraming:</strong> De bedragen zijn indicatieve richtprijzen (prijspeil 2026), gebaseerd op gangbare marktprijzen en ervaringscijfers. Ze dienen uitsluitend als vrijblijvend referentiekader voor budgettering en het vergelijken van offertes. Werkelijke prijzen hangen af van de situatie ter plaatse, hoeveelheden en de gekozen uitvoerder. Op arbeid voor schilder- en stukadoorswerk aan woningen ouder dan twee jaar geldt het verlaagde btw-tarief, waardoor die posten lager kunnen uitvallen.
+                  </p>
+                  <p>
+                    <strong>11.4 Aansprakelijkheid &amp; Derden:</strong> Op deze opdracht zijn de algemene voorwaarden van CheckMijnHuis van toepassing. Eventuele aansprakelijkheid is beperkt tot het factuurbedrag van de onderliggende adviesopdracht, behoudens opzet of bewuste roekeloosheid. Dit document is strikt vertrouwelijk en uitsluitend opgesteld ten behoeve van de vermelde opdrachtgever en locatie; derden kunnen hieraan geen rechten ontlenen.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- ONDERTEKENING & VALIDATIE -->
+            <div class="mt-2 flex items-start justify-between gap-4 pt-1.5 border-t-2 border-slate-900 text-[9.5px] text-slate-700">
+              <div class="flex items-start gap-2">
+                ${getVectorLogo(20)}
+                <div class="leading-snug">
+                  <span class="block text-[7.5px] uppercase font-bold text-slate-400">Opgesteld door:</span>
+                  <span class="whitespace-nowrap"><strong class="text-slate-950">${ADVISEUR.naam}</strong> <span class="text-slate-500">• ${ADVISEUR.functie}</span></span>
+                  <span class="block text-slate-500 whitespace-nowrap">${ADVISEUR.bedrijf} • KvK ${ADVISEUR.kvk}</span>
+                  <span class="block text-slate-500 whitespace-nowrap">${ADVISEUR.telefoon} • ${ADVISEUR.email}</span>
+                </div>
+              </div>
+              <div class="text-right leading-snug shrink-0 whitespace-nowrap">
+                <span class="block text-[7.5px] uppercase font-bold text-slate-400">Documentstatus:</span>
+                <span class="block font-bold text-emerald-800">Definitief advies &amp; plan van aanpak</span>
+                <span class="block text-slate-500">Vragen? Bel of mail gerust.</span>
+              </div>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
+            <span class="shrink-0">CheckMijnHuis • Onafhankelijk Bouwfysisch Advies</span>
+            <span class="min-w-0 truncate text-center">${data.title} • Pagina 4 van 4</span>
+            <span class="shrink-0">www.checkmijnhuis.nl</span>
+          </div>
+        </div>
+      `;
+
+      if (window.lucide) lucide.createIcons();
+      setTimeout(checkPageOverflow, 50);
+    }
+
+
+    // ================================================================
+    // WEB-APP: DOSSIERS OP HET TOESTEL, AUTOMATISCH OPSLAAN, WEERGAVEN
+    // Alle klantgegevens blijven op dit toestel (IndexedDB); er gaat niets naar een server.
+    // ================================================================
+    const APP_VERSIE = "1.0";
+    const DB_NAME = "checkmijnhuis", DB_STORE = "dossiers";
+    let db = null, currentId = null, lastSavedJson = "", saveTimer = null, blankJson = "";
+    let KB_DEFAULT_JSON = "";
+
+    function openDb() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = () => req.result.createObjectStore(DB_STORE, { keyPath: "id" });
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    function dbAll() {
+      return new Promise((resolve, reject) => {
+        const r = db.transaction(DB_STORE).objectStore(DB_STORE).getAll();
+        r.onsuccess = () => resolve(r.result || []); r.onerror = () => reject(r.error);
+      });
+    }
+    function dbGet(id) {
+      return new Promise((resolve, reject) => {
+        const r = db.transaction(DB_STORE).objectStore(DB_STORE).get(id);
+        r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error);
+      });
+    }
+    function dbPut(rec) {
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, "readwrite"); tx.objectStore(DB_STORE).put(rec);
+        tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error);
+      });
+    }
+    function dbDelete(id) {
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, "readwrite"); tx.objectStore(DB_STORE).delete(id);
+        tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    // ---------- toestand van één dossier ----------
+    function vandaag() {
+      return new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }) + " • " + ADVISEUR.naam;
+    }
+    function resetState() {
+      clientName = ""; clientAddress = ""; inspectDate = vandaag();
+      currentTemplateKey = "condensatie";
+      customSituations = {}; customDuidingen = {};
+      kb = JSON.parse(KB_DEFAULT_JSON);
+      adviesState = {}; samenvatting = {}; urgentie = { niveau: "", tekst: "" }; fotoData = "";
+    }
+    function applyState(s) {
+      resetState();
+      const el = document.getElementById('savedState');
+      el.textContent = JSON.stringify(s || {});
+      restoreState();
+      el.textContent = "";
+    }
+    function stateJson() { return JSON.stringify(collectState()); }
+
+    function refreshAll() {
+      syncInputsFromState();
+      refreshAdviesPanel();
+      refreshSamPanel();
+      refreshTekstPanel();
+      renderAllPages();
+      updateTopLabel();
+    }
+
+    // ---------- automatisch opslaan ----------
+    function scheduleSave() {
+      if (!db) return;
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(saveNow, 600);
+    }
+    async function saveNow() {
+      if (!db) return;
+      const json = stateJson();
+      if (json === lastSavedJson) return;
+      if (!currentId && json === blankJson) return; // leeg nieuw dossier: nog niets opslaan
+      if (!currentId) currentId = "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const prev = await dbGet(currentId);
+      await dbPut({ id: currentId, created: prev ? prev.created : Date.now(), updated: Date.now(), state: JSON.parse(json) });
+      lastSavedJson = json;
+      try { localStorage.setItem('cmh_last', currentId); } catch (e) {}
+      flashSaved();
+      updateTopLabel();
+    }
+    function flashSaved() {
+      const el = document.getElementById('saveState');
+      if (!el) return;
+      el.textContent = "Opgeslagen";
+      el.classList.remove('opacity-0');
+      clearTimeout(el._t); el._t = setTimeout(() => el.classList.add('opacity-0'), 1500);
+    }
+    function updateTopLabel() {
+      const el = document.getElementById('curLabel');
+      if (el) el.textContent = clientAddress.trim() || (currentId ? "Advies zonder adres" : "Nieuw advies");
+    }
+
+    // ---------- weergaven ----------
+    let currentView = "dossiers";
+    function showView(v) {
+      currentView = v;
+      document.body.classList.remove('view-dossiers', 'view-invullen', 'view-voorbeeld');
+      document.body.classList.add('view-' + v);
+      document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('nav-active', b.dataset.nav === v));
+      if (v === 'dossiers') renderDossierList();
+      if (v === 'voorbeeld') { checkPageOverflow(); fitPreview(); }
+      window.scrollTo(0, 0);
+    }
+    function fitPreview() {
+      const wrap = document.getElementById('previewWrap');
+      const cont = document.getElementById('dossierContainer');
+      if (!wrap || !cont) return;
+      if (currentView !== 'voorbeeld') { cont.style.transform = ""; wrap.style.height = ""; return; }
+      const avail = Math.min(document.documentElement.clientWidth - 16, 900);
+      const sc = Math.min(1, avail / 794);
+      cont.style.transform = `scale(${sc})`;
+      wrap.style.height = Math.ceil(cont.scrollHeight * sc) + 40 + "px";
+    }
+    window.addEventListener('resize', () => fitPreview());
+
+    // ---------- dossierlijst ----------
+    async function renderDossierList() {
+      const list = document.getElementById('dossierList');
+      if (!list || !db) return;
+      const items = (await dbAll()).sort((a, b) => b.updated - a.updated);
+      document.getElementById('dossierCount').textContent = items.length ? `${items.length} advies${items.length === 1 ? '' : 'en'} op dit toestel` : "";
+      if (!items.length) {
+        list.innerHTML = `<p class="text-slate-400 text-sm py-8 text-center">Nog geen adviezen. Tik op <strong class="text-white">Nieuw advies</strong> om te beginnen.</p>`;
+        return;
+      }
+      list.innerHTML = items.map(it => {
+        const s = it.state || {};
+        const titel = (DOSSIERS[s.currentTemplateKey] || {}).title || "";
+        const d = new Date(it.updated).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' });
+        const foto = typeof s.fotoData === 'string' && s.fotoData.startsWith('data:image/') ? `<img src="${s.fotoData}" class="w-14 h-14 rounded-lg object-cover shrink-0 border border-slate-700">` : `<div class="w-14 h-14 rounded-lg bg-slate-800 border border-slate-700 shrink-0 flex items-center justify-center text-slate-500"><i data-lucide="house" class="w-6 h-6"></i></div>`;
+        return `<div class="flex items-center gap-3 p-3 rounded-2xl bg-slate-900 border border-slate-800">
+          <button class="flex items-center gap-3 flex-1 min-w-0 text-left" onclick="openDossier('${it.id}')">
+            ${foto}
+            <div class="min-w-0">
+              <p class="text-white font-bold text-[15px] truncate">${escHtml(s.clientAddress || 'Zonder adres')}</p>
+              <p class="text-slate-400 text-[13px] truncate">${escHtml(s.clientName || '')}${s.clientName ? ' • ' : ''}${escHtml(titel)}</p>
+              <p class="text-slate-500 text-[12px]">Bijgewerkt ${d}</p>
+            </div>
+          </button>
+          <button class="p-2.5 rounded-xl text-slate-400 hover:text-red-300 hover:bg-red-950/40" title="Verwijderen" onclick="deleteDossier('${it.id}')"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+        </div>`;
+      }).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function openDossier(id) {
+      await saveNow();
+      const rec = await dbGet(id);
+      if (!rec) return;
+      currentId = id;
+      applyState(rec.state);
+      lastSavedJson = stateJson();
+      try { localStorage.setItem('cmh_last', id); } catch (e) {}
+      refreshAll();
+      showView('invullen');
+    }
+
+    async function newDossier() {
+      await saveNow();
+      currentId = null;
+      resetState();
+      lastSavedJson = "";
+      refreshAll();
+      blankJson = stateJson();
+      showView('invullen');
+    }
+
+    async function deleteDossier(id) {
+      const rec = await dbGet(id);
+      const naam = rec && rec.state ? (rec.state.clientAddress || 'dit advies') : 'dit advies';
+      if (!confirm(`Advies "${naam}" definitief verwijderen van dit toestel?\n\nTip: maak eerst een back-up als je het wilt bewaren.`)) return;
+      await dbDelete(id);
+      if (currentId === id) { currentId = null; resetState(); lastSavedJson = ""; refreshAll(); blankJson = stateJson(); }
+      renderDossierList();
+    }
+
+    // ---------- back-up ----------
+    async function backupMaken() {
+      await saveNow();
+      const items = await dbAll();
+      if (!items.length) { alert("Er zijn nog geen adviezen om te bewaren."); return; }
+      const datum = new Date().toISOString().slice(0, 10);
+      const naam = `CheckMijnHuis-backup-${datum}.json`;
+      const blob = new Blob([JSON.stringify({ app: "checkmijnhuis", versie: APP_VERSIE, gemaakt: new Date().toISOString(), dossiers: items })], { type: "application/json" });
+      const file = new File([blob], naam, { type: "application/json" });
+      try {
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: naam });
+          return;
+        }
+      } catch (e) { if (e && e.name === 'AbortError') return; }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = naam;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    }
+
+    function backupTerugzetten(input) {
+      const f = input.files && input.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = async () => {
+        try {
+          const data = JSON.parse(r.result);
+          const items = Array.isArray(data.dossiers) ? data.dossiers : [];
+          let n = 0;
+          for (const it of items) {
+            if (!it || !it.id || !it.state) continue;
+            const cur = await dbGet(it.id);
+            if (!cur || (it.updated || 0) > (cur.updated || 0)) { await dbPut(it); n++; }
+          }
+          alert(`${n} advies${n === 1 ? '' : 'en'} teruggezet.`);
+          renderDossierList();
+        } catch (e) {
+          alert("Dit bestand is geen geldige back-up van CheckMijnHuis.");
+        }
+        input.value = "";
+      };
+      r.readAsText(f);
+    }
+
+    // ---------- situatie & duiding als invoervelden ----------
+    function refreshTekstPanel() {
+      const d = DOSSIERS[currentTemplateKey];
+      const s = document.getElementById('tx_situatie'), u = document.getElementById('tx_duiding');
+      if (s) { s.value = customSituations[currentTemplateKey] || ""; s.placeholder = "Standaardtekst: " + d.defaultSituation; }
+      if (u) { u.value = customDuidingen[currentTemplateKey] || ""; u.placeholder = "Standaardtekst: " + d.analysisExtra.replace(/<[^>]+>/g, ''); }
+    }
+    function setSituatieTekst(val) {
+      syncSituationText(val);
+      const el = document.getElementById('docSituation');
+      if (el) el.innerHTML = val.trim() ? escHtml(val).replace(/\n/g, '<br>') : DOSSIERS[currentTemplateKey].defaultSituation;
+      checkPageOverflow();
+    }
+    function setDuidingTekst(val) {
+      syncDuidingText(val);
+      const el = document.getElementById('docDuiding');
+      if (el) el.innerHTML = val.trim() ? escHtml(val).replace(/\n/g, '<br>') : DOSSIERS[currentTemplateKey].analysisExtra;
+      checkPageOverflow();
+    }
+
+    // ---------- koppelingen met de bestaande functies ----------
+    (function koppel() {
+      const _cpo = checkPageOverflow;
+      checkPageOverflow = function () { const r = _cpo(); scheduleSave(); return r; };
+      const _sw = switchTemplate;
+      switchTemplate = function (key) { _sw(key); refreshTekstPanel(); scheduleSave(); };
+      const _ss = syncSituationText;
+      syncSituationText = function (v) { _ss(v); const t = document.getElementById('tx_situatie'); if (t && document.activeElement !== t) t.value = v; };
+      const _sd = syncDuidingText;
+      syncDuidingText = function (v) { _sd(v); const t = document.getElementById('tx_duiding'); if (t && document.activeElement !== t) t.value = v; };
+      const _sca = syncClientAddress;
+      syncClientAddress = function (v) { _sca(v); updateTopLabel(); };
+      const _rap = renderAllPages;
+      renderAllPages = function () { _rap(); fitPreview(); };
+      document.addEventListener('input', scheduleSave, true);
+      document.addEventListener('change', scheduleSave, true);
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveNow(); });
+      window.addEventListener('pagehide', () => saveNow());
+    })();
+
+    // ---------- opstarten ----------
+    window.addEventListener('DOMContentLoaded', async () => {
+      KB_DEFAULT_JSON = JSON.stringify(kb);
+      resetState();
+      refreshAll();
+      blankJson = stateJson();
+      try {
+        db = await openDb();
+        if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+      } catch (e) {
+        alert("De opslag op dit toestel is niet beschikbaar (bijvoorbeeld in privé-modus). Adviezen worden dan niet bewaard.");
+      }
+      showView('dossiers');
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => checkPageOverflow());
+      if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+    });
+    window.addEventListener('beforeprint', () => checkPageOverflow());
+  </script>
+
+</body></html>
