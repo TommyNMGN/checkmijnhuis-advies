@@ -277,6 +277,7 @@
     <details class="stap" open>
       <summary><span class="stap-nr">1</span><span class="stap-titel">Bij aankomst</span><span class="stap-sub">klant &amp; woning</span></summary>
       <div class="stap-body grid grid-cols-1 md:grid-cols-2 gap-2.5">
+        <p class="md:col-span-2 text-[12px] text-slate-400">Naam en adres kun je ook later thuis invullen. Alles wat je invult wordt direct bewaard.</p>
         <div><label class="kb-lbl">Opdrachtgever / naam</label><input type="text" id="topClientName" class="kb-inp" oninput="syncClientName(this.value)" placeholder="bijv. Familie De Graaf"></div>
         <div><label class="kb-lbl">Adres (straat, huisnummer, plaats)</label><input type="text" id="topClientAddress" class="kb-inp" oninput="syncClientAddress(this.value)" placeholder="bijv. Kerkstraat 12, Den Bosch" autocomplete="street-address"></div>
         <div><label class="kb-lbl">Datum &amp; adviseur</label><input type="text" id="topInspectDate" class="kb-inp" oninput="syncInspectDate(this.value)"></div>
@@ -317,7 +318,6 @@
           <div><label class="kb-lbl">Binnen °C</label><input type="text" inputmode="decimal" id="kb_binnenT" class="kb-inp" placeholder="19" oninput="setKB('binnenT', this.value)"></div>
           <div><label class="kb-lbl">Binnen RV %</label><input type="text" inputmode="decimal" id="kb_binnenRV" class="kb-inp" placeholder="72" oninput="setKB('binnenRV', this.value)"></div>
         </div>
-        <p id="dp_live" class="text-[13px] text-sky-300"></p>
         <div class="grid grid-cols-2 gap-2">
           <div><label class="kb-lbl">Luchtkwaliteit</label>
             <select id="kb_lucht" class="kb-inp" onchange="setKB('lucht', this.value)">
@@ -499,7 +499,7 @@
       { key: "rcm",   naam: "PCE-RCM 16",          functie: "temperatuur, RV en CO₂" },
       { key: "vm128", naam: "Metofix VM128 bolmeter", functie: "indicatieve dieptemeting materiaalvocht" },
       { key: "romus", naam: "Romus Mini pinmeter",  functie: "oppervlakkig materiaalvocht, relatief" },
-      { key: "testo", naam: "Testo 835-H1",        functie: "oppervlaktetemperatuur en dauwpunt" },
+      { key: "testo", naam: "Testo 835-H1",        functie: "oppervlaktetemperatuur" },
       { key: "cam",   naam: "HIKMICRO B01S",       functie: "thermografie, ter ondersteuning" }
     ];
 
@@ -607,7 +607,6 @@
     function getKBHtml() {
       if (!kb.show) return "";
       const meta = [kb.datum, kb.omst].map(s => (s || "").trim()).filter(Boolean).map(escHtml).join(" · ");
-      const td = dauwpunt(kb.binnenT, kb.binnenRV);
       return `
         <div class="rounded-xl border border-slate-300 overflow-hidden text-[9.5px]">
           <div class="bg-slate-900 text-white px-2.5 py-1 flex items-center justify-between gap-3">
@@ -622,7 +621,6 @@
             <div class="p-2 space-y-0.5">
               <span class="block text-[8px] font-bold uppercase text-slate-400 leading-tight">Binnenklimaat${(kb.binnenRuimte || "").trim() ? " • " + escHtml(kb.binnenRuimte) : ""}</span>
               <div>${kbClimate(kb.binnenT, kb.binnenRV)}</div>
-              ${td !== null ? `<div class="text-[8.5px] text-slate-500">Dauwpunt ${fmt1(td)} °C</div>` : ''}
             </div>
             <div class="p-2 space-y-0.5">
               <span class="block text-[8px] font-bold uppercase text-slate-400">Luchtkwaliteit</span>
@@ -2097,40 +2095,25 @@
 
     // Meetpuntentabel in de kernbevindingen
     function getMeetpuntenHtml() {
-      const mp = getMeetpunten().filter(p => p.niveau || (p.loc || "").trim() || (p.opp || "").trim());
+      const mp = getMeetpunten().filter(p => p.niveau || (p.loc || "").trim());
       if (!mp.length) return "";
-      const td = dauwpunt(kb.binnenT, kb.binnenRV);
-      const rows = mp.map((p, i) => {
-        const opp = parseFloat(String(p.opp || "").replace(',', '.'));
-        let oppTxt = '<span class="text-slate-400">—</span>', dTxt = '<span class="text-slate-400">—</span>';
-        if (!isNaN(opp)) {
-          oppTxt = `${fmt1(opp)} °C`;
-          if (td !== null) {
-            const d = opp - td;
-            const cls = d <= 0 ? 'text-red-700 font-black' : (d < 3 ? 'text-amber-700 font-bold' : 'text-slate-800');
-            dTxt = `<span class="${cls}">${d > 0 ? '+' : ''}${fmt1(d)} °C</span>`;
-          }
-        }
-        return `<tr class="border-t border-slate-100">
-          <td class="px-2 py-1 text-slate-500">${i + 1}</td>
+      const rows = mp.map((p, i) => `<tr class="border-t border-slate-100">
+          <td class="px-2 py-1 text-slate-500 w-5">${i + 1}</td>
           <td class="px-2 py-1 text-slate-800">${escHtml(p.loc) || '<span class="text-slate-400">—</span>'}</td>
           <td class="px-2 py-1 text-slate-700 whitespace-nowrap">${(p.h || "").trim() ? escHtml(p.h) + ' cm' : '—'}</td>
           <td class="px-2 py-1">${kbBadge(p.niveau)}</td>
-          <td class="px-2 py-1 text-slate-800 whitespace-nowrap">${oppTxt}</td>
-          <td class="px-2 py-1 whitespace-nowrap">${dTxt}</td>
-        </tr>`;
-      }).join('');
-      const tdTxt = td !== null ? ` • dauwpunt binnenlucht ${fmt1(td)} °C` : "";
+        </tr>`).join('');
       return `<div class="border-t border-slate-200 bg-white">
         <table class="w-full text-left text-[9px]">
           <thead class="text-[7.5px] uppercase text-slate-400 font-bold">
-            <tr><th class="px-2 pt-1.5 w-5">#</th><th class="px-2 pt-1.5">Meetpunt</th><th class="px-2 pt-1.5">Hoogte</th><th class="px-2 pt-1.5">Materiaalvocht</th><th class="px-2 pt-1.5">Oppervlak</th><th class="px-2 pt-1.5">Verschil met dauwpunt</th></tr>
+            <tr><th class="px-2 pt-1.5 w-5">#</th><th class="px-2 pt-1.5">Meetpunt</th><th class="px-2 pt-1.5">Hoogte</th><th class="px-2 pt-1.5">Materiaalvocht (relatief)</th></tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
-        <p class="px-2 pb-1 pt-0.5 text-[7.5px] text-slate-500">Materiaalvocht relatief (droog / verhoogd / nat)${tdTxt}. Een oppervlak dat minder dan 3 °C boven het dauwpunt ligt, heeft een verhoogd risico op condensatie en schimmel.</p>
+        <div class="h-1"></div>
       </div>`;
     }
+
 
     // Detailfoto's met bijschrift
     function getFotosHtml() {
@@ -2922,7 +2905,7 @@
     }
     function updateTopLabel() {
       const el = document.getElementById('curLabel');
-      if (el) el.textContent = clientAddress.trim() || (currentId ? "Advies zonder adres" : "Nieuw advies");
+      if (el) el.textContent = clientAddress.trim() || (currentId ? "Adres nog invullen" : "Nieuw advies");
     }
 
     // ---------- weergaven ----------
@@ -2978,9 +2961,9 @@
           <button class="flex items-center gap-3 flex-1 min-w-0 text-left" onclick="openDossier('${it.id}')">
             ${foto}
             <div class="min-w-0">
-              <p class="text-white font-bold text-[15px] truncate">${escHtml(s.clientAddress || 'Zonder adres')}</p>
+              <p class="text-white font-bold text-[15px] truncate">${escHtml(s.clientAddress || '') || '<span class="text-amber-300">Adres nog invullen</span>'}</p>
               <p class="text-slate-400 text-[13px] truncate">${escHtml(s.clientName || '')}${s.clientName ? ' • ' : ''}${escHtml(titel)}</p>
-              <p class="text-slate-500 text-[12px]">Bijgewerkt ${d}</p>
+              <p class="text-slate-500 text-[12px]">Bijgewerkt ${d}${s.clientAddress ? '' : ' • aangemaakt ' + new Date(it.created).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
             </div>
           </button>
           <button class="p-2.5 rounded-xl text-slate-400 hover:text-red-300 hover:bg-red-950/40" title="Verwijderen" onclick="deleteDossier('${it.id}')"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
@@ -3122,13 +3105,8 @@
     }
     function setObsOverig(v) { waarnemingen.overig = v; updateLocatieBlokken(); }
 
-    function updateDpLive() {
-      const e = document.getElementById('dp_live');
-      if (!e) return;
-      const td = dauwpunt(kb.binnenT, kb.binnenRV);
-      e.textContent = td !== null ? `Dauwpunt binnenlucht: ${fmt1(td)} °C` : "";
-      getMeetpunten().forEach((p, i) => updateMpDelta(i));
-    }
+    function updateDpLive() {}
+
 
     function renderMpEditor() {
       const box = document.getElementById('mp_list');
@@ -3142,31 +3120,18 @@
           </div>
           <input type="text" class="kb-inp" placeholder="Locatie, bijv. hoek buitenmuur slaapkamer" value="${escHtml(p.loc || '')}" oninput="setMp(${i}, 'loc', this.value)" id="mp_loc_${i}">
           <div class="flex flex-wrap gap-1">${QUICK_LOC.map(q => `<button type="button" class="mini-chip" onclick="mpLoc(${i}, '${q}')">${q}</button>`).join('')}</div>
-          <div class="grid grid-cols-2 gap-2">
-            <div><label class="kb-lbl">Hoogte (cm)</label><input type="text" inputmode="numeric" class="kb-inp" value="${escHtml(p.h || '')}" oninput="setMp(${i}, 'h', this.value)" id="mp_h_${i}"></div>
-            <div><label class="kb-lbl">Oppervlak °C (optioneel)</label><input type="text" inputmode="decimal" class="kb-inp" value="${escHtml(p.opp || '')}" oninput="setMp(${i}, 'opp', this.value)"></div>
-          </div>
+          <div><label class="kb-lbl">Hoogte (cm)</label><input type="text" inputmode="numeric" class="kb-inp" value="${escHtml(p.h || '')}" oninput="setMp(${i}, 'h', this.value)" id="mp_h_${i}"></div>
           <div class="flex flex-wrap gap-1">${QUICK_H.map(q => `<button type="button" class="mini-chip" onclick="mpH(${i}, '${q}')">${q} cm</button>`).join('')}</div>
           <div><label class="kb-lbl">Materiaalvocht</label>
             <div class="seg">${['droog', 'verhoogd', 'nat'].map(n => `<button type="button" class="${p.niveau === n ? 'on-' + n : ''}" onclick="setMpNiveau(${i}, '${n}')">${n[0].toUpperCase() + n.slice(1)}</button>`).join('')}</div>
           </div>
-          <p id="mp_delta_${i}" class="text-[12px]"></p>
         </div>`).join('');
       const add = document.getElementById('mp_add');
       if (add) add.style.display = mp.length >= MAX_MEETPUNTEN ? 'none' : '';
-      mp.forEach((p, i) => updateMpDelta(i));
       if (window.lucide) lucide.createIcons();
     }
-    function updateMpDelta(i) {
-      const e = document.getElementById('mp_delta_' + i);
-      if (!e) return;
-      const p = getMeetpunten()[i]; const td = dauwpunt(kb.binnenT, kb.binnenRV);
-      const opp = parseFloat(String((p && p.opp) || "").replace(',', '.'));
-      if (isNaN(opp) || td === null) { e.textContent = ""; return; }
-      const d = opp - td;
-      e.className = 'text-[12px] font-semibold ' + (d <= 0 ? 'text-red-400' : d < 3 ? 'text-amber-300' : 'text-emerald-300');
-      e.textContent = `${d > 0 ? '+' : ''}${fmt1(d)} °C t.o.v. dauwpunt` + (d <= 0 ? ' – condensatie' : d < 3 ? ' – verhoogd risico op condensatie' : '');
-    }
+    function updateMpDelta(i) {}
+
     function addMeetpunt() {
       const mp = getMeetpunten();
       if (mp.length >= MAX_MEETPUNTEN) return;
@@ -3174,7 +3139,7 @@
       renderMpEditor(); updateLocatieBlokken();
     }
     function removeMeetpunt(i) { getMeetpunten().splice(i, 1); renderMpEditor(); updateLocatieBlokken(); }
-    function setMp(i, f, v) { const p = getMeetpunten()[i]; if (!p) return; p[f] = v; if (f === 'opp') updateMpDelta(i); updateLocatieBlokken(); }
+    function setMp(i, f, v) { const p = getMeetpunten()[i]; if (!p) return; p[f] = v; updateLocatieBlokken(); }
     function setMpNiveau(i, n) { const p = getMeetpunten()[i]; if (!p) return; p.niveau = p.niveau === n ? "" : n; renderMpEditor(); updateLocatieBlokken(); }
     function mpLoc(i, q) {
       const p = getMeetpunten()[i]; if (!p) return;
