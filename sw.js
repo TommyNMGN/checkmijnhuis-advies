@@ -1,6 +1,6 @@
 // CheckMijnHuis Advies – service worker: zorgt dat de app ook zonder internet werkt.
 // Verhoog VERSIE bij elke nieuwe publicatie, zodat alle bestanden opnieuw worden opgehaald.
-const VERSIE = 'cmh-v1.1.1';
+const VERSIE = 'cmh-v1.2.0';
 const BESTANDEN = [
   './', './index.html', './app.css', './icons.js', './manifest.webmanifest',
   './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png',

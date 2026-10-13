@@ -263,7 +263,7 @@
       <p class="text-[12px] text-slate-400 px-1">Je adviezen staan alleen op dit toestel. Maak regelmatig een back-up, bijvoorbeeld naar iCloud Drive.</p>
       <div class="grid grid-cols-2 gap-2">
         <button onclick="backupMaken()" class="py-3 rounded-xl bg-slate-800 active:bg-slate-700 border border-slate-700 text-white text-[14px] font-bold flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>Back-up maken</button>
-        <label class="py-3 rounded-xl bg-slate-800 active:bg-slate-700 border border-slate-700 text-white text-[14px] font-bold flex items-center justify-center gap-2 cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i>Terugzetten<input type="file" accept="application/json,.json" class="hidden" onchange="backupTerugzetten(this)"></label>
+        <label class="py-3 rounded-xl bg-slate-800 active:bg-slate-700 border border-slate-700 text-white text-[14px] font-bold flex items-center justify-center gap-2 cursor-pointer"><i data-lucide="upload" class="w-4 h-4"></i>Terugzetten<input type="file" accept="application/json,.json,text/html,.html,.htm" class="hidden" onchange="backupTerugzetten(this)"></label>
       </div>
     </div>
   </section>
@@ -418,6 +418,8 @@
           <button onclick="showView('voorbeeld')" class="py-3 rounded-xl bg-slate-800 active:bg-slate-700 border border-slate-700 text-white text-[14px] font-bold flex items-center justify-center gap-2"><i data-lucide="eye" class="w-4 h-4"></i>Voorbeeld</button>
           <button onclick="downloadPdfDeterministic()" class="py-3 rounded-xl bg-emerald-600 active:bg-emerald-700 text-white text-[14px] font-bold flex items-center justify-center gap-2"><i data-lucide="file-down" class="w-4 h-4"></i>PDF maken</button>
         </div>
+        <button onclick="htmlOpslaan()" class="w-full py-3 rounded-xl bg-slate-800 active:bg-slate-700 border border-slate-700 text-white text-[14px] font-bold flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>HTML opslaan (eigen administratie)</button>
+        <p class="text-[12px] text-slate-400 leading-snug">Het HTML-bestand opent in elke browser, ziet er hetzelfde uit als de PDF en bevat alle ingevulde gegevens. Via <strong>Adviezen › Terugzetten</strong> kun je het later weer in de app openen en aanpassen.</p>
       </div>
     </details>
   </section>
@@ -2397,7 +2399,7 @@
 
             <!-- GEVELFOTO & OBJECTGEGEVENS -->
             <div class="mt-2.5 ${foto ? 'grid grid-cols-[38%_1fr] gap-3' : ''} text-xs">
-              ${foto ? `<div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 min-h-[150px]"><img src="${foto}" alt="Gevel van het object" class="w-full h-full object-cover block"></div>` : ''}
+              ${foto ? `<div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 min-h-[150px]" style="position:relative"><img src="${foto}" alt="Gevel van het object" style="position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;object-position:50% 40%;display:block"></div>` : ''}
               <div class="grid ${foto ? 'grid-cols-1' : 'grid-cols-2'} gap-2">
                 <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 space-y-0.5">
                   <span class="block text-[9px] font-bold text-slate-400 uppercase">Opdrachtgever &amp; Object:</span>
@@ -3030,13 +3032,93 @@
       renderDossierList();
     }
 
+    // ---------- HTML-export voor de eigen administratie ----------
+    // Eén zelfstandig bestand: het rapport (zelfde opmaak als de PDF, ook af te drukken)
+    // plus alle ingevulde gegevens, zodat het later via 'Terugzetten' weer in de app kan.
+    async function bestandAlsDataUrl(url) {
+      const b = await (await fetch(url)).blob();
+      return await new Promise((ok, fout) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = fout; r.readAsDataURL(b); });
+    }
+    async function htmlOpslaan() {
+      if (!clientAddress.trim()) {
+        alert("Vul eerst het adres in; dat wordt de bestandsnaam.");
+        document.getElementById('topClientAddress')?.focus();
+        return;
+      }
+      try {
+        await saveNow();
+        if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        checkPageOverflow();
+
+        // opmaak: app.css met ingebouwde lettertypen + de rapportstijlen uit deze pagina
+        let css = await (await fetch('app.css')).text();
+        const fonts = [...new Set(css.match(/fonts\/[a-z0-9-]+\.woff2/g) || [])];
+        for (const f of fonts) { try { css = css.split(f).join(await bestandAlsDataUrl(f)); } catch (e) {} }
+        const eigen = [...document.querySelectorAll('head style')].map(x => x.textContent).join('\n');
+
+        // rapportpagina's kopiëren zonder bewerk- en invulhulpjes
+        const kopie = document.getElementById('dossierContainer').cloneNode(true);
+        kopie.removeAttribute('style');
+        kopie.querySelectorAll('.ph-hint, .no-print').forEach(e => e.remove());
+        kopie.querySelectorAll('.ph-mark').forEach(e => e.classList.remove('ph-mark'));
+        kopie.querySelectorAll('[contenteditable]').forEach(e => { e.removeAttribute('contenteditable'); e.removeAttribute('oninput'); });
+        kopie.querySelectorAll('.a4-page').forEach(p => { p.style.outline = ''; p.removeAttribute('title'); });
+
+        const rec = { id: currentId || ('dossier-' + Date.now()), created: Date.now(), updated: Date.now(), state: collectState() };
+        try { const cur = currentId && await dbGet(currentId); if (cur) { rec.created = cur.created; rec.updated = cur.updated; } } catch (e) {}
+        const data = JSON.stringify({ app: "checkmijnhuis", versie: APP_VERSIE, gemaakt: new Date().toISOString(), dossiers: [rec] }).replace(/</g, '\\u003c');
+        const naam = getExportFilename('html');
+        const titel = naam.replace(/\.html$/, '');
+
+        const html = `<!DOCTYPE html>
+<html lang="nl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escHtml(titel)}</title>
+<style>${css}</style>
+<style>${eigen}</style>
+<style>
+  body { background:#e2e8f0 !important; padding:16px 0 !important; margin:0; }
+  #dossierContainer { width:794px; margin:0 auto; }
+  #dossierContainer .a4-page { margin:0 auto 20px auto; box-shadow:0 6px 20px rgba(15,23,42,.18); }
+  @media print { body { padding:0 !important; } #dossierContainer .a4-page { margin:0 !important; box-shadow:none !important; } }
+</style>
+<script type="application/json" id="cmhDossier">${data}<\/script>
+</head><body class="antialiased">
+${kopie.outerHTML}
+</body></html>`;
+
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const file = new File([blob], naam, { type: 'text/html' });
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (isIOS && navigator.canShare && navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file], title: titel }); return; }
+          catch (e) { if (e && e.name === 'AbortError') return; }
+        }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = naam;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+        showToast(`Opgeslagen als <strong>${escHtml(naam)}</strong>`, true);
+      } catch (e) {
+        console.error(e);
+        showToast("Het HTML-bestand kon niet worden gemaakt. Probeer het opnieuw.", false);
+      }
+    }
+
     function backupTerugzetten(input) {
       const f = input.files && input.files[0];
       if (!f) return;
       const r = new FileReader();
       r.onload = async () => {
         try {
-          const data = JSON.parse(r.result);
+          let tekst = r.result;
+          // ook een opgeslagen HTML-rapport kan worden teruggezet
+          if (/^\s*</.test(tekst)) {
+            const el = new DOMParser().parseFromString(tekst, 'text/html').getElementById('cmhDossier');
+            if (!el) throw new Error('geen dossier');
+            tekst = el.textContent;
+          }
+          const data = JSON.parse(tekst);
           const items = Array.isArray(data.dossiers) ? data.dossiers : [];
           let n = 0;
           for (const it of items) {
@@ -3044,7 +3126,7 @@
             const cur = await dbGet(it.id);
             if (!cur || (it.updated || 0) > (cur.updated || 0)) { await dbPut(it); n++; }
           }
-          alert(`${n} advies${n === 1 ? '' : 'en'} teruggezet.`);
+          alert(n ? `${n} advies${n === 1 ? '' : 'en'} teruggezet.` : 'Dit advies staat al in de app (dezelfde of een nieuwere versie).');
           renderDossierList();
         } catch (e) {
           alert("Dit bestand is geen geldige back-up van CheckMijnHuis.");
