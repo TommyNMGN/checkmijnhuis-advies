@@ -145,6 +145,25 @@
     body.view-voorbeeld #previewWrap { position:relative; left:auto; visibility:visible; padding:8px; overflow:hidden; }
     body.view-voorbeeld #previewWrap .a4-page { margin: 0 0 16px 0; }
     @media (min-width: 900px) { body.view-voorbeeld #dossierContainer { margin: 0 auto; } }
+    /* stappen */
+    details.stap { background:#0f172a; border:1px solid #1e293b; border-radius:16px; color:#fff; }
+    details.stap > summary { list-style:none; cursor:pointer; display:flex; align-items:center; gap:10px; padding:12px 14px; }
+    details.stap > summary::-webkit-details-marker { display:none; }
+    .stap-nr { width:26px; height:26px; border-radius:999px; background:#2563eb; color:#fff; font-weight:900; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .stap-titel { font-weight:800; font-size:15px; }
+    .stap-sub { font-size:12px; color:#94a3b8; margin-left:auto; text-align:right; }
+    .stap-body { padding: 0 14px 14px 14px; }
+    .foto-btn { display:inline-flex; align-items:center; gap:6px; padding:10px 14px; border-radius:12px; background:#1e293b; border:1px solid #334155; color:#fff; font-weight:700; font-size:14px; cursor:pointer; }
+    .chip { padding:7px 11px; border-radius:999px; border:1px solid #334155; background:#020617; color:#cbd5e1; font-size:13px; font-weight:600; }
+    .chip.on { background:#2563eb; border-color:#2563eb; color:#fff; }
+    .chip.on-groen { background:#059669; border-color:#059669; color:#fff; }
+    .seg { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
+    .seg button { padding:8px 4px; border-radius:10px; border:1px solid #334155; background:#020617; color:#cbd5e1; font-size:13px; font-weight:700; }
+    .seg button.on-droog { background:#059669; border-color:#059669; color:#fff; }
+    .seg button.on-verhoogd { background:#d97706; border-color:#d97706; color:#fff; }
+    .seg button.on-nat { background:#dc2626; border-color:#dc2626; color:#fff; }
+    .mini-chip { padding:4px 8px; border-radius:999px; border:1px solid #334155; color:#94a3b8; font-size:12px; }
+
     /* geen inzoomen op iPhone bij het aantikken van een veld */
     @media (max-width: 900px) {
       input, select, textarea, .kb-inp { font-size: 16px !important; }
@@ -250,12 +269,105 @@
   </section>
 
   <!-- ============================================================== -->
-  <!-- APP: INVULLEN                                                   -->
+  <!-- APP: INVULLEN (stappen in de volgorde van het bezoek)           -->
   <!-- ============================================================== -->
   <section id="view-invullen" class="no-print app-view max-w-3xl mx-auto px-3 py-3 space-y-3">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 text-white">
-        <label class="kb-lbl">Type advies (bronoorzaak)</label>
-        <select id="templateSelector" onchange="switchTemplate(this.value)" class="kb-inp">
+
+    <!-- STAP 1 -->
+    <details class="stap" open>
+      <summary><span class="stap-nr">1</span><span class="stap-titel">Bij aankomst</span><span class="stap-sub">klant &amp; woning</span></summary>
+      <div class="stap-body grid grid-cols-1 md:grid-cols-2 gap-2.5">
+        <div><label class="kb-lbl">Opdrachtgever / naam</label><input type="text" id="topClientName" class="kb-inp" oninput="syncClientName(this.value)" placeholder="bijv. Familie De Graaf"></div>
+        <div><label class="kb-lbl">Adres (straat, huisnummer, plaats)</label><input type="text" id="topClientAddress" class="kb-inp" oninput="syncClientAddress(this.value)" placeholder="bijv. Kerkstraat 12, Den Bosch" autocomplete="street-address"></div>
+        <div><label class="kb-lbl">Datum &amp; adviseur</label><input type="text" id="topInspectDate" class="kb-inp" oninput="syncInspectDate(this.value)"></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="kb-lbl">Type woning</label><select id="obj_type" class="kb-inp" onchange="setObj('type', this.value)"></select></div>
+          <div><label class="kb-lbl">Bouwjaar</label><input type="text" inputmode="numeric" id="obj_bouwjaar" class="kb-inp" placeholder="bijv. 1965" oninput="setObj('bouwjaar', this.value)"></div>
+        </div>
+        <div class="md:col-span-2"><label class="kb-lbl">Aanwezig tijdens de inspectie</label><input type="text" id="obj_aanwezig" class="kb-inp" placeholder="bijv. dhr. en mevr. De Graaf" oninput="setObj('aanwezig', this.value)"></div>
+        <div class="md:col-span-2"><label class="kb-lbl">Aanleiding, zoals de bewoner het vertelt</label><textarea id="obj_aanleiding" rows="2" class="kb-inp" style="resize:vertical" placeholder="bijv. Sinds de winter schimmel achter de kast in de slaapkamer en beslagen ramen." oninput="setObj('aanleiding', this.value)"></textarea></div>
+      </div>
+    </details>
+
+    <!-- STAP 2 -->
+    <details class="stap" open>
+      <summary><span class="stap-nr">2</span><span class="stap-titel">Buiten</span><span class="stap-sub">gevelfoto &amp; buitenklimaat</span></summary>
+      <div class="stap-body space-y-2.5">
+        <div class="flex items-center gap-3 flex-wrap">
+          <div id="foto_preview"></div>
+          <label class="foto-btn"><i data-lucide="camera" class="w-4 h-4"></i>Camera<input type="file" accept="image/*" capture="environment" class="hidden" onchange="loadFoto(this)"></label>
+          <label class="foto-btn"><i data-lucide="upload" class="w-4 h-4"></i>Bibliotheek<input type="file" accept="image/*" class="hidden" onchange="loadFoto(this)"></label>
+          <button id="foto_remove" type="button" onclick="removeFoto()" class="hidden text-[13px] text-red-300 underline">Verwijderen</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="kb-lbl">Buiten °C</label><input type="text" inputmode="decimal" id="kb_buitenT" class="kb-inp" placeholder="12" oninput="setKB('buitenT', this.value)"></div>
+          <div><label class="kb-lbl">Buiten RV %</label><input type="text" inputmode="decimal" id="kb_buitenRV" class="kb-inp" placeholder="85" oninput="setKB('buitenRV', this.value)"></div>
+        </div>
+        <div><label class="kb-lbl">Weer &amp; omstandigheden</label><input type="text" id="kb_omst" class="kb-inp" placeholder="bijv. droog weer, verwarming aan, ramen dicht" oninput="setKB('omst', this.value)"></div>
+        <div><label class="kb-lbl">Datum &amp; tijd meting</label><input type="text" id="kb_datum" class="kb-inp" oninput="setKB('datum', this.value)"></div>
+      </div>
+    </details>
+
+    <!-- STAP 3 -->
+    <details class="stap" open>
+      <summary><span class="stap-nr">3</span><span class="stap-titel">Binnen</span><span class="stap-sub">klimaat &amp; luchtkwaliteit</span></summary>
+      <div class="stap-body space-y-2.5">
+        <div><label class="kb-lbl">Ruimte van de meting</label><input type="text" id="kb_binnenRuimte" class="kb-inp" placeholder="bijv. slaapkamer" oninput="setKB('binnenRuimte', this.value)"></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="kb-lbl">Binnen °C</label><input type="text" inputmode="decimal" id="kb_binnenT" class="kb-inp" placeholder="19" oninput="setKB('binnenT', this.value)"></div>
+          <div><label class="kb-lbl">Binnen RV %</label><input type="text" inputmode="decimal" id="kb_binnenRV" class="kb-inp" placeholder="72" oninput="setKB('binnenRV', this.value)"></div>
+        </div>
+        <p id="dp_live" class="text-[13px] text-sky-300"></p>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="kb-lbl">Luchtkwaliteit</label>
+            <select id="kb_lucht" class="kb-inp" onchange="setKB('lucht', this.value)">
+              <option value="">— kies —</option><option value="goed">Goed</option><option value="matig">Matig</option><option value="onvoldoende">Onvoldoende</option>
+            </select></div>
+          <div><label class="kb-lbl">Standaardtekst</label><select id="kb_luchtSjabloon" class="kb-inp" onchange="useLuchtSjabloon(this.value)"></select></div>
+        </div>
+        <div><label class="kb-lbl">Toelichting luchtkwaliteit</label><input type="text" id="kb_luchtToel" class="kb-inp" placeholder="bijv. CO₂ verhoogd na nacht; fijnstof en TVOC normaal" oninput="setKB('luchtToel', this.value)"></div>
+      </div>
+    </details>
+
+    <!-- STAP 4 -->
+    <details class="stap" open>
+      <summary><span class="stap-nr">4</span><span class="stap-titel">Waarnemingen &amp; meetpunten</span><span class="stap-sub">wat zie en meet je</span></summary>
+      <div class="stap-body space-y-3">
+        <div>
+          <label class="kb-lbl">Wat neem je waar? (tik aan)</label>
+          <div id="obs_chips" class="flex flex-wrap gap-1.5"></div>
+          <input type="text" id="obs_overig" class="kb-inp mt-2" placeholder="Overige waarneming (optioneel)" oninput="setObsOverig(this.value)">
+        </div>
+        <div>
+          <label class="kb-lbl">Meetpunten (max. 4)</label>
+          <div id="mp_list" class="space-y-2"></div>
+          <button type="button" id="mp_add" onclick="addMeetpunt()" class="mt-2 w-full py-2.5 rounded-xl bg-slate-800 active:bg-slate-700 border border-slate-700 text-white text-[14px] font-bold flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i>Meetpunt toevoegen</button>
+        </div>
+        <div>
+          <label class="kb-lbl">Gebruikte meetapparatuur</label>
+          <div id="kb_app_list" class="flex flex-wrap gap-x-4 gap-y-1.5 pt-0.5"></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- STAP 5 -->
+    <details class="stap" open>
+      <summary><span class="stap-nr">5</span><span class="stap-titel">Foto's</span><span class="stap-sub">max. 4, met bijschrift</span></summary>
+      <div class="stap-body space-y-2.5">
+        <div id="df_list" class="space-y-2"></div>
+        <div id="df_add" class="grid grid-cols-2 gap-2">
+          <label class="foto-btn justify-center"><i data-lucide="camera" class="w-4 h-4"></i>Camera<input type="file" accept="image/*" capture="environment" class="hidden" onchange="addDetailFoto(this)"></label>
+          <label class="foto-btn justify-center"><i data-lucide="upload" class="w-4 h-4"></i>Bibliotheek<input type="file" accept="image/*" class="hidden" onchange="addDetailFoto(this)"></label>
+        </div>
+      </div>
+    </details>
+
+    <!-- STAP 6 -->
+    <details class="stap" open>
+      <summary><span class="stap-nr">6</span><span class="stap-titel">Situatie &amp; diagnose</span><span class="stap-sub">wat is er aan de hand</span></summary>
+      <div class="stap-body space-y-2.5">
+        <div><label class="kb-lbl">Wat heb je bij deze woning gezien? (ruimten, schadebeeld)</label><textarea id="tx_situatie" rows="4" class="kb-inp" style="resize:vertical" oninput="setSituatieTekst(this.value)"></textarea></div>
+        <div><label class="kb-lbl">Type advies (bronoorzaak)</label><select id="templateSelector" onchange="switchTemplate(this.value)" class="kb-inp">
             <option value="condensatie">1. Condensatie &amp; Ventilatiedeficiëntie</option>
             <option value="opstijgend">2. Opstijgend Vocht &amp; Muurbarrières</option>
             <option value="doorslaand">3. Doorslaand Vocht &amp; Gevelrenovatie</option>
@@ -263,221 +375,53 @@
             <option value="lateraal">5. Lateraal Vocht in Kelderwanden (Bekuiping)</option>
             <option value="lekkage">6. Lekkages &amp; Lekdetectie</option>
             <option value="schimmel">7. Schimmelontwikkeling boven Maaiveld</option>
-          </select>
+          </select></div>
+        <div><label class="kb-lbl">Oorzaak in één zin (leeg = standaardzin van het dossier)</label><input type="text" id="sam_oorzaak" class="kb-inp" oninput="setSamField('oorzaak', this.value)"></div>
+        <div><label class="kb-lbl">Bouwfysische duiding (leeg = standaardtekst van het dossier)</label><textarea id="tx_duiding" rows="4" class="kb-inp" style="resize:vertical" oninput="setDuidingTekst(this.value)"></textarea></div>
       </div>
+    </details>
 
-      <!-- ONDERSTE RIJ: OBJECT- EN SITUATIE INVOERBALK -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs text-white">
-        <div>
-          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
-            <i data-lucide="user" class="w-3 h-3 text-blue-400"></i> Opdrachtgever / Naam:
-          </label>
-          <input type="text" id="topClientName" value="" oninput="syncClientName(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-semibold text-xs focus:border-blue-500 focus:outline-none" placeholder="bijv. Familie De Graaf">
-        </div>
-
-        <div>
-          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
-            <i data-lucide="map-pin" class="w-3 h-3 text-blue-400"></i> Straat &amp; Huisnummer (+ Plaats):
-          </label>
-          <input type="text" id="topClientAddress" value="" oninput="syncClientAddress(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-semibold text-xs focus:border-blue-500 focus:outline-none" placeholder="bijv. Wilhelminasingel 84, Nijmegen">
-        </div>
-
-        <div>
-          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
-            <i data-lucide="calendar" class="w-3 h-3 text-blue-400"></i> Datum &amp; Adviseur:
-          </label>
-          <input type="text" id="topInspectDate" value="" oninput="syncInspectDate(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-semibold text-xs focus:border-blue-500 focus:outline-none" placeholder="bijv. 24 september 2026">
-        </div>
-      </div>
-
-      
-      <!-- SAMENVATTING, FOTO & TIPS -->
-      <details id="samPanel" open class="bg-slate-900 border border-slate-800 rounded-2xl text-xs text-white">
-        <summary class="cursor-pointer select-none px-3 py-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
-          <i data-lucide="clipboard-check" class="w-3.5 h-3.5"></i> Samenvatting, foto &amp; tips (pagina 1 en 3)
-        </summary>
-        <div class="px-3 pb-3 grid grid-cols-1 md:grid-cols-6 gap-2">
-          <div class="md:col-span-6 flex items-center gap-3 flex-wrap">
-            <label class="kb-lbl !mb-0">Gevelfoto</label>
-            <div id="foto_preview"></div>
-            <label class="cursor-pointer px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-[11px] font-bold">
-              Foto kiezen…<input type="file" accept="image/*" class="hidden" onchange="loadFoto(this)">
-            </label>
-            <button id="foto_remove" type="button" onclick="removeFoto()" class="hidden text-[11px] text-red-300 hover:text-red-200 underline">Verwijderen</button>
-            <span class="text-[10px] text-slate-500">Foto van de gevel van het pand; wordt automatisch verkleind en meebewaard.</span>
-          </div>
-          <div class="md:col-span-6">
-            <label class="kb-lbl">Oorzaak in één zin (leeg = standaardtekst van het dossier)</label>
-            <input type="text" id="sam_oorzaak" class="kb-inp" oninput="setSamField('oorzaak', this.value)">
-          </div>
-          <div class="md:col-span-2">
-            <label class="kb-lbl">Urgentie</label>
+    <!-- STAP 7 -->
+    <details class="stap" open>
+      <summary><span class="stap-nr">7</span><span class="stap-titel">Advies</span><span class="stap-sub">aanbeveling, urgentie &amp; tips</span></summary>
+      <div class="stap-body space-y-2.5">
+        <div><label class="kb-lbl">Aanbevolen optie</label><select id="adv_rec" class="kb-inp" onchange="setAdviesRec(this.value)"></select></div>
+        <div><label class="kb-lbl">Sjabloon voor motivatie (daarna aanpassen; tekst tussen [haken] invullen)</label><select id="adv_sjabloon" class="kb-inp" onchange="useSjabloon(this.value)"></select></div>
+        <div><label class="kb-lbl">Motivatie (1 à 2 zinnen, specifiek voor deze woning)</label><textarea id="adv_motivatie" rows="3" class="kb-inp" style="resize:vertical" oninput="setAdviesField('motivatie', this.value)" placeholder="Waarom past deze optie bij deze woning?"></textarea></div>
+        <div><label class="kb-lbl">Prijsindicatie aanbevolen optie (optioneel overschrijven)</label><input type="text" id="adv_prijs" class="kb-inp" oninput="setAdviesField('prijs', this.value)"></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="kb-lbl">Urgentie</label>
             <select id="sam_urgNiveau" class="kb-inp" onchange="setUrgentie('niveau', this.value)">
-              <option value="">— kies —</option>
-              <option value="hoog">Hoog</option>
-              <option value="gemiddeld">Gemiddeld</option>
-              <option value="laag">Laag</option>
-            </select>
-          </div>
-          <div class="md:col-span-4">
-            <label class="kb-lbl">Toelichting urgentie (leeg = standaardtekst)</label>
-            <input type="text" id="sam_urgTekst" class="kb-inp" oninput="setUrgentie('tekst', this.value)">
-          </div>
-          <div class="md:col-span-6">
-            <label class="kb-lbl flex items-center justify-between"><span>Wat de klant zelf kan doen (één tip per regel; leeg = standaardtips)</span>
-              <button type="button" onclick="useStandaardTips()" class="normal-case tracking-normal text-emerald-300 hover:text-emerald-200 underline font-semibold">standaardtips invullen om aan te passen</button></label>
-            <textarea id="sam_tips" rows="3" class="kb-inp" style="resize:vertical" oninput="setSamField('tips', this.value)"></textarea>
-          </div>
+              <option value="">— kies —</option><option value="hoog">Hoog</option><option value="gemiddeld">Gemiddeld</option><option value="laag">Laag</option>
+            </select></div>
+          <div><label class="kb-lbl">Toelichting (leeg = standaard)</label><input type="text" id="sam_urgTekst" class="kb-inp" oninput="setUrgentie('tekst', this.value)"></div>
         </div>
-      </details>
-
-      
-      <!-- KERNBEVINDINGEN INVOER (MOMENTOPNAME) -->
-      <details id="kbPanel" open class="bg-slate-900 border border-slate-800 rounded-2xl text-xs text-white">
-        <summary class="cursor-pointer select-none px-3 py-2 flex items-center justify-between gap-2">
-          <span class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-300">
-            <i data-lucide="gauge" class="w-3.5 h-3.5"></i> Kernbevindingen (momentopname) invullen
-          </span>
-          <label class="flex items-center gap-1.5 text-[10px] text-slate-300 font-semibold" onclick="event.stopPropagation()">
-            <input type="checkbox" id="kb_show" checked onchange="setKB('show', this.checked)" class="accent-amber-400"> Tonen in document
-          </label>
-          <label class="flex items-center gap-1.5 text-[10px] text-slate-300 font-semibold" onclick="event.stopPropagation()" title="Toont de absolute luchtvochtigheid binnen en buiten, berekend uit temperatuur en RV">
-            <input type="checkbox" id="kb_vb" checked onchange="setKB('vb', this.checked)" class="accent-amber-400"> Vochtbalans tonen
-          </label>
-        </summary>
-        <div class="px-3 pb-3 grid grid-cols-2 md:grid-cols-6 gap-2">
-          <div class="col-span-2 md:col-span-2">
-            <label class="kb-lbl">Datum &amp; tijd meting</label>
-            <input type="text" id="kb_datum" class="kb-inp" placeholder="bijv. 9 okt 2026, 10:30" oninput="setKB('datum', this.value)">
-          </div>
-          <div class="col-span-2 md:col-span-4">
-            <label class="kb-lbl">Omstandigheden (weer, verwarming, gebruik)</label>
-            <input type="text" id="kb_omst" class="kb-inp" placeholder="bijv. droog weer, verwarming aan, ramen dicht" oninput="setKB('omst', this.value)">
-          </div>
-
-          <div>
-            <label class="kb-lbl">Buiten °C</label>
-            <input type="text" inputmode="decimal" id="kb_buitenT" class="kb-inp" placeholder="12" oninput="setKB('buitenT', this.value)">
-          </div>
-          <div>
-            <label class="kb-lbl">Buiten RV %</label>
-            <input type="text" inputmode="decimal" id="kb_buitenRV" class="kb-inp" placeholder="85" oninput="setKB('buitenRV', this.value)">
-          </div>
-          <div>
-            <label class="kb-lbl">Binnen: ruimte</label>
-            <input type="text" id="kb_binnenRuimte" class="kb-inp" placeholder="slaapkamer" oninput="setKB('binnenRuimte', this.value)">
-          </div>
-          <div>
-            <label class="kb-lbl">Binnen °C</label>
-            <input type="text" inputmode="decimal" id="kb_binnenT" class="kb-inp" placeholder="19" oninput="setKB('binnenT', this.value)">
-          </div>
-          <div>
-            <label class="kb-lbl">Binnen RV %</label>
-            <input type="text" inputmode="decimal" id="kb_binnenRV" class="kb-inp" placeholder="72" oninput="setKB('binnenRV', this.value)">
-          </div>
-          <div class="hidden md:block"></div>
-
-          <div>
-            <label class="kb-lbl">Luchtkwaliteit</label>
-            <select id="kb_lucht" class="kb-inp" onchange="setKB('lucht', this.value)">
-              <option value="">— kies —</option>
-              <option value="goed">Goed</option>
-              <option value="matig">Matig</option>
-              <option value="onvoldoende">Onvoldoende</option>
-            </select>
-          </div>
-          <div class="md:col-span-3">
-            <label class="kb-lbl">Toelichting luchtkwaliteit</label>
-            <input type="text" id="kb_luchtToel" class="kb-inp" placeholder="bijv. CO₂ verhoogd na nacht; fijnstof en TVOC binnen normaal" oninput="setKB('luchtToel', this.value)">
-          </div>
-          <div class="md:col-span-2">
-            <label class="kb-lbl">Standaardtekst toelichting</label>
-            <select id="kb_luchtSjabloon" class="kb-inp" onchange="useLuchtSjabloon(this.value)"></select>
-          </div>
-
-          <div>
-            <label class="kb-lbl">Constructie 1</label>
-            <select id="kb_c1n" class="kb-inp" onchange="setKB('c1n', this.value)">
-              <option value="">— kies —</option>
-              <option value="droog">Droog</option>
-              <option value="verhoogd">Verhoogd</option>
-              <option value="nat">Nat</option>
-            </select>
-          </div>
-          <div class="md:col-span-2">
-            <label class="kb-lbl">Locatie 1</label>
-            <input type="text" id="kb_c1l" class="kb-inp" placeholder="bijv. buitenhoek slaapkamer" oninput="setKB('c1l', this.value)">
-          </div>
-          <div>
-            <label class="kb-lbl">Constructie 2 (optioneel)</label>
-            <select id="kb_c2n" class="kb-inp" onchange="setKB('c2n', this.value)">
-              <option value="">— geen —</option>
-              <option value="droog">Droog</option>
-              <option value="verhoogd">Verhoogd</option>
-              <option value="nat">Nat</option>
-            </select>
-          </div>
-          <div class="md:col-span-2">
-            <label class="kb-lbl">Locatie 2</label>
-            <input type="text" id="kb_c2l" class="kb-inp" placeholder="bijv. muren begane grond" oninput="setKB('c2l', this.value)">
-          </div>
-
-          <div class="col-span-2 md:col-span-6">
-            <label class="kb-lbl">Gebruikte meetapparatuur bij deze inspectie</label>
-            <div id="kb_app_list" class="flex flex-wrap gap-x-4 gap-y-1.5 pt-0.5"></div>
-          </div>
+        <div>
+          <label class="kb-lbl flex items-center justify-between gap-2"><span>Wat de klant zelf kan doen (één tip per regel)</span>
+            <button type="button" onclick="useStandaardTips()" class="normal-case tracking-normal text-emerald-300 underline font-semibold shrink-0">standaardtips invullen</button></label>
+          <textarea id="sam_tips" rows="3" class="kb-inp" style="resize:vertical" oninput="setSamField('tips', this.value)"></textarea>
         </div>
-      </details>
+      </div>
+    </details>
 
-      
-      <!-- SITUATIE & DUIDING -->
-      <details id="tekstPanel" open class="bg-slate-900 border border-slate-800 rounded-2xl text-xs text-white">
-        <summary class="cursor-pointer select-none px-3 py-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-sky-300">
-          <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Situatie ter plaatse &amp; duiding
-        </summary>
-        <div class="px-3 pb-3 space-y-2">
-          <div>
-            <label class="kb-lbl">Wat heb je bij deze woning gezien? (ruimten, schadebeeld)</label>
-            <textarea id="tx_situatie" rows="4" class="kb-inp" style="resize:vertical" oninput="setSituatieTekst(this.value)"></textarea>
-          </div>
-          <div>
-            <label class="kb-lbl">Bouwfysische duiding (leeg = standaardtekst van het dossier)</label>
-            <textarea id="tx_duiding" rows="4" class="kb-inp" style="resize:vertical" oninput="setDuidingTekst(this.value)"></textarea>
-          </div>
+    <!-- STAP 8 -->
+    <details class="stap" open>
+      <summary><span class="stap-nr">8</span><span class="stap-titel">Controle &amp; versturen</span><span class="stap-sub">nalopen en PDF maken</span></summary>
+      <div class="stap-body space-y-2.5">
+        <div id="checkBox" class="hidden bg-amber-950/40 border border-amber-700/60 rounded-2xl px-3 py-2 text-xs text-amber-100"></div>
+        <p id="checkOk" class="hidden text-[13px] text-emerald-300 font-semibold">Alles is ingevuld. Bekijk het rapport en maak de PDF.</p>
+        <div class="flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-slate-300">
+          <label class="flex items-center gap-2"><input type="checkbox" id="kb_show" checked onchange="setKB('show', this.checked)" class="accent-amber-400 w-4 h-4"> Kernbevindingen tonen</label>
+          <label class="flex items-center gap-2"><input type="checkbox" id="kb_vb" checked onchange="setKB('vb', this.checked)" class="accent-amber-400 w-4 h-4"> Vochtbalans tonen</label>
         </div>
-      </details>
-
-      <!-- AANBEVELING & MOTIVATIE -->
-      <details id="adviesPanel" open class="bg-slate-900 border border-slate-800 rounded-2xl text-xs text-white">
-        <summary class="cursor-pointer select-none px-3 py-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-indigo-300">
-          <i data-lucide="badge-check" class="w-3.5 h-3.5"></i> Aanbeveling &amp; motivatie voor deze woning
-        </summary>
-        <div class="px-3 pb-3 grid grid-cols-1 md:grid-cols-6 gap-2">
-          <div class="md:col-span-3">
-            <label class="kb-lbl">Aanbevolen optie</label>
-            <select id="adv_rec" class="kb-inp" onchange="setAdviesRec(this.value)"></select>
-          </div>
-          <div class="md:col-span-3">
-            <label class="kb-lbl">Prijsindicatie aanbevolen optie (optioneel overschrijven)</label>
-            <input type="text" id="adv_prijs" class="kb-inp" oninput="setAdviesField('prijs', this.value)">
-          </div>
-          <div class="md:col-span-6">
-            <label class="kb-lbl">Sjabloon voor motivatie (daarna aanpassen; tekst tussen [haken] invullen)</label>
-            <select id="adv_sjabloon" class="kb-inp" onchange="useSjabloon(this.value)"></select>
-          </div>
-          <div class="md:col-span-6">
-            <label class="kb-lbl">Motivatie (1 à 2 zinnen, specifiek voor deze woning)</label>
-            <textarea id="adv_motivatie" rows="2" class="kb-inp" style="resize:vertical" oninput="setAdviesField('motivatie', this.value)" placeholder="Waarom past deze optie bij deze woning?"></textarea>
-          </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="showView('voorbeeld')" class="py-3 rounded-xl bg-slate-800 active:bg-slate-700 border border-slate-700 text-white text-[14px] font-bold flex items-center justify-center gap-2"><i data-lucide="eye" class="w-4 h-4"></i>Voorbeeld</button>
+          <button onclick="downloadPdfDeterministic()" class="py-3 rounded-xl bg-emerald-600 active:bg-emerald-700 text-white text-[14px] font-bold flex items-center justify-center gap-2"><i data-lucide="file-down" class="w-4 h-4"></i>PDF maken</button>
         </div>
-      </details>
-
-      
-      <div id="checkBox" class="hidden bg-amber-950/40 border border-amber-700/60 rounded-2xl px-3 py-2 text-xs text-amber-100"></div>
-      <button onclick="showView('voorbeeld')" class="w-full py-3.5 rounded-2xl bg-slate-800 active:bg-slate-700 border border-slate-700 text-white text-[15px] font-bold flex items-center justify-center gap-2">
-        <i data-lucide="eye" class="w-5 h-5"></i> Bekijk het rapport
-      </button>
+      </div>
+    </details>
   </section>
+
 
 
   <!-- NOTIFICATIE TOAST -->
@@ -536,6 +480,7 @@
       binnenRuimte: "", binnenT: "", binnenRV: "",
       lucht: "", luchtToel: "",
       c1n: "", c1l: "", c2n: "", c2l: "",
+      mp: [],
       app: { rcm: true, vm128: true, romus: true, testo: true, cam: false },
       vb: true
     };
@@ -661,18 +606,15 @@
 
     function getKBHtml() {
       if (!kb.show) return "";
-      const constrRows = [[kb.c1n, kb.c1l], [kb.c2n, kb.c2l]]
-        .filter(([n, l], i) => i === 0 || n || (l || "").trim())
-        .map(([n, l]) => `<div class="flex items-start gap-1.5">${kbBadge(n)}<span class="text-slate-700 leading-tight">${escHtml(l) || '<span class="text-slate-400">—</span>'}</span></div>`)
-        .join("");
       const meta = [kb.datum, kb.omst].map(s => (s || "").trim()).filter(Boolean).map(escHtml).join(" · ");
+      const td = dauwpunt(kb.binnenT, kb.binnenRV);
       return `
         <div class="rounded-xl border border-slate-300 overflow-hidden text-[9.5px]">
           <div class="bg-slate-900 text-white px-2.5 py-1 flex items-center justify-between gap-3">
             <span class="text-[9px] font-black uppercase tracking-wider shrink-0">Kernbevindingen • Momentopname</span>
             <span class="text-[8.5px] text-slate-300 truncate">${meta || "Datum &amp; omstandigheden: —"}</span>
           </div>
-          <div class="grid grid-cols-4 divide-x divide-slate-200 bg-white">
+          <div class="grid grid-cols-3 divide-x divide-slate-200 bg-white">
             <div class="p-2 space-y-0.5">
               <span class="block text-[8px] font-bold uppercase text-slate-400">Buitenklimaat</span>
               <div>${kbClimate(kb.buitenT, kb.buitenRV)}</div>
@@ -680,21 +622,20 @@
             <div class="p-2 space-y-0.5">
               <span class="block text-[8px] font-bold uppercase text-slate-400 leading-tight">Binnenklimaat${(kb.binnenRuimte || "").trim() ? " • " + escHtml(kb.binnenRuimte) : ""}</span>
               <div>${kbClimate(kb.binnenT, kb.binnenRV)}</div>
+              ${td !== null ? `<div class="text-[8.5px] text-slate-500">Dauwpunt ${fmt1(td)} °C</div>` : ''}
             </div>
             <div class="p-2 space-y-0.5">
               <span class="block text-[8px] font-bold uppercase text-slate-400">Luchtkwaliteit</span>
               <div class="flex items-start gap-1.5">${kbBadge(kb.lucht)}<span class="text-slate-700 leading-tight">${escHtml(kb.luchtToel)}</span></div>
             </div>
-            <div class="p-2 space-y-1">
-              <span class="block text-[8px] font-bold uppercase text-slate-400">Constructie (relatief)</span>
-              ${constrRows}
-            </div>
           </div>
+          ${getMeetpuntenHtml()}
           ${getVochtbalansHtml()}
           ${getApparatuurHtml()}
           <p class="px-2.5 py-1 text-[7.5px] italic text-slate-500 bg-slate-50 border-t border-slate-200 leading-snug">${KB_DISCLAIMER}</p>
         </div>`;
     }
+
 
     function setKB(field, value) {
       if (field === 'lucht') { kb.lucht = value; refreshLuchtSjablonen(); }
@@ -706,7 +647,7 @@
 
     function kbIsIncomplete() {
       if (!kb.show) return false;
-      return !kb.buitenRV.trim() || !kb.binnenRV.trim() || !kb.buitenT.trim() || !kb.binnenT.trim() || !kb.lucht || !kb.c1n;
+      return !kb.buitenRV.trim() || !kb.binnenRV.trim() || !kb.buitenT.trim() || !kb.binnenT.trim() || !kb.lucht || !getMeetpunten().some(p => p.niveau);
     }
 
     // AUTOMATISCHE PAGINAVULLING
@@ -775,16 +716,19 @@
       const num = v => parseFloat(String(v || "").replace(',', '.'));
 
       if (!fotoData) w.push("Er is nog geen <strong>gevelfoto</strong> toegevoegd.");
+      if ((detailFotos || []).some(f => f && f.data && !(f.bijschrift || '').trim())) w.push("Een <strong>detailfoto</strong> heeft nog geen bijschrift.");
+      if (!(detailFotos || []).some(f => f && f.data)) w.push("INFO|Tip: met 2 tot 4 <strong>detailfoto's</strong> (bijvoorbeeld vochtplek, meter op de muur) ziet de klant direct dat het advies over zijn woning gaat.");
       if (!urgentie.niveau) w.push("Kies de <strong>urgentie</strong> voor de samenvatting op pagina 1.");
       if (!(getSam(key).oorzaak || "").trim()) w.push("De <strong>oorzaak</strong> op pagina 1 is nog de standaardzin van het dossier. Klopt die voor deze woning? Pas hem anders aan in het paneel 'Samenvatting, foto &amp; tips'.");
-      if (sit && !duid && /\bgeen\b[^.]*\b(schimmel|condens|schade|vochtplek)/i.test(sit) && ['condensatie', 'schimmel', 'opstijgend', 'doorslaand'].includes(key)) {
+      const geenSchade = (waarnemingen.lijst || []).includes(GEEN_SCHADE) || (sit && /\bgeen\b[^.]*\b(schimmel|condens|schade|vochtplek)/i.test(sit));
+      if (!duid && geenSchade && ['condensatie', 'schimmel', 'opstijgend', 'doorslaand'].includes(key)) {
         w.push("In de situatie staat dat er <strong>geen schade</strong> is waargenomen, terwijl de standaardduiding uitgaat van een schadebeeld. Pas de <strong>duiding</strong> aan (bijvoorbeeld: preventief advies).");
       }
       if (!sit) w.push("De <strong>situatie ter plaatse</strong> is nog de standaardtekst. Beschrijf wat je bij déze woning hebt gezien (ruimten, schadebeeld).");
       if (/\[[^\]]*\]/.test(sit + duid)) w.push("In de situatie of duiding staat nog tekst tussen [haken].");
 
       if (kb.show) {
-        const constr = [kb.c1n, kb.c2n].filter(Boolean);
+        const constr = getMeetpunten().map(p => p.niveau).filter(Boolean);
         const allDry = constr.length > 0 && constr.every(c => c === 'droog');
         if (allDry && ['opstijgend', 'doorslaand', 'lateraal', 'lekkage'].includes(key)) {
           w.push("De <strong>constructie</strong> is overal als droog genoteerd, terwijl dit dossier uitgaat van vocht in de constructie. Vermeld waar het vocht wél zit, of licht in de duiding toe waarom het nu droog is (bijv. weersafhankelijk).");
@@ -831,7 +775,7 @@
 
     // OPSLAAN / HERSTELLEN VAN ALLE INVOER
     function collectState() {
-      return { clientName, clientAddress, inspectDate, currentTemplateKey, customSituations, customDuidingen, kb, adviesState, samenvatting, urgentie, fotoData };
+      return { clientName, clientAddress, inspectDate, currentTemplateKey, customSituations, customDuidingen, kb, adviesState, samenvatting, urgentie, fotoData, obj, waarnemingen, detailFotos };
     }
 
     function restoreState() {
@@ -850,6 +794,10 @@
         if (s.samenvatting && typeof s.samenvatting === 'object') samenvatting = s.samenvatting;
         if (s.urgentie && typeof s.urgentie === 'object') urgentie = Object.assign(urgentie, s.urgentie);
         if (typeof s.fotoData === 'string' && s.fotoData.startsWith('data:image/')) fotoData = s.fotoData;
+        if (s.obj && typeof s.obj === 'object') obj = Object.assign({ type: "", bouwjaar: "", aanwezig: "", aanleiding: "" }, s.obj);
+        if (s.waarnemingen && typeof s.waarnemingen === 'object') waarnemingen = { lijst: Array.isArray(s.waarnemingen.lijst) ? s.waarnemingen.lijst : [], overig: s.waarnemingen.overig || "" };
+        if (Array.isArray(s.detailFotos)) detailFotos = s.detailFotos.filter(f => f && typeof f.data === 'string' && f.data.startsWith('data:image/')).slice(0, MAX_DETAILFOTOS);
+        migreerMeetpunten();
       } catch (e) {
         console.error('Opgeslagen invoer kon niet worden gelezen', e);
       }
@@ -1980,9 +1928,9 @@
     function getSamenvattingHtml(data) {
       const a = getAdvies();
       const adviesTxt = a.rec === "none"
-        ? "Geen uitgesproken voorkeur; zie de keuzematrix (hoofdstuk 5)."
+        ? "Geen uitgesproken voorkeur; zie de keuzematrix (hoofdstuk 6)."
         : `Optie ${OPTION_LETTERS[a.rec]}: ${escHtml(optionName(data.options[a.rec]))}`;
-      const kostenTxt = a.rec === "none" ? "Zie de kostenraming per optie (hoofdstuk 8)." : `${escHtml(getRecPriceText())} incl. btw (richtprijs; offertes kunnen afwijken)`;
+      const kostenTxt = a.rec === "none" ? "Zie de kostenraming per optie (hoofdstuk 9)." : `${escHtml(getRecPriceText())} incl. btw (richtprijs; offertes kunnen afwijken)`;
       const u = URGENTIE[urgentie.niveau];
       const urgTxt = u
         ? `<span class="inline-block px-1.5 py-px rounded border ${u.cls} font-black text-[8.5px] uppercase tracking-wide mr-1">${u.label}</span>${escHtml((urgentie.tekst || "").trim() || u.tekst)}`
@@ -2082,6 +2030,150 @@
       const rm = document.getElementById('foto_remove');
       if (pv) pv.innerHTML = fotoData ? `<img src="${fotoData}" class="h-14 w-20 object-cover rounded-md border border-slate-700">` : '<span class="text-[11px] text-slate-500 italic">Nog geen foto</span>';
       if (rm) rm.classList.toggle('hidden', !fotoData);
+    }
+
+
+    // ============================================================
+    // OBJECT, WAARNEMINGEN, MEETPUNTEN & DETAILFOTO'S
+    // ============================================================
+    let obj = { type: "", bouwjaar: "", aanwezig: "", aanleiding: "" };
+    let waarnemingen = { lijst: [], overig: "" };
+    let detailFotos = [];               // [{ data, bijschrift }], max. 4
+    const MAX_DETAILFOTOS = 4, MAX_MEETPUNTEN = 4;
+
+    const OBJECT_TYPES = ['Tussenwoning', 'Hoekwoning', '2-onder-1-kap', 'Vrijstaande woning', 'Appartement', 'Bovenwoning', 'Benedenwoning', 'Bedrijfspand', 'Anders'];
+    const WAARNEMING_KEUZES = ['Vochtplekken', 'Zoutuitbloei', 'Schimmelvorming', 'Afbladderende verf / stuc', 'Muffe geur', 'Condens op glas', 'Houtrot', 'Vlekken op gevel'];
+    const GEEN_SCHADE = 'Geen zichtbare schade';
+    const QUICK_LOC = ['Plint', 'Kimnaad', 'Muurvlak', 'Dagkant', 'Onder vensterbank', 'Hoek buitenmuur', 'Rond leiding', 'Vloer', 'Plafond'];
+    const QUICK_H = ['5', '10', '20', '50', '100', '150'];
+
+    // Dauwpunt (Magnus-formule) in °C
+    function dauwpunt(t, rv) {
+      const T = parseFloat(String(t).replace(',', '.')), RV = parseFloat(String(rv).replace(',', '.'));
+      if (isNaN(T) || isNaN(RV) || RV <= 0) return null;
+      const g = Math.log(RV / 100) + (17.62 * T) / (243.12 + T);
+      return (243.12 * g) / (17.62 - g);
+    }
+    function fmt1(x) { return x.toFixed(1).replace('.', ','); }
+
+    function getMeetpunten() {
+      if (!Array.isArray(kb.mp)) kb.mp = [];
+      return kb.mp;
+    }
+    // Oude adviezen (twee constructievelden) omzetten naar meetpunten
+    function migreerMeetpunten() {
+      if (Array.isArray(kb.mp) && kb.mp.length) return;
+      const mp = [];
+      [[kb.c1n, kb.c1l], [kb.c2n, kb.c2l]].forEach(([n, l]) => {
+        if (n || (l || "").trim()) mp.push({ loc: l || "", h: "", niveau: n || "", opp: "" });
+      });
+      kb.mp = mp;
+    }
+
+    function getObjectRegel() {
+      const d = [obj.type, (obj.bouwjaar || "").trim() ? "bouwjaar " + obj.bouwjaar.trim() : ""].filter(x => (x || "").trim());
+      return d.length ? `<p class="text-slate-500 text-[10px] px-1">${escHtml(d.join(' • '))}</p>` : "";
+    }
+    function getAanwezigRegel() {
+      return (obj.aanwezig || "").trim() ? `<p class="text-slate-500 text-[10px] px-1">Aanwezig: ${escHtml(obj.aanwezig.trim())}</p>` : "";
+    }
+
+    // Aanleiding en waarnemingen bij de situatie ter plaatse
+    function getAanleidingHtml() {
+      const a = (obj.aanleiding || "").trim();
+      return a ? `<p class="text-[10px] text-slate-700 leading-snug px-1"><strong class="text-blue-900">Aanleiding (zoals gemeld):</strong> ${escHtml(a)}</p>` : "";
+    }
+    function getWaarnemingenHtml() {
+      const l = (waarnemingen.lijst || []).slice();
+      const o = (waarnemingen.overig || "").trim();
+      if (o) l.push(o);
+      if (!l.length) return "";
+      const geen = l.includes(GEEN_SCHADE);
+      return `<div class="flex flex-wrap items-center gap-1 px-1 pt-0.5">
+        <span class="text-[9px] font-bold uppercase tracking-wider text-blue-900 mr-0.5">Waargenomen:</span>
+        ${l.map(x => `<span class="inline-block px-1.5 py-px rounded border text-[9px] font-semibold ${x === GEEN_SCHADE ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-white border-slate-300 text-slate-800'}">${escHtml(x)}</span>`).join('')}
+      </div>`;
+    }
+
+    // Meetpuntentabel in de kernbevindingen
+    function getMeetpuntenHtml() {
+      const mp = getMeetpunten().filter(p => p.niveau || (p.loc || "").trim() || (p.opp || "").trim());
+      if (!mp.length) return "";
+      const td = dauwpunt(kb.binnenT, kb.binnenRV);
+      const rows = mp.map((p, i) => {
+        const opp = parseFloat(String(p.opp || "").replace(',', '.'));
+        let oppTxt = '<span class="text-slate-400">—</span>', dTxt = '<span class="text-slate-400">—</span>';
+        if (!isNaN(opp)) {
+          oppTxt = `${fmt1(opp)} °C`;
+          if (td !== null) {
+            const d = opp - td;
+            const cls = d <= 0 ? 'text-red-700 font-black' : (d < 3 ? 'text-amber-700 font-bold' : 'text-slate-800');
+            dTxt = `<span class="${cls}">${d > 0 ? '+' : ''}${fmt1(d)} °C</span>`;
+          }
+        }
+        return `<tr class="border-t border-slate-100">
+          <td class="px-2 py-1 text-slate-500">${i + 1}</td>
+          <td class="px-2 py-1 text-slate-800">${escHtml(p.loc) || '<span class="text-slate-400">—</span>'}</td>
+          <td class="px-2 py-1 text-slate-700 whitespace-nowrap">${(p.h || "").trim() ? escHtml(p.h) + ' cm' : '—'}</td>
+          <td class="px-2 py-1">${kbBadge(p.niveau)}</td>
+          <td class="px-2 py-1 text-slate-800 whitespace-nowrap">${oppTxt}</td>
+          <td class="px-2 py-1 whitespace-nowrap">${dTxt}</td>
+        </tr>`;
+      }).join('');
+      const tdTxt = td !== null ? ` • dauwpunt binnenlucht ${fmt1(td)} °C` : "";
+      return `<div class="border-t border-slate-200 bg-white">
+        <table class="w-full text-left text-[9px]">
+          <thead class="text-[7.5px] uppercase text-slate-400 font-bold">
+            <tr><th class="px-2 pt-1.5 w-5">#</th><th class="px-2 pt-1.5">Meetpunt</th><th class="px-2 pt-1.5">Hoogte</th><th class="px-2 pt-1.5">Materiaalvocht</th><th class="px-2 pt-1.5">Oppervlak</th><th class="px-2 pt-1.5">Verschil met dauwpunt</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p class="px-2 pb-1 pt-0.5 text-[7.5px] text-slate-500">Materiaalvocht relatief (droog / verhoogd / nat)${tdTxt}. Een oppervlak dat minder dan 3 °C boven het dauwpunt ligt, heeft een verhoogd risico op condensatie en schimmel.</p>
+      </div>`;
+    }
+
+    // Detailfoto's met bijschrift
+    function getFotosHtml() {
+      const f = (detailFotos || []).filter(x => x && x.data);
+      if (!f.length) return "";
+      return `<div class="grid grid-cols-2 gap-2">
+        ${f.map((x, i) => `<figure class="rounded-xl border border-slate-200 overflow-hidden bg-white">
+          <img src="${x.data}" alt="" class="w-full h-[185px] object-cover block">
+          <figcaption class="px-2 py-1 text-[9px] text-slate-700 leading-snug"><strong>Foto ${i + 1}:</strong> ${escHtml(x.bijschrift || '') || '<span class="ph-hint text-amber-600 italic">[bijschrift]</span>'}</figcaption>
+        </figure>`).join('')}
+      </div>`;
+    }
+
+    function updateLocatieBlokken() {
+      const set = (id, html) => { const e = document.getElementById(id); if (e) e.innerHTML = html; };
+      set('aanleidingHolder', getAanleidingHtml());
+      set('waarnemingenHolder', getWaarnemingenHtml());
+      set('fotosHolder', getFotosHtml());
+      set('objRegelHolder', getObjectRegel());
+      set('aanwezigHolder', getAanwezigRegel());
+      const kbh = document.getElementById('kbHolder');
+      if (kbh) kbh.innerHTML = getKBHtml();
+      const fs = document.getElementById('fotosSectie');
+      if (fs) fs.style.display = (detailFotos || []).some(x => x && x.data) ? '' : 'none';
+      checkPageOverflow();
+    }
+
+    // Foto verkleinen (max. 1200 px, JPEG), gedeeld door gevelfoto en detailfoto's
+    function verkleinFoto(file, cb) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const max = 1200, sc = Math.min(1, max / Math.max(img.width, img.height));
+          const c = document.createElement('canvas');
+          c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          cb(c.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = () => showToast("Deze foto kon niet worden gelezen. Probeer een JPG of PNG.", false);
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
     }
 
     // FUNCTIE OM DYNAMISCHE BESTANDSNAAM SAMEN TE STELLEN:
@@ -2226,7 +2318,7 @@
       if (el && el.innerText !== val) el.innerText = val;
       const topInp = document.getElementById('topClientAddress');
       if (topInp && topInp.value !== val) topInp.value = val;
-      ['hdrObject2', 'hdrObject3', 'hdrObject4'].forEach(id => {
+      ['hdrObject2', 'hdrObject3', 'hdrObject4', 'hdrObject5'].forEach(id => {
         const h = document.getElementById(id);
         if (h) h.innerText = `Object: ${val.trim() || '—'}`;
       });
@@ -2328,46 +2420,47 @@
                   <span class="block text-[9px] font-bold text-slate-400 uppercase">Opdrachtgever &amp; Object:</span>
                   <p id="docClientName" data-ph="[Naam opdrachtgever invullen]" class="font-bold text-slate-900 text-xs px-1" contenteditable="true" oninput="syncClientName(this.innerText.trim())">${escHtml(clientName)}</p>
                   <p id="docClientAddress" data-ph="[Adres invullen]" class="text-slate-600 text-[11px] px-1" contenteditable="true" oninput="syncClientAddress(this.innerText.trim())">${escHtml(clientAddress)}</p>
+                  <div id="objRegelHolder">${getObjectRegel()}</div>
                 </div>
                 <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 space-y-0.5">
                   <span class="block text-[9px] font-bold text-slate-400 uppercase">Inspectie:</span>
                   <p id="docInspectDate" class="font-bold text-slate-900 text-xs px-1" data-ph="[Datum invullen]" contenteditable="true" oninput="syncInspectDate(this.innerText.trim())">${escHtml(inspectDate)}</p>
                   <p class="text-slate-600 text-[11px] px-1 font-medium">Niet-destructief vochtonderzoek ter plaatse</p>
+                  <div id="aanwezigHolder">${getAanwezigRegel()}</div>
                 </div>
               </div>
             </div>
-            ${!foto ? '<p class="ph-hint text-[9px] italic text-amber-600 -mt-1">[Gevelfoto toevoegen via het paneel “Samenvatting, foto &amp; tips”]</p>' : ''}
+            ${!foto ? '<p class="ph-hint text-[9px] italic text-amber-600 -mt-1">[Gevelfoto toevoegen in stap 2]</p>' : ''}
 
             <!-- IN HET KORT -->
             <div id="samenvattingHolder">${getSamenvattingHtml(data)}</div>
 
-            <!-- HOOFDSTUK 1: BOUWFYSISCHE ANALYSE & SITUATIE TER PLAATSE -->
+            <!-- HOOFDSTUK 1: SITUATIE TER PLAATSE -->
             <div class="mt-2.5 space-y-1.5 text-xs">
               <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
                 <span class="w-4 h-4 rounded bg-slate-900 text-white text-[9px] font-black flex items-center justify-center">1</span>
-                Situatie ter Plaatse &amp; Metingen
+                Situatie ter Plaatse
               </h2>
-
               <div class="bg-blue-50/70 border-l-4 border-blue-600 p-2.5 rounded-r-xl space-y-1">
-                <span class="text-[9px] font-black text-blue-900 uppercase tracking-wider block">Specifieke Situatie Ter Plaatse (Inspectiewaarneming):</span>
+                <div id="aanleidingHolder">${getAanleidingHtml()}</div>
+                <span class="text-[9px] font-black text-blue-900 uppercase tracking-wider block px-1">Wat wij ter plaatse zagen:</span>
                 <p id="docSituation" class="text-[10.5px] text-slate-800 leading-snug font-medium p-1 rounded" contenteditable="true" oninput="syncSituationText(this.innerText)">${activeSituation}</p>
+                <div id="waarnemingenHolder">${getWaarnemingenHtml()}</div>
               </div>
+            </div>
 
-              <div id="kbHolder">${getKBHtml()}</div>
-
-              <div class="p-2 rounded-lg bg-slate-50 border border-slate-200 text-[10px] text-slate-700 leading-snug">
-                <strong>Bouwfysische duiding:</strong> <span id="docDuiding" class="rounded" contenteditable="true" title="Klik om de duiding voor deze woning aan te passen" oninput="syncDuidingText(this.innerText)">${activeDuiding}</span>
-              </div>
+            <div class="p-2 rounded-lg bg-slate-50 border border-slate-200 text-[10px] text-slate-700 leading-snug">
+              <strong>Bouwfysische duiding:</strong> <span id="docDuiding" class="rounded" contenteditable="true" title="Klik om de duiding voor deze woning aan te passen" oninput="syncDuidingText(this.innerText)">${activeDuiding}</span>
             </div>
           </div>
           <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
             <span class="shrink-0">CheckMijnHuis • Onafhankelijk Bouwfysisch Advies</span>
-            <span class="min-w-0 truncate text-center">${data.title} • Pagina 1 van 4</span>
+            <span class="min-w-0 truncate text-center">${data.title} • Pagina 1 van 5</span>
             <span class="shrink-0">www.checkmijnhuis.nl</span>
           </div>
         </div>
 
-        <!-- PAGINA 2: ACHTERGROND, RISICO'S & OPLOSSINGEN -->
+        <!-- PAGINA 2: METINGEN & FOTO'S -->
         <div class="a4-page" id="page-2">
           <div class="page-body">
             <!-- HEADER PAGINA 2 -->
@@ -2382,13 +2475,51 @@
               <span id="hdrObject2" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
             </div>
 
+
+            <!-- HOOFDSTUK 2: METINGEN, FOTO'S & DUIDING -->
+            <div class="mt-2.5 space-y-1.5 text-xs">
+              <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                <span class="w-4 h-4 rounded bg-slate-900 text-white text-[9px] font-black flex items-center justify-center">2</span>
+                Metingen &amp; Bevindingen
+              </h2>
+              <div id="kbHolder">${getKBHtml()}</div>
+            </div>
+
+            <div id="fotosSectie" class="space-y-1.5 text-xs" style="${(detailFotos || []).some(x => x && x.data) ? '' : 'display:none'}">
+              <p class="font-bold text-slate-900 uppercase tracking-wider text-[10px]">Foto's van de situatie</p>
+              <div id="fotosHolder">${getFotosHtml()}</div>
+            </div>
+
+          </div>
+          <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
+            <span class="shrink-0">CheckMijnHuis • Onafhankelijk Bouwfysisch Advies</span>
+            <span class="min-w-0 truncate text-center">${data.title} • Pagina 2 van 5</span>
+            <span class="shrink-0">www.checkmijnhuis.nl</span>
+          </div>
+        </div>
+
+        <!-- PAGINA 3: ACHTERGROND, RISICO'S & OPLOSSINGEN -->
+        <div class="a4-page" id="page-3">
+          <div class="page-body">
+            <!-- HEADER PAGINA 2 -->
+            <div class="border-b-2 border-slate-900 pb-2 flex items-center justify-between text-xs text-slate-500">
+              <div class="flex items-center gap-2">
+                ${getVectorLogo(24)}
+                <div>
+                  <span class="font-black text-slate-900 text-xs">CheckMijn<span class="text-blue-600">Huis</span></span>
+                  <span class="text-[9px] text-slate-500 block leading-tight">Advies &amp; Plan van Aanpak • ${data.title}</span>
+                </div>
+              </div>
+              <span id="hdrObject3" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
+            </div>
+
             <!-- HOOFDSTUK 2: ACHTERGROND -->
             <div class="mt-2.5 space-y-1.5 text-xs">
               <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-                <span class="w-4 h-4 rounded bg-slate-500 text-white text-[9px] font-black flex items-center justify-center">2</span>
+                <span class="w-4 h-4 rounded bg-slate-500 text-white text-[9px] font-black flex items-center justify-center">3</span>
                 Achtergrond: hoe ontstaat dit probleem?
               </h2>
-              <p class="text-[8.5px] italic text-slate-500 -mt-0.5">Algemene uitleg over het verschijnsel; wat specifiek bij uw woning is vastgesteld, staat in hoofdstuk 1.</p>
+              <p class="text-[8.5px] italic text-slate-500 -mt-0.5">Algemene uitleg over het verschijnsel; wat specifiek bij uw woning is vastgesteld, staat in hoofdstuk 1 en 2.</p>
               <div class="text-slate-700 leading-relaxed text-[10.5px] space-y-1">
                 <p>${data.problem}</p>
               </div>
@@ -2397,7 +2528,7 @@
             <!-- HOOFDSTUK 2: RISICO- & GEVOLGENANALYSE -->
             <div class="mt-2.5 space-y-1.5 text-xs">
               <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5 text-amber-900">
-                <span class="w-4 h-4 rounded bg-amber-600 text-white text-[9px] font-black flex items-center justify-center">3</span>
+                <span class="w-4 h-4 rounded bg-amber-600 text-white text-[9px] font-black flex items-center justify-center">4</span>
                 Risico&#39;s bij Uitstel of Niet-Ingrijpen
               </h2>
 
@@ -2414,7 +2545,7 @@
             <!-- HOOFDSTUK 3: OPLOSSINGSRICHTING -->
             <div class="mt-2.5 space-y-1 text-xs">
               <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-                <span class="w-4 h-4 rounded bg-slate-900 text-white text-[9px] font-black flex items-center justify-center">4</span>
+                <span class="w-4 h-4 rounded bg-slate-900 text-white text-[9px] font-black flex items-center justify-center">5</span>
                 Bouwfysische Oplossingsrichting
               </h2>
               <p class="text-slate-700 text-[10.5px] leading-relaxed">${optie.solution}</p>
@@ -2424,7 +2555,7 @@
             <div class="mt-2.5 space-y-1.5 text-xs">
               <div class="flex items-center justify-between border-b border-slate-200 pb-0.5">
                 <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-                  <span class="w-4 h-4 rounded bg-slate-900 text-white text-[9px] font-black flex items-center justify-center">5</span>
+                  <span class="w-4 h-4 rounded bg-slate-900 text-white text-[9px] font-black flex items-center justify-center">6</span>
                   Onafhankelijke Keuzematrix Oplossingssystemen
                 </h2>
                 <span class="shrink-0 whitespace-nowrap text-[8.5px] text-slate-500">Bouwfysisch Vergelijkingsoverzicht</span>
@@ -2452,13 +2583,13 @@
           </div>
           <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
             <span class="shrink-0">CheckMijnHuis • Onafhankelijk Bouwfysisch Advies</span>
-            <span class="min-w-0 truncate text-center">${data.title} • Pagina 2 van 4</span>
+            <span class="min-w-0 truncate text-center">${data.title} • Pagina 3 van 5</span>
             <span class="shrink-0">www.checkmijnhuis.nl</span>
           </div>
         </div>
 
-        <!-- PAGINA 3: UITVOERING & KOSTEN -->
-        <div class="a4-page" id="page-3">
+        <!-- PAGINA 4: UITVOERING & KOSTEN -->
+        <div class="a4-page" id="page-4">
           <div class="page-body">
             <!-- HEADER PAGINA 2 -->
             <div class="border-b-2 border-slate-900 pb-2 flex items-center justify-between text-xs text-slate-500">
@@ -2469,14 +2600,14 @@
                   <span class="text-[9px] text-slate-500 block leading-tight">Advies &amp; Plan van Aanpak • Uitvoering &amp; Kosten</span>
                 </div>
               </div>
-              <span id="hdrObject3" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
+              <span id="hdrObject4" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
             </div>
 
             <!-- HOOFDSTUK 5: TECHNISCH WERKVOORSCHRIFT & UITGANGSPUNTEN -->
             <div class="mt-2.5 space-y-1 text-xs">
               <div class="flex items-center justify-between border-b border-slate-200 pb-0.5">
                 <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-                  <span class="w-4 h-4 rounded bg-indigo-900 text-white text-[9px] font-black flex items-center justify-center">6</span>
+                  <span class="w-4 h-4 rounded bg-indigo-900 text-white text-[9px] font-black flex items-center justify-center">7</span>
                   Technisch Werkvoorschrift (voor de uitvoerende partij)
                 </h2>
                 <span class="shrink-0 whitespace-nowrap text-[8.5px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
@@ -2502,7 +2633,7 @@
             <!-- HOOFDSTUK 7: WAT U NU AL ZELF KUNT DOEN -->
             <div class="mt-2.5 space-y-1 text-xs">
               <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5 text-emerald-900">
-                <span class="w-4 h-4 rounded bg-emerald-600 text-white text-[9px] font-black flex items-center justify-center">7</span>
+                <span class="w-4 h-4 rounded bg-emerald-600 text-white text-[9px] font-black flex items-center justify-center">8</span>
                 Wat u nu al zelf kunt doen
               </h2>
               <div id="tipsHolder">${getTipsHtml()}</div>
@@ -2512,7 +2643,7 @@
             <div class="mt-2.5 space-y-1 text-xs">
               <div class="flex items-center justify-between border-b border-slate-200 pb-0.5">
                 <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-                  <span class="w-4 h-4 rounded bg-emerald-800 text-white text-[9px] font-black flex items-center justify-center">8</span>
+                  <span class="w-4 h-4 rounded bg-emerald-800 text-white text-[9px] font-black flex items-center justify-center">9</span>
                   Indicatieve Kostenraming Uitvoering (Richtprijzen 2026)
                 </h2>
                 <span class="shrink-0 whitespace-nowrap text-[8.5px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
@@ -2550,13 +2681,13 @@
           </div>
           <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
             <span class="shrink-0">CheckMijnHuis • Onafhankelijk Bouwfysisch Advies</span>
-            <span class="min-w-0 truncate text-center">${data.title} • Pagina 3 van 4</span>
+            <span class="min-w-0 truncate text-center">${data.title} • Pagina 4 van 5</span>
             <span class="shrink-0">www.checkmijnhuis.nl</span>
           </div>
         </div>
 
         <!-- PAGINA 4: OPLEVERING, VERVOLG & VERANTWOORDING -->
-        <div class="a4-page" id="page-4">
+        <div class="a4-page" id="page-5">
           <div class="page-body">
             <!-- HEADER PAGINA 2 -->
             <div class="border-b-2 border-slate-900 pb-2 flex items-center justify-between text-xs text-slate-500">
@@ -2567,14 +2698,14 @@
                   <span class="text-[9px] text-slate-500 block leading-tight">Advies &amp; Plan van Aanpak • Oplevering &amp; Verantwoording</span>
                 </div>
               </div>
-              <span id="hdrObject4" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
+              <span id="hdrObject5" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
             </div>
 
             <!-- HOOFDSTUK 7: OPLEVERINGS- & ACCEPTATIEPROTOCOL -->
             <div class="mt-2.5 space-y-1 text-xs">
               <div class="flex items-center justify-between border-b border-slate-200 pb-0.5">
                 <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5 text-blue-900">
-                  <span class="w-4 h-4 rounded bg-blue-700 text-white text-[9px] font-black flex items-center justify-center">9</span>
+                  <span class="min-w-[16px] px-0.5 h-4 rounded bg-blue-700 text-white text-[9px] font-black flex items-center justify-center">10</span>
                   Opleverings- &amp; Acceptatieprotocol
                 </h2>
                 <span class="text-[8.5px] text-slate-500 shrink-0 whitespace-nowrap pl-3">Controlecriteria voor akkoord</span>
@@ -2593,7 +2724,7 @@
             <!-- HOOFDSTUK 10: VOLGENDE STAPPEN -->
             <div class="mt-2.5 space-y-1 text-xs">
               <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-                <span class="min-w-[16px] px-0.5 h-4 rounded bg-slate-900 text-white text-[9px] font-black flex items-center justify-center">10</span>
+                <span class="min-w-[16px] px-0.5 h-4 rounded bg-slate-900 text-white text-[9px] font-black flex items-center justify-center">11</span>
                 Volgende stappen
               </h2>
               <div class="grid grid-cols-3 gap-2 text-[9px]">
@@ -2603,7 +2734,7 @@
                 </div>
                 <div class="p-2 rounded-xl border border-slate-200 bg-white space-y-0.5">
                   <span class="font-bold text-slate-900 text-[9.5px] block">2. Offertes vergelijken</span>
-                  <p class="text-slate-600 leading-snug">Leg de offertes naast het werkvoorschrift (hoofdstuk 6) en de kostenindicatie (hoofdstuk 8).</p>
+                  <p class="text-slate-600 leading-snug">Leg de offertes naast het werkvoorschrift (hoofdstuk 7) en de kostenindicatie (hoofdstuk 9).</p>
                 </div>
                 <div class="p-2 rounded-xl border border-slate-200 bg-white space-y-0.5">
                   <span class="font-bold text-slate-900 text-[9.5px] block">3. Resultaat controleren</span>
@@ -2633,23 +2764,23 @@
             <div class="mt-2.5 p-2 rounded-xl bg-slate-50 border border-slate-300 text-[8px] text-slate-700 leading-snug space-y-1 shadow-2xs">
               <p class="font-bold flex items-center gap-1 text-[8.5px] text-slate-900 border-b border-slate-200 pb-0.5">
                 <i data-lucide="shield-check" class="w-3.5 h-3.5 text-blue-600"></i>
-                11. Juridisch Kader, Reikwijdte &amp; Aansprakelijkheid
+                12. Juridisch Kader, Reikwijdte &amp; Aansprakelijkheid
               </p>
               <div class="grid grid-cols-2 gap-2 pt-0.5">
                 <div class="space-y-0.5">
                   <p>
-                    <strong>11.1 Aard der Werkzaamheden &amp; Inspanningsverplichting:</strong> CheckMijnHuis treedt op als onafhankelijk bouwfysisch adviseur. Het advies en plan van aanpak vormen een professionele inspanningsverbintenis gebaseerd op een visuele inspectie en niet-destructieve metingen ter plaatse, naar de algemeen aanvaarde bouwfysische praktijk en stand der techniek op de inspectiedatum. De metingen vormen een momentopname. Constructieve berekeningen, leidingtracés achter gesloten constructies en latente/verborgen gebreken vallen buiten het onderzoekskader.
+                    <strong>12.1 Aard der Werkzaamheden &amp; Inspanningsverplichting:</strong> CheckMijnHuis treedt op als onafhankelijk bouwfysisch adviseur. Het advies en plan van aanpak vormen een professionele inspanningsverbintenis gebaseerd op een visuele inspectie en niet-destructieve metingen ter plaatse, naar de algemeen aanvaarde bouwfysische praktijk en stand der techniek op de inspectiedatum. De metingen vormen een momentopname. Constructieve berekeningen, leidingtracés achter gesloten constructies en latente/verborgen gebreken vallen buiten het onderzoekskader.
                   </p>
                   <p>
-                    <strong>11.2 Zelfstandige Uitvoeringsverantwoordelijkheid:</strong> CheckMijnHuis voert zelf géén herstel-, aannemers- of installatiewerkzaamheden uit. De opdrachtgever behoudt te allen tijde de volledige vrijheid in de selectie en contractering van uitvoerende partijen. De uitvoerende partij draagt zelfstandig de volledige verantwoordelijkheid voor werkopname, constructieve toetsing, verificatie van ondergronden en leidingen, deugdelijke uitvoering conform geldende normen en wettelijke garantieverlening.
+                    <strong>12.2 Zelfstandige Uitvoeringsverantwoordelijkheid:</strong> CheckMijnHuis voert zelf géén herstel-, aannemers- of installatiewerkzaamheden uit. De opdrachtgever behoudt te allen tijde de volledige vrijheid in de selectie en contractering van uitvoerende partijen. De uitvoerende partij draagt zelfstandig de volledige verantwoordelijkheid voor werkopname, constructieve toetsing, verificatie van ondergronden en leidingen, deugdelijke uitvoering conform geldende normen en wettelijke garantieverlening.
                   </p>
                 </div>
                 <div class="space-y-0.5">
                   <p>
-                    <strong>11.3 Indicatieve Kostenraming:</strong> De bedragen zijn indicatieve richtprijzen (prijspeil 2026), gebaseerd op gangbare marktprijzen en ervaringscijfers. Ze dienen uitsluitend als vrijblijvend referentiekader voor budgettering en het vergelijken van offertes. Werkelijke prijzen hangen af van de situatie ter plaatse, hoeveelheden en de gekozen uitvoerder. Op arbeid voor schilder- en stukadoorswerk aan woningen ouder dan twee jaar geldt het verlaagde btw-tarief, waardoor die posten lager kunnen uitvallen.
+                    <strong>12.3 Indicatieve Kostenraming:</strong> De bedragen zijn indicatieve richtprijzen (prijspeil 2026), gebaseerd op gangbare marktprijzen en ervaringscijfers. Ze dienen uitsluitend als vrijblijvend referentiekader voor budgettering en het vergelijken van offertes. Werkelijke prijzen hangen af van de situatie ter plaatse, hoeveelheden en de gekozen uitvoerder. Op arbeid voor schilder- en stukadoorswerk aan woningen ouder dan twee jaar geldt het verlaagde btw-tarief, waardoor die posten lager kunnen uitvallen.
                   </p>
                   <p>
-                    <strong>11.4 Aansprakelijkheid &amp; Derden:</strong> Op deze opdracht zijn de algemene voorwaarden van CheckMijnHuis van toepassing. Eventuele aansprakelijkheid is beperkt tot het factuurbedrag van de onderliggende adviesopdracht, behoudens opzet of bewuste roekeloosheid. Dit document is strikt vertrouwelijk en uitsluitend opgesteld ten behoeve van de vermelde opdrachtgever en locatie; derden kunnen hieraan geen rechten ontlenen.
+                    <strong>12.4 Aansprakelijkheid &amp; Derden:</strong> Op deze opdracht zijn de algemene voorwaarden van CheckMijnHuis van toepassing. Eventuele aansprakelijkheid is beperkt tot het factuurbedrag van de onderliggende adviesopdracht, behoudens opzet of bewuste roekeloosheid. Dit document is strikt vertrouwelijk en uitsluitend opgesteld ten behoeve van de vermelde opdrachtgever en locatie; derden kunnen hieraan geen rechten ontlenen.
                   </p>
                 </div>
               </div>
@@ -2675,7 +2806,7 @@
           </div>
           <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
             <span class="shrink-0">CheckMijnHuis • Onafhankelijk Bouwfysisch Advies</span>
-            <span class="min-w-0 truncate text-center">${data.title} • Pagina 4 van 4</span>
+            <span class="min-w-0 truncate text-center">${data.title} • Pagina 5 van 5</span>
             <span class="shrink-0">www.checkmijnhuis.nl</span>
           </div>
         </div>
@@ -2738,6 +2869,10 @@
       customSituations = {}; customDuidingen = {};
       kb = JSON.parse(KB_DEFAULT_JSON);
       adviesState = {}; samenvatting = {}; urgentie = { niveau: "", tekst: "" }; fotoData = "";
+      obj = { type: "", bouwjaar: "", aanwezig: "", aanleiding: "" };
+      waarnemingen = { lijst: [], overig: "" };
+      detailFotos = [];
+      kb.mp = [];
       kb.datum = new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
     }
     function applyState(s) {
@@ -2754,6 +2889,7 @@
       refreshAdviesPanel();
       refreshSamPanel();
       refreshTekstPanel();
+      refreshStappen();
       renderAllPages();
       updateTopLabel();
     }
@@ -2955,6 +3091,128 @@
       checkPageOverflow();
     }
 
+    // ---------- stappen: woning, waarnemingen, meetpunten, foto's ----------
+    function refreshStappen() {
+      const sel = document.getElementById('obj_type');
+      if (sel) {
+        sel.innerHTML = '<option value="">— kies —</option>' + OBJECT_TYPES.map(t => `<option>${escHtml(t)}</option>`).join('');
+        sel.value = obj.type || "";
+      }
+      const sv = (id, v) => { const e = document.getElementById(id); if (e) e.value = v || ""; };
+      sv('obj_bouwjaar', obj.bouwjaar); sv('obj_aanwezig', obj.aanwezig); sv('obj_aanleiding', obj.aanleiding);
+      sv('obs_overig', waarnemingen.overig);
+      renderObsChips(); renderMpEditor(); renderDfEditor(); updateDpLive();
+    }
+    function setObj(f, v) { obj[f] = v; updateLocatieBlokken(); }
+
+    function renderObsChips() {
+      const box = document.getElementById('obs_chips');
+      if (!box) return;
+      const l = waarnemingen.lijst || [];
+      box.innerHTML = WAARNEMING_KEUZES.map(w => `<button type="button" class="chip ${l.includes(w) ? 'on' : ''}" onclick="toggleObs('${w.replace(/'/g, "\\'")}')">${escHtml(w)}</button>`).join('')
+        + `<button type="button" class="chip ${l.includes(GEEN_SCHADE) ? 'on-groen' : ''}" onclick="toggleObs('${GEEN_SCHADE}')">${GEEN_SCHADE}</button>`;
+    }
+    function toggleObs(w) {
+      let l = (waarnemingen.lijst || []).slice();
+      if (l.includes(w)) l = l.filter(x => x !== w);
+      else if (w === GEEN_SCHADE) l = [GEEN_SCHADE];
+      else l = l.filter(x => x !== GEEN_SCHADE).concat(w);
+      waarnemingen.lijst = WAARNEMING_KEUZES.concat(GEEN_SCHADE).filter(x => l.includes(x));
+      renderObsChips(); updateLocatieBlokken();
+    }
+    function setObsOverig(v) { waarnemingen.overig = v; updateLocatieBlokken(); }
+
+    function updateDpLive() {
+      const e = document.getElementById('dp_live');
+      if (!e) return;
+      const td = dauwpunt(kb.binnenT, kb.binnenRV);
+      e.textContent = td !== null ? `Dauwpunt binnenlucht: ${fmt1(td)} °C` : "";
+      getMeetpunten().forEach((p, i) => updateMpDelta(i));
+    }
+
+    function renderMpEditor() {
+      const box = document.getElementById('mp_list');
+      if (!box) return;
+      const mp = getMeetpunten();
+      box.innerHTML = mp.map((p, i) => `
+        <div class="rounded-xl border border-slate-700 bg-slate-950/60 p-2.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[13px] font-bold text-white">Meetpunt ${i + 1}</span>
+            <button type="button" onclick="removeMeetpunt(${i})" class="p-1.5 text-slate-400" title="Verwijderen"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          </div>
+          <input type="text" class="kb-inp" placeholder="Locatie, bijv. hoek buitenmuur slaapkamer" value="${escHtml(p.loc || '')}" oninput="setMp(${i}, 'loc', this.value)" id="mp_loc_${i}">
+          <div class="flex flex-wrap gap-1">${QUICK_LOC.map(q => `<button type="button" class="mini-chip" onclick="mpLoc(${i}, '${q}')">${q}</button>`).join('')}</div>
+          <div class="grid grid-cols-2 gap-2">
+            <div><label class="kb-lbl">Hoogte (cm)</label><input type="text" inputmode="numeric" class="kb-inp" value="${escHtml(p.h || '')}" oninput="setMp(${i}, 'h', this.value)" id="mp_h_${i}"></div>
+            <div><label class="kb-lbl">Oppervlak °C (optioneel)</label><input type="text" inputmode="decimal" class="kb-inp" value="${escHtml(p.opp || '')}" oninput="setMp(${i}, 'opp', this.value)"></div>
+          </div>
+          <div class="flex flex-wrap gap-1">${QUICK_H.map(q => `<button type="button" class="mini-chip" onclick="mpH(${i}, '${q}')">${q} cm</button>`).join('')}</div>
+          <div><label class="kb-lbl">Materiaalvocht</label>
+            <div class="seg">${['droog', 'verhoogd', 'nat'].map(n => `<button type="button" class="${p.niveau === n ? 'on-' + n : ''}" onclick="setMpNiveau(${i}, '${n}')">${n[0].toUpperCase() + n.slice(1)}</button>`).join('')}</div>
+          </div>
+          <p id="mp_delta_${i}" class="text-[12px]"></p>
+        </div>`).join('');
+      const add = document.getElementById('mp_add');
+      if (add) add.style.display = mp.length >= MAX_MEETPUNTEN ? 'none' : '';
+      mp.forEach((p, i) => updateMpDelta(i));
+      if (window.lucide) lucide.createIcons();
+    }
+    function updateMpDelta(i) {
+      const e = document.getElementById('mp_delta_' + i);
+      if (!e) return;
+      const p = getMeetpunten()[i]; const td = dauwpunt(kb.binnenT, kb.binnenRV);
+      const opp = parseFloat(String((p && p.opp) || "").replace(',', '.'));
+      if (isNaN(opp) || td === null) { e.textContent = ""; return; }
+      const d = opp - td;
+      e.className = 'text-[12px] font-semibold ' + (d <= 0 ? 'text-red-400' : d < 3 ? 'text-amber-300' : 'text-emerald-300');
+      e.textContent = `${d > 0 ? '+' : ''}${fmt1(d)} °C t.o.v. dauwpunt` + (d <= 0 ? ' – condensatie' : d < 3 ? ' – verhoogd risico op condensatie' : '');
+    }
+    function addMeetpunt() {
+      const mp = getMeetpunten();
+      if (mp.length >= MAX_MEETPUNTEN) return;
+      mp.push({ loc: "", h: "", niveau: "", opp: "" });
+      renderMpEditor(); updateLocatieBlokken();
+    }
+    function removeMeetpunt(i) { getMeetpunten().splice(i, 1); renderMpEditor(); updateLocatieBlokken(); }
+    function setMp(i, f, v) { const p = getMeetpunten()[i]; if (!p) return; p[f] = v; if (f === 'opp') updateMpDelta(i); updateLocatieBlokken(); }
+    function setMpNiveau(i, n) { const p = getMeetpunten()[i]; if (!p) return; p.niveau = p.niveau === n ? "" : n; renderMpEditor(); updateLocatieBlokken(); }
+    function mpLoc(i, q) {
+      const p = getMeetpunten()[i]; if (!p) return;
+      p.loc = (p.loc || "").trim() ? p.loc.trim() + ' – ' + q.toLowerCase() : q;
+      const e = document.getElementById('mp_loc_' + i); if (e) e.value = p.loc;
+      updateLocatieBlokken();
+    }
+    function mpH(i, q) {
+      const p = getMeetpunten()[i]; if (!p) return;
+      p.h = q; const e = document.getElementById('mp_h_' + i); if (e) e.value = q;
+      updateLocatieBlokken();
+    }
+
+    function renderDfEditor() {
+      const box = document.getElementById('df_list');
+      if (!box) return;
+      box.innerHTML = detailFotos.map((f, i) => `
+        <div class="flex gap-2.5 items-start rounded-xl border border-slate-700 bg-slate-950/60 p-2">
+          <img src="${f.data}" class="w-20 h-20 rounded-lg object-cover shrink-0 border border-slate-700">
+          <div class="flex-1 min-w-0 space-y-1.5">
+            <label class="kb-lbl">Foto ${i + 1}: bijschrift</label>
+            <input type="text" class="kb-inp" placeholder="bijv. vochtplek buitenhoek slaapkamer" value="${escHtml(f.bijschrift || '')}" oninput="setDfCaption(${i}, this.value)">
+          </div>
+          <button type="button" onclick="removeDetailFoto(${i})" class="p-1.5 text-slate-400" title="Verwijderen"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        </div>`).join('');
+      const add = document.getElementById('df_add');
+      if (add) add.style.display = detailFotos.length >= MAX_DETAILFOTOS ? 'none' : '';
+      if (window.lucide) lucide.createIcons();
+    }
+    function addDetailFoto(input) {
+      const f = input.files && input.files[0];
+      input.value = "";
+      if (!f || detailFotos.length >= MAX_DETAILFOTOS) return;
+      verkleinFoto(f, data => { detailFotos.push({ data, bijschrift: "" }); renderDfEditor(); updateLocatieBlokken(); showToast("Foto toegevoegd. Vul nog een bijschrift in.", true); });
+    }
+    function removeDetailFoto(i) { detailFotos.splice(i, 1); renderDfEditor(); updateLocatieBlokken(); }
+    function setDfCaption(i, v) { if (detailFotos[i]) { detailFotos[i].bijschrift = v; updateLocatieBlokken(); } }
+
     // ---------- koppelingen met de bestaande functies ----------
     (function koppel() {
       const _cpo = checkPageOverflow;
@@ -2965,6 +3223,14 @@
       syncSituationText = function (v) { _ss(v); const t = document.getElementById('tx_situatie'); if (t && document.activeElement !== t) t.value = v; };
       const _sd = syncDuidingText;
       syncDuidingText = function (v) { _sd(v); const t = document.getElementById('tx_duiding'); if (t && document.activeElement !== t) t.value = v; };
+      const _skb = setKB;
+      setKB = function (f, v) { _skb(f, v); if (f === 'binnenT' || f === 'binnenRV') updateDpLive(); };
+      const _uc = updateChecks;
+      updateChecks = function () {
+        _uc();
+        const ok = document.getElementById('checkOk');
+        if (ok) ok.classList.toggle('hidden', getConsistencyWarnings().some(w => !w.startsWith('INFO|')));
+      };
       const _sca = syncClientAddress;
       syncClientAddress = function (v) { _sca(v); updateTopLabel(); };
       const _rap = renderAllPages;
