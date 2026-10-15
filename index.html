@@ -501,7 +501,7 @@
       { key: "rcm",   naam: "PCE-RCM 16",          functie: "temperatuur, RV en CO₂" },
       { key: "vm128", naam: "Metofix VM128 bolmeter", functie: "indicatieve dieptemeting materiaalvocht" },
       { key: "romus", naam: "Romus Mini pinmeter",  functie: "oppervlakkig materiaalvocht, relatief" },
-      { key: "testo", naam: "Testo 835-H1",        functie: "oppervlaktetemperatuur" },
+      { key: "testo", naam: "Testo 835-H1",        functie: "oppervlaktetemperatuur (opsporen koude plekken)" },
       { key: "cam",   naam: "HIKMICRO B01S",       functie: "thermografie, ter ondersteuning" }
     ];
 
@@ -594,9 +594,14 @@
       const ab = absVocht(kb.buitenT, kb.buitenRV), ai = absVocht(kb.binnenT, kb.binnenRV);
       if (ab === null || ai === null) return "";
       const diff = ai - ab;
+      const piek = "Vochtproblemen ontstaan doorgaans op momenten met een hoge vochtproductie, zoals 's nachts en bij koken, douchen en wasdrogen.";
       const uitleg = diff <= 0.3
-        ? "Op het meetmoment bevatte de binnenlucht niet meer vocht dan de buitenlucht: er was toen geen meetbaar vochtoverschot in de woning. Vochtproblemen ontstaan doorgaans op momenten met een hoge vochtproductie, zoals 's nachts en bij koken, douchen en wasdrogen."
-        : `De binnenlucht bevatte ca. ${fmtGm3(diff)} g/m³ meer vocht dan de buitenlucht. Dit vochtoverschot moet door ventilatie worden afgevoerd.`;
+        ? `Op het meetmoment bevatte de binnenlucht nauwelijks meer vocht dan de buitenlucht: er was toen geen meetbaar vochtoverschot. ${piek}`
+        : diff < 2
+          ? `De binnenlucht bevatte ca. ${fmtGm3(diff)} g/m³ meer vocht dan de buitenlucht: een beperkt vochtoverschot op het meetmoment. ${piek}`
+          : diff < 4
+            ? `De binnenlucht bevatte ca. ${fmtGm3(diff)} g/m³ meer vocht dan de buitenlucht. Dit vochtoverschot moet door ventilatie worden afgevoerd.`
+            : `De binnenlucht bevatte ca. ${fmtGm3(diff)} g/m³ meer vocht dan de buitenlucht. Dit is een hoog vochtoverschot, wat wijst op onvoldoende afvoer van vocht ten opzichte van de vochtproductie.`;
       return `<p class="px-2.5 py-1 text-[8px] text-slate-600 bg-white border-t border-slate-200 leading-snug"><strong class="text-slate-800">Vochtbalans:</strong> buiten ca. ${fmtGm3(ab)} g/m³ · binnen ca. ${fmtGm3(ai)} g/m³ (absolute luchtvochtigheid). ${uitleg}</p>`;
     }
 
@@ -835,7 +840,7 @@
         risks: [
           {
             title: "1. Gezondheid & Binnenklimaat",
-            desc: "Langdurig hoge luchtvochtigheid en schimmelgroei vergroten de kans op luchtwegklachten en verergering van astma. Een hoog CO2-gehalte (> 1.200 ppm) is een signaal van onvoldoende ventilatie en gaat vaak samen met benauwdheid, hoofdpijn en een slechtere nachtrust."
+            desc: "Langdurig hoge luchtvochtigheid en schimmelgroei vergroten de kans op luchtwegklachten en verergering van astma. Een CO₂-gehalte boven circa 1.000 ppm is een signaal van onvoldoende ventilatie en gaat vaak samen met benauwdheid, hoofdpijn en een slechtere nachtrust."
           },
           {
             title: "2. Comfort & Stookkosten",
@@ -851,7 +856,7 @@
           {
             name: "Optie A: Decentrale Balans-WTW",
             desc: "Plaatsing van 2 decentrale WTW-units in de buitengevel van de woonkamer en hoofdslaapkamer, die als paar samenwerken. Voorzien van keramische warmtewisselaar of enthalpiewisselaar en vochtsensoren.",
-            pros: "✓ Geen kanalenstelsel of ingrijpend breekwerk<br>✓ Hoge warmteterugwinning (veelal 80-90% volgens fabrikant)<br>✓ Stil in basisstand (&lt; 25 dB(A)) &amp; volautomatisch"
+            pros: "✓ Geen kanalenstelsel of ingrijpend breekwerk<br>✓ Hoge warmteterugwinning (veelal 80-90% volgens fabrikant)<br>✓ Stil in basisstand (vaak &lt; 25 dB(A), volgens fabrikant) &amp; volautomatisch"
           },
           {
             name: "Systeem C Vraaggestuurde Afzuiging",
@@ -1129,14 +1134,14 @@
       },
 
       lekkage: {
-        title: "Lekkages & Niet-Destructieve Lekdetectie",
+        title: "Lekkage & Advies Lekdetectie",
         sub: "Onafhankelijk Bouwfysisch Advies & Technisch Plan van Aanpak voor leiding-, afvoer- en bouwkundige lekkages",
         icon: "droplet",
         framework: "Bouwfysische praktijk • lekdetectie",
         defaultSituation: "Geconstateerd nabij natte ruimten, schachten of plafonds. Schadebeeld: vochtkringen, verkleuringen, vochttoename die niet samenhangt met het weer en mogelijk een doorlopende watermeter.",
         problem: `Anders dan bij opstijgend of doorslaand vocht wordt een lekkage veroorzaakt door een defect: aan een aanvoer-, afvoer- of cv-leiding, of aan kitwerk in de badkamer.<br><br>
         Water zoekt de weg van de minste weerstand door holle ruimten en dekvloeren. Daardoor zit de zichtbare schade vaak op een andere plek dan het lek zelf. <em>Niet-destructief zoeken voorkomt onnodig hak- en breekwerk en beperkt de herstelkosten.</em>`,
-        analysisExtra: `Het schadebeeld en de bevindingen ter plaatse passen eerder bij een lekkage (continu of bij gebruik) dan bij een bouwfysische oorzaak. De exacte plek van het lek kan alleen met gerichte lekdetectie worden vastgesteld. Gerichte, niet-destructieve lekdetectie is nodig om onnodig sloopwerk aan tegels en dekvloeren te voorkomen.`,
+        analysisExtra: `Het schadebeeld en de bevindingen ter plaatse passen eerder bij een lekkage (continu of bij gebruik) dan bij een bouwfysische oorzaak. De exacte plek van het lek kan alleen met gerichte, niet-destructieve lekdetectie worden vastgesteld; zo wordt onnodig sloopwerk aan tegels en dekvloeren voorkomen.`,
         risks: [
           {
             title: "1. Aantasting Vloer en Plafond",
@@ -1172,12 +1177,12 @@
         steps: `<strong>Stap 1: Niet-destructieve lekdetectie</strong><br>
         Inzet van traceergas, akoestische apparatuur en/of leidingcamera om het defect te lokaliseren zonder onnodig breekwerk. Laat de bevindingen vastleggen in een detectierapport.<br><br>
         <strong>Stap 2: Gerichte reparatie door installateur</strong><br>
-        Gericht openen van een zo klein mogelijk deel van vloer of wand boven het lekpunt. Herstel van de leiding (solderen, persen of koppelen) en afsluitend een druktest.<br><br>
+        Gericht openen van een zo klein mogelijk deel van vloer of wand bij het lekpunt en herstel van het defect: bij een leiding solderen, persen of koppelen met afsluitend een druktest; bij een afvoer of kitaansluiting vervangen en waterdicht aansluiten.<br><br>
         <strong>Stap 3: Droging &amp; vochtmeting vóór herafwerking</strong><br>
         Bouwdrogers plaatsen totdat vochtmetingen aantonen dat de constructie voldoende droog is. Pas daarna stuc-, tegel- of vloerwerk herstellen.`,
         costs: [
           { item: "Niet-destructieve lekdetectie met detectierapport", low: 375, high: 550, inTotal: true },
-          { item: "Leidingherstel door installateur (gericht openen & herstel)", low: 250, high: 650, inTotal: true },
+          { item: "Herstel door installateur (gericht openen & herstel leiding of afvoer)", low: 250, high: 650, inTotal: true },
           { item: "Bouwdroging 1-2 weken (huur droger + ventilator)", low: 100, high: 500, inTotal: true },
           { item: "Sanitair kitwerk rondom bad/douche vernieuwen", low: 150, high: 350, note: "indien van toepassing" }
         ],
@@ -1226,7 +1231,7 @@
           },
           {
             name: "Wandverwarming",
-            desc: "Een verwarmingslint achter de plint of in het stucwerk dat de wandtemperatuur boven het dauwpunt houdt.",
+            desc: "Een verwarmingslint achter de plint of in het stucwerk dat de koude plek warm genoeg houdt om schimmelgroei te voorkomen.",
             pros: "✓ Gerichte aanpak bij smalle, moeilijke plekken<br>✕ Continu stroomverbruik<br>✕ Verbetert de luchtkwaliteit niet"
           }
         ],
@@ -1352,7 +1357,7 @@
           "De schimmel komt op meerdere plekken voor en de luchtvochtigheid in de ruimte is structureel te hoog. Betere ventilatie is hier de belangrijkste maatregel; lokale isolatie kan daarna alsnog nodig zijn."
         ],
         [
-          "De koude plek is te smal of te lastig bereikbaar om te isoleren ([bijv. betonlatei boven kozijn]). Wandverwarming houdt de plek boven het dauwpunt, met stroomverbruik als nadeel."
+          "De koude plek is te smal of te lastig bereikbaar om te isoleren ([bijv. betonlatei boven kozijn]). Wandverwarming houdt de plek warm genoeg om schimmelgroei te voorkomen, met stroomverbruik als nadeel."
         ]
       ]
     };
@@ -1815,13 +1820,13 @@
           ]
         },
         2: {
-          solution: `Het warm houden van de koude plek met lokale wandverwarming, zodat het oppervlak boven het dauwpunt blijft. Geschikt voor smalle of lastig bereikbare plekken waar isoleren niet goed mogelijk is.`,
+          solution: `Het warm houden van de koude plek met lokale wandverwarming, zodat het oppervlak niet langdurig vochtig wordt. Alleen boven het dauwpunt blijven is daarvoor niet genoeg: schimmel groeit al bij circa 80% RV aan het oppervlak. Geschikt voor smalle of lastig bereikbare plekken waar isoleren niet goed mogelijk is.`,
           steps: `<strong>Stap 1: Schimmel verwijderen</strong><br>
           Reinig de aangetaste plek met waterstofperoxide (3-5%) of alcohol (70-80%). Verwijder sterk aangetast behang of stucwerk; draag stofmasker (FFP2) en handschoenen.<br><br>
           <strong>Stap 2: Wandverwarming aanbrengen</strong><br>
           Breng een verwarmingslint of -folie aan achter de plint of in het stucwerk langs de koude plek. Laat de aansluiting op een aparte groep met thermostaat uitvoeren door een erkend installateur.<br><br>
           <strong>Stap 3: Afwerken &amp; instellen</strong><br>
-          Werk af met dampopen stuc en silicaatverf. Stel de thermostaat zo in dat het oppervlak boven het dauwpunt blijft, zonder dat het systeem continu op vol vermogen draait.`,
+          Werk af met dampopen stuc en silicaatverf. Stel de thermostaat zo in dat het oppervlak ruim boven het dauwpunt blijft (enkele graden marge), zonder dat het systeem continu op vol vermogen draait.`,
           costs: [
             { item: "Schimmelreiniging en desinfectie (per kamer)", low: 200, high: 450, inTotal: true },
             { item: "Verwarmingslint/-folie incl. thermostaat & aparte groep", low: 400, high: 1000, inTotal: true },
@@ -1908,7 +1913,7 @@
 
     const URGENTIE = {
       hoog: { label: "Hoog", cls: "bg-red-100 text-red-800 border-red-300", tekst: "Binnen enkele weken aanpakken; schade en klachten nemen toe zolang het probleem blijft bestaan." },
-      gemiddeld: { label: "Gemiddeld", cls: "bg-amber-100 text-amber-800 border-amber-300", tekst: "Aanpakken binnen enkele maanden, bij voorkeur vóór de winter." },
+      gemiddeld: { label: "Gemiddeld", cls: "bg-amber-100 text-amber-800 border-amber-300", tekst: "Aanpakken binnen enkele maanden; uitstel vergroot de kans op schade." },
       laag: { label: "Laag", cls: "bg-emerald-100 text-emerald-800 border-emerald-300", tekst: "Meenemen bij gepland onderhoud; geen directe schade te verwachten." }
     };
 
