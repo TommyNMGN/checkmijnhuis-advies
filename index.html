@@ -376,8 +376,8 @@
             <option value="lekkage">6. Lekkages &amp; Lekdetectie</option>
             <option value="schimmel">7. Schimmelontwikkeling boven Maaiveld</option>
           </select></div>
-        <div><label class="kb-lbl">Oorzaak in één zin (leeg = standaardzin van het dossier)</label><input type="text" id="sam_oorzaak" class="kb-inp" oninput="setSamField('oorzaak', this.value)"></div>
-        <div><label class="kb-lbl">Bouwfysische duiding (leeg = standaardtekst van het dossier)</label><textarea id="tx_duiding" rows="4" class="kb-inp" style="resize:vertical" oninput="setDuidingTekst(this.value)"></textarea></div>
+        <div><label class="kb-lbl">Oorzaak in één zin (tik erin om de standaardzin aan te passen)</label><input type="text" id="sam_oorzaak" class="kb-inp" oninput="setSamField('oorzaak', this.value)"></div>
+        <div><label class="kb-lbl">Bouwfysische duiding (tik erin om de standaardtekst aan te passen)</label><textarea id="tx_duiding" rows="4" class="kb-inp" style="resize:vertical" oninput="setDuidingTekst(this.value)"></textarea></div>
       </div>
     </details>
 
@@ -3266,6 +3266,34 @@ ${kopie.outerHTML}
     function setDfCaption(i, v) { if (detailFotos[i]) { detailFotos[i].bijschrift = v; updateLocatieBlokken(); } }
 
     // ---------- koppelingen met de bestaande functies ----------
+    // ---------- standaardtekst bewerkbaar maken ----------
+    // Tik je in een leeg veld, dan komt de standaardtekst erin te staan, zodat je die kunt aanpassen
+    // in plaats van alles opnieuw te typen. Laat je hem ongewijzigd, dan blijft het veld 'standaard'.
+    const STD_VELDEN = ['tx_situatie', 'tx_duiding', 'sam_oorzaak', 'sam_urgTekst', 'sam_tips'];
+    function standaardVan(el) {
+      const ph = (el.placeholder || '').replace(/^Standaardtekst:\s*/, '');
+      return /^Kies eerst/.test(ph) ? '' : ph;
+    }
+    document.addEventListener('focusin', e => {
+      const el = e.target;
+      if (!STD_VELDEN.includes(el.id) || el.value.trim()) return;
+      const std = standaardVan(el);
+      if (!std) return;
+      el.value = std;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      const naarEind = () => { try { el.setSelectionRange(el.value.length, el.value.length); } catch (x) {} if (el.tagName === 'TEXTAREA') el.scrollTop = el.scrollHeight; };
+      naarEind(); setTimeout(naarEind, 0); setTimeout(naarEind, 60);
+    });
+    document.addEventListener('focusout', e => {
+      const el = e.target;
+      if (!STD_VELDEN.includes(el.id)) return;
+      const std = standaardVan(el);
+      if (std && el.value.trim() === std.trim()) {
+        el.value = '';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+
     (function koppel() {
       const _cpo = checkPageOverflow;
       checkPageOverflow = function () { const r = _cpo(); scheduleSave(); return r; };
