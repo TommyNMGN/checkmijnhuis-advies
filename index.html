@@ -388,7 +388,7 @@
         <div><label class="kb-lbl">Aanbevolen optie</label><select id="adv_rec" class="kb-inp" onchange="setAdviesRec(this.value)"></select></div>
         <div><label class="kb-lbl">Sjabloon voor motivatie (daarna aanpassen; tekst tussen [haken] invullen)</label><select id="adv_sjabloon" class="kb-inp" onchange="useSjabloon(this.value)"></select></div>
         <div><label class="kb-lbl">Motivatie (1 à 2 zinnen, specifiek voor deze woning)</label><textarea id="adv_motivatie" rows="3" class="kb-inp" style="resize:vertical" oninput="setAdviesField('motivatie', this.value)" placeholder="Waarom past deze optie bij deze woning?"></textarea></div>
-        <div><label class="kb-lbl">Prijsindicatie aanbevolen optie (optioneel overschrijven)</label><input type="text" id="adv_prijs" class="kb-inp" oninput="setAdviesField('prijs', this.value)"></div>
+        <div><label class="kb-lbl">Prijsindicatie aanbevolen optie (optioneel overschrijven)</label><input type="text" id="adv_prijs" class="kb-inp" oninput="setAdviesField('prijs', this.value)"><p class="text-[12px] text-slate-400 mt-1 leading-snug">Wijkt de hoeveelheid duidelijk af van het uitgangspunt in het grijze voorbeeld? Vul dan zelf in, bijv. <em>€ 4.500,- tot € 7.500,- voor ca. 25 m¹ muur</em>.</p></div>
         <div class="grid grid-cols-2 gap-2">
           <div><label class="kb-lbl">Urgentie</label>
             <select id="sam_urgNiveau" class="kb-inp" onchange="setUrgentie('niveau', this.value)">
@@ -1273,6 +1273,18 @@
       return (t.low || t.high) ? [t.low, t.high] : null;
     }
 
+    // Uitgangspunt (hoeveelheid) waarop de richtprijs per optie is gebaseerd
+    const PRIJS_BASIS = {
+      condensatie: ["2 kamers", "een gemiddelde eengezinswoning", "een gemiddelde eengezinswoning"],
+      opstijgend: ["ca. 16-20 m¹ muur", "ca. 16-20 m¹ muur", "ca. 16-20 m¹ muur"],
+      doorslaand: ["ca. 50 m² gevel", "ca. 50 m² gevel", "ca. 50 m² gevel"],
+      kelderventilatie: ["één kelderruimte", "één kelderruimte", "één kelderruimte"],
+      lateraal: ["ca. 30 m² kelderwand", "ca. 30 m² kelderwand en -vloer", "één keldergevel van gemiddelde lengte"],
+      lekkage: ["één lekpunt", "één douche of bad", "één ruimte"],
+      schimmel: ["één kamer", "één kamer", "één kamer"]
+    };
+    function prijsBasis(key, i) { return ((PRIJS_BASIS[key] || [])[i]) || ""; }
+
     const MOTIVATIE_SJABLONEN = {
       condensatie: [
         [
@@ -1409,7 +1421,7 @@
       if (pr) {
         pr.value = a.prijs || "";
         const p = a.rec === "none" ? null : optionRange(currentTemplateKey, a.rec);
-        pr.placeholder = a.rec === "none" ? "n.v.t. bij geen voorkeur" : (p ? `standaard: ${fmtEuro(p[0])} tot ${fmtEuro(p[1])}` : "bijv. € 2.000,- tot € 3.000,- (anders: volgens offerte)");
+        pr.placeholder = a.rec === "none" ? "n.v.t. bij geen voorkeur" : (p ? `standaard: ${fmtEuro(p[0])} tot ${fmtEuro(p[1])} bij ${prijsBasis(currentTemplateKey, a.rec)}` : "bijv. € 2.000,- tot € 3.000,- (anders: volgens offerte)");
         pr.disabled = a.rec === "none";
       }
     }
@@ -1507,13 +1519,13 @@
         const isRec = a.rec === i;
         return `<tr class="${isRec ? 'bg-indigo-50 font-bold text-indigo-950' : 'text-slate-700'}">
           <td class="p-1.5 w-16 font-black">Optie ${OPTION_LETTERS[i]}</td>
-          <td class="p-1.5">${escHtml(optionName(o))}${isRec ? ' <span class="ml-1 text-[8px] font-black uppercase px-1.5 py-px rounded bg-indigo-600 text-white">Aanbevolen</span>' : ''}</td>
+          <td class="p-1.5">${escHtml(optionName(o))}${prijsBasis(currentTemplateKey, i) && !(isRec && (a.prijs || "").trim()) ? ` <span class="font-normal text-slate-500">(${escHtml(prijsBasis(currentTemplateKey, i))})</span>` : ''}${isRec ? ' <span class="ml-1 text-[8px] font-black uppercase px-1.5 py-px rounded bg-indigo-600 text-white">Aanbevolen</span>' : ''}</td>
           <td class="p-1.5 text-right font-semibold whitespace-nowrap">${optionPriceText(currentTemplateKey, i)}</td>
         </tr>`;
       }).join('');
       const detailNote = a.rec === "none"
         ? 'De detailraming hieronder is uitgewerkt voor optie A en dient als referentie bij het vergelijken van offertes. De raming gaat uit van de aanpak zoals beschreven; vervallen er onderdelen, dan valt het bedrag lager uit.'
-        : `Hieronder de detailraming van de aanbevolen optie ${OPTION_LETTERS[a.rec]}. De raming gaat uit van de aanpak zoals beschreven; vervallen er onderdelen, dan valt het bedrag lager uit.`;
+        : `Hieronder de detailraming van de aanbevolen optie ${OPTION_LETTERS[a.rec]}. De raming gaat uit van de aanpak en de hoeveelheid zoals vermeld; is de werkelijke hoeveelheid groter of kleiner, dan verandert het bedrag naar verhouding.`;
       return `
         <div class="border border-slate-200 rounded-lg overflow-hidden mb-1.5">
           <table class="w-full text-left text-[9.5px]">
@@ -1935,7 +1947,8 @@
       const adviesTxt = a.rec === "none"
         ? "Geen uitgesproken voorkeur; zie de keuzematrix (hoofdstuk 6)."
         : `Optie ${OPTION_LETTERS[a.rec]}: ${escHtml(optionName(data.options[a.rec]))}`;
-      const kostenTxt = a.rec === "none" ? "Zie de kostenraming per optie (hoofdstuk 9)." : `${escHtml(getRecPriceText())} incl. btw (richtprijs; offertes kunnen afwijken)`;
+      const basis = (a.prijs || "").trim() ? "" : prijsBasis(currentTemplateKey, a.rec);
+      const kostenTxt = a.rec === "none" ? "Zie de kostenraming per optie (hoofdstuk 9)." : `${escHtml(getRecPriceText())} incl. btw${basis ? `, uitgaande van ${escHtml(basis)}` : ""} (richtprijs; de werkelijke hoeveelheid en offertes bepalen de prijs)`;
       const u = URGENTIE[urgentie.niveau];
       const urgTxt = u
         ? `<span class="inline-block px-1.5 py-px rounded border ${u.cls} font-black text-[8.5px] uppercase tracking-wide mr-1">${u.label}</span>${escHtml((urgentie.tekst || "").trim() || u.tekst)}`
