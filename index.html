@@ -368,13 +368,13 @@
       <div class="stap-body space-y-2.5">
         <div><label class="kb-lbl">Wat heb je bij deze woning gezien? (ruimten, schadebeeld)</label><textarea id="tx_situatie" rows="4" class="kb-inp" style="resize:vertical" oninput="setSituatieTekst(this.value)"></textarea></div>
         <div><label class="kb-lbl">Type advies (bronoorzaak)</label><select id="templateSelector" onchange="switchTemplate(this.value)" class="kb-inp">
-            <option value="condensatie">1. Condensatie &amp; Ventilatiedeficiëntie</option>
-            <option value="opstijgend">2. Opstijgend Vocht &amp; Muurbarrières</option>
-            <option value="doorslaand">3. Doorslaand Vocht &amp; Gevelrenovatie</option>
-            <option value="kelderventilatie">4. Kelderventilatie &amp; Dauwpuntsturing</option>
-            <option value="lateraal">5. Lateraal Vocht in Kelderwanden (Bekuiping)</option>
-            <option value="lekkage">6. Lekkage &amp; Lekdetectie</option>
-            <option value="schimmel">7. Schimmel &amp; Koudebruggen</option>
+            <option value="condensatie">1. Condensatie door onvoldoende ventilatie</option>
+            <option value="opstijgend">2. Opstijgend vocht uit de grond</option>
+            <option value="doorslaand">3. Doorslaand vocht via de gevel</option>
+            <option value="kelderventilatie">4. Vochtige kelder door condensatie</option>
+            <option value="lateraal">5. Vocht door kelderwanden van buitenaf</option>
+            <option value="lekkage">6. Lekkage &amp; lekdetectie</option>
+            <option value="schimmel">7. Schimmel op koude plekken</option>
           </select></div>
         <div><label class="kb-lbl">Oorzaak in één zin (tik erin om de standaardzin aan te passen)</label><input type="text" id="sam_oorzaak" class="kb-inp" oninput="setSamField('oorzaak', this.value)"></div>
         <div><label class="kb-lbl">Bouwfysische duiding (tik erin om de standaardtekst aan te passen)</label><textarea id="tx_duiding" rows="4" class="kb-inp" style="resize:vertical" oninput="setDuidingTekst(this.value)"></textarea></div>
@@ -829,7 +829,7 @@
     // het totaal wordt automatisch berekend, zodat het altijd klopt met de regels erboven.
     const DOSSIERS = {
       condensatie: {
-        title: "Condensatie & Ventilatiedeficiëntie Binnenklimaat",
+        title: "Condensatie door Onvoldoende Ventilatie",
         sub: "Onafhankelijk Bouwfysisch Advies & Technisch Plan van Aanpak voor effectieve luchtverversing en vochtbeheersing",
         icon: "wind",
         framework: "Bbl (luchtverversing) • NEN 8087",
@@ -890,7 +890,7 @@
       },
 
       opstijgend: {
-        title: "Opstijgend Vocht & Horizontale Muurbarrières",
+        title: "Opstijgend Vocht uit de Grond",
         sub: "Onafhankelijk Bouwfysisch Advies & Technisch Plan van Aanpak voor chemische muurinjectie en zoutbestendig muurherstel",
         icon: "arrow-up-circle",
         framework: "WTA 4-10 (injectie) • WTA 2-9 (saneerpleister)",
@@ -951,7 +951,7 @@
       },
 
       doorslaand: {
-        title: "Doorslaand Vocht & Gevelrenovatie",
+        title: "Doorslaand Vocht via de Gevel",
         sub: "Onafhankelijk Bouwfysisch Advies & Technisch Plan van Aanpak voor gevelherstel & dampopen hydrofobering",
         icon: "cloud-rain",
         framework: "Bouwfysische praktijk • productbladen",
@@ -1012,7 +1012,7 @@
       },
 
       kelderventilatie: {
-        title: "Kelderventilatie & Dauwpuntsturing",
+        title: "Vochtige Kelder door Condensatie",
         sub: "Onafhankelijk Bouwfysisch Advies & Technisch Plan van Aanpak voor het beheersen van zomercondensatie in ondergrondse ruimten",
         icon: "thermometer-snowflake",
         framework: "Bouwfysische praktijk • dauwpuntventilatie",
@@ -1073,7 +1073,7 @@
       },
 
       lateraal: {
-        title: "Lateraal Vocht in Kelderwanden (Binnenbekuiping)",
+        title: "Vocht door de Kelderwanden van Buitenaf",
         sub: "Onafhankelijk Bouwfysisch Advies & Technisch Plan van Aanpak voor waterdichte kelderafdichting & kimnaadherstel",
         icon: "shield-alert",
         framework: "WTA 4-6 (afdichten kelderwanden)",
@@ -1195,7 +1195,7 @@
       },
 
       schimmel: {
-        title: "Schimmel & Koudebruggen",
+        title: "Schimmel op Koude Plekken",
         sub: "Onafhankelijk Bouwfysisch Advies & Technisch Plan van Aanpak voor koudebrugsanering & schimmelbeheersing",
         icon: "biohazard",
         framework: "Bouwfysische praktijk • koudebruggen",
