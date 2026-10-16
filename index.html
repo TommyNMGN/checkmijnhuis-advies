@@ -373,8 +373,8 @@
             <option value="doorslaand">3. Doorslaand Vocht &amp; Gevelrenovatie</option>
             <option value="kelderventilatie">4. Kelderventilatie &amp; Dauwpuntsturing</option>
             <option value="lateraal">5. Lateraal Vocht in Kelderwanden (Bekuiping)</option>
-            <option value="lekkage">6. Lekkages &amp; Lekdetectie</option>
-            <option value="schimmel">7. Schimmelontwikkeling boven Maaiveld</option>
+            <option value="lekkage">6. Lekkage &amp; Lekdetectie</option>
+            <option value="schimmel">7. Schimmel &amp; Koudebruggen</option>
           </select></div>
         <div><label class="kb-lbl">Oorzaak in één zin (tik erin om de standaardzin aan te passen)</label><input type="text" id="sam_oorzaak" class="kb-inp" oninput="setSamField('oorzaak', this.value)"></div>
         <div><label class="kb-lbl">Bouwfysische duiding (tik erin om de standaardtekst aan te passen)</label><textarea id="tx_duiding" rows="4" class="kb-inp" style="resize:vertical" oninput="setDuidingTekst(this.value)"></textarea></div>
@@ -724,7 +724,7 @@
       if ((detailFotos || []).some(f => f && f.data && !(f.bijschrift || '').trim())) w.push("Een <strong>detailfoto</strong> heeft nog geen bijschrift.");
       if (!(detailFotos || []).some(f => f && f.data)) w.push("INFO|Tip: met 2 tot 4 <strong>detailfoto's</strong> (bijvoorbeeld vochtplek, meter op de muur) ziet de klant direct dat het advies over zijn woning gaat.");
       if (!urgentie.niveau) w.push("Kies de <strong>urgentie</strong> voor de samenvatting op pagina 1.");
-      if (!(getSam(key).oorzaak || "").trim()) w.push("De <strong>oorzaak</strong> op pagina 1 is nog de standaardzin van het dossier. Klopt die voor deze woning? Pas hem anders aan in het paneel 'Samenvatting, foto &amp; tips'.");
+      if (!(getSam(key).oorzaak || "").trim()) w.push("De <strong>oorzaak</strong> op pagina 1 is nog de standaardzin van het dossier. Klopt die voor deze woning? Pas hem anders aan bij 'Oorzaak in één zin'.");
       const geenSchade = (waarnemingen.lijst || []).includes(GEEN_SCHADE) || (sit && /\bgeen\b[^.]*\b(schimmel|condens|schade|vochtplek)/i.test(sit));
       if (!duid && geenSchade && ['condensatie', 'schimmel', 'opstijgend', 'doorslaand'].includes(key)) {
         w.push("In de situatie staat dat er <strong>geen schade</strong> is waargenomen, terwijl de standaardduiding uitgaat van een schadebeeld. Pas de <strong>duiding</strong> aan (bijvoorbeeld: preventief advies).");
@@ -851,7 +851,7 @@
             desc: "Aanhoudende condensatie leidt op termijn tot rotting van houten kozijnen, roestvorming op stalen lateien en loslatend stucwerk en behang op koude zones."
           }
         ],
-        solution: `Het herstellen van de vochtbalans door een continue, mechanisch ondersteunde basisventilatie met warmteterugwinning (WTW). Dit zorgt voor een permanente afvoer van vocht en CO2 zonder hinderlijke tocht, koudeval of onnodig warmteverlies.`,
+        solution: `Het herstellen van de vochtbalans door een continue, mechanisch ondersteunde basisventilatie met warmteterugwinning (WTW). Dit zorgt voor een permanente afvoer van vocht en CO₂ zonder hinderlijke tocht, koudeval of onnodig warmteverlies.`,
         options: [
           {
             name: "Optie A: Decentrale Balans-WTW",
@@ -860,7 +860,7 @@
           },
           {
             name: "Systeem C Vraaggestuurde Afzuiging",
-            desc: "Centrale gelijkstroom afzuigbox met vraagsturing op RV/CO2 in de natte ruimten, gecombineerd met zelfregelende toevoerroosters in de kozijnen.",
+            desc: "Centrale afzuigbox met gelijkstroommotor (EC) en vraagsturing op RV/CO₂ in de natte ruimten, gecombineerd met zelfregelende toevoerroosters in de kozijnen.",
             pros: "✓ Goedkoper in aanschaf<br>✕ Kans op tocht en geluidsinval via open gevelroosters<br>✕ Geen warmteterugwinning (hoger warmteverlies)"
           },
           {
@@ -933,7 +933,7 @@
         steps: `<strong>Stap 1: Verwijderen van zoutbelast stucwerk</strong><br>
         Mechanisch afkappen van pleister- en verflagen tot op het metselwerk, tot <strong>minimaal 50 cm (bij voorkeur 80 cm) boven de hoogste zichtbare schade- of zoutgrens</strong>. Afval direct afvoeren.<br><br>
         <strong>Stap 2: Realisatie injectiebarrière</strong><br>
-        Boorgaten (Ø 12 mm, of volgens productblad) in de laagst bereikbare lintvoeg, afgestemd op vloerpeil binnen en maaiveld buiten; hart-op-hart circa 10 tot 12 cm. Boordiepte: muurdikte minus 2-3 cm (uitvoerder controleert vooraf leidingtracés). Vullen met gecertificeerde injectiecrème en dichtzetten met krimpvrije mortel.<br><br>
+        Boorgaten (Ø 12 mm, of volgens productblad) in de laagst bereikbare lintvoeg, afgestemd op vloerpeil binnen en maaiveld buiten; hart-op-hart circa 10 tot 12 cm. Boordiepte volgens productblad, doorgaans tot enkele centimeters vóór de achterzijde van de muur (uitvoerder controleert vooraf leidingtracés). Vullen met gecertificeerde injectiecrème en dichtzetten met krimpvrije mortel.<br><br>
         <strong>Stap 3: Droogtijd &amp; zoutbestendige herafwerking</strong><br>
         Afwerken met een saneerpleistersysteem conform WTA 2-9 of een zoutblokkerend membraan. Houd rekening met een lange uitdroogtijd van de muur (vuistregel circa 1 maand per 2,5 cm muurdikte). <em>Standaard gipspleister is niet geschikt om direct op de behandelde muur aan te brengen, omdat achtergebleven zouten opnieuw schade veroorzaken.</em>`,
         costs: [
@@ -1017,7 +1017,7 @@
         icon: "thermometer-snowflake",
         framework: "Bouwfysische praktijk • dauwpuntventilatie",
         defaultSituation: "Geconstateerd in het souterrain of de kelderruimte. Schadebeeld: klamme vloeren, muffe geur, druppelvorming op koude wanden en schimmel op opgeslagen spullen, vooral in de warme zomermaanden.",
-        problem: `Warme zomerlucht bevat veel waterdamp: lucht van 25°C en 70% RV bevat circa 16 gram water per m³. Stroomt die lucht een koele kelder binnen, met wandtemperaturen van 12-15°C, dan koelt hij snel af tegen de koude muren.<br><br>
+        problem: `Warme zomerlucht bevat veel waterdamp: lucht van 25 °C en 70% RV bevat circa 16 gram water per m³. Stroomt die lucht een koele kelder binnen, met wandtemperaturen van 12-15 °C, dan koelt hij snel af tegen de koude muren.<br><br>
         Koude lucht kan veel minder waterdamp vasthouden, waardoor de luchtvochtigheid oploopt tot verzadiging en het vocht condenseert op vloeren en muren. <em>Overdag luchten in de zomer verergert het probleem daardoor juist: elke dag komt er extra vocht de kelder in.</em>`,
         analysisExtra: `Het schadebeeld past bij zomercondensatie: de kelderwanden zijn in de warme maanden kouder dan het dauwpunt van de binnenstromende buitenlucht. Dit verschijnsel is seizoensgebonden en bij een meting buiten de zomer niet altijd waarneembaar. Zonder sturing op dauwpunt voert elke ventilatieopening dan juist vocht aan in plaats van af.`,
         risks: [
@@ -1043,7 +1043,7 @@
           },
           {
             name: "Vaste Bouwdroger",
-            desc: "Plaatsing van een vaste condensatiedroger met permanente afvoer naar het riool.",
+            desc: "Plaatsing van een vaste condensdroger met permanente afvoer naar het riool.",
             pros: "✓ Snelle daling van de luchtvochtigheid<br>✕ Hoger stroomverbruik bij continu gebruik<br>✕ Ververst de lucht niet"
           },
           {
@@ -1116,7 +1116,7 @@
         steps: `<strong>Stap 1: Afkappen en ondergrond voorbereiden</strong><br>
         Verwijder alle oude pleisterlagen, verf en teerlagen tot op gezond metselwerk. Reinig de ondergrond (stralen of staalborstelen) voor een open, draagkrachtig oppervlak.<br><br>
         <strong>Stap 2: Kimnaad uitfrezen &amp; afdichten</strong><br>
-        Frees de kimnaad over de volle lengte uit tot een groef van circa 3 x 3 cm. Vul deze met een krimpvrije, snelhardende afdichtingsmortel en werk af met een holle hoek (hol-kim).<br><br>
+        Frees de kimnaad over de volle lengte uit tot een groef van circa 3 x 3 cm. Vul deze met een krimpvrije, snelhardende afdichtingsmortel en werk af met een holkeel (afgeronde hoek).<br><br>
         <strong>Stap 3: Meerlaagse minerale afdichting aanbrengen</strong><br>
         Breng minimaal 2 tot 3 lagen minerale afdichtingsmortel kruislings aan, in de laagdikte die het productblad voorschrijft. Laat de afdichting doorlopen tot circa 20 cm boven het hoogste grondwater- of maaiveldniveau.`,
         costs: [
@@ -1195,7 +1195,7 @@
       },
 
       schimmel: {
-        title: "Schimmelontwikkeling boven Maaiveld",
+        title: "Schimmel & Koudebruggen",
         sub: "Onafhankelijk Bouwfysisch Advies & Technisch Plan van Aanpak voor koudebrugsanering & schimmelbeheersing",
         icon: "biohazard",
         framework: "Bouwfysische praktijk • koudebruggen",
@@ -1227,7 +1227,7 @@
           {
             name: "Decentrale Balans-WTW",
             desc: "Plaatsing van een vochtgestuurde decentrale ventilatie-unit die de luchtvochtigheid in de ruimte rond of onder 55% RV houdt.",
-            pros: "✓ Verlaagt de luchtvochtigheid continu<br>✓ Voert vocht en CO2 af naar buiten<br>✕ Neemt de koudebrug zelf niet weg"
+            pros: "✓ Verlaagt de luchtvochtigheid continu<br>✓ Voert vocht en CO₂ af naar buiten<br>✕ Neemt de koudebrug zelf niet weg"
           },
           {
             name: "Wandverwarming",
@@ -1556,23 +1556,23 @@
     const OPTIE_UITWERKING = {
       condensatie: {
         1: {
-          solution: `Het herstellen van de vochtbalans door continue, vraaggestuurde mechanische afzuiging in de natte ruimten (keuken, badkamer, toilet), met gecontroleerde luchttoevoer via zelfregelende roosters in de verblijfsruimten. De afzuiging schakelt automatisch op bij een verhoogde luchtvochtigheid of CO2.`,
+          solution: `Het herstellen van de vochtbalans door continue, vraaggestuurde mechanische afzuiging in de natte ruimten (keuken, badkamer, toilet), met gecontroleerde luchttoevoer via zelfregelende roosters in de verblijfsruimten. De afzuiging schakelt automatisch op bij een verhoogde luchtvochtigheid of CO₂.`,
           steps: `<strong>Stap 1: Luchttoevoer in de verblijfsruimten</strong><br>
           Plaats zelfregelende ventilatieroosters in de kozijnen of het glas van de woonkamer en de slaapkamers. Stem de capaciteit af op de grootte van de ruimte (eisen Bbl). Zelfregelende roosters knijpen bij harde wind automatisch af en beperken zo tocht. De roosters blijven permanent open.<br><br>
           <strong>Stap 2: Vraaggestuurde afzuigunit</strong><br>
-          Plaats een energiezuinige gelijkstroom (EC) afzuigbox met afzuigpunten in keuken, badkamer en toilet. Bestaande kanalen controleren, reinigen en waar nodig vervangen. Vraagsturing op luchtvochtigheid (RV) en/of CO2, zodat de box automatisch opschakelt bij koken, douchen en 's nachts.<br><br>
+          Plaats een energiezuinige afzuigbox met gelijkstroommotor (EC) en afzuigpunten in keuken, badkamer en toilet. Bestaande kanalen controleren, reinigen en waar nodig vervangen. Vraagsturing op luchtvochtigheid (RV) en/of CO₂, zodat de box automatisch opschakelt bij koken, douchen en 's nachts.<br><br>
           <strong>Stap 3: Overstroom, inregelen &amp; opleveringsmeting</strong><br>
           Zorg voor een <strong>vrije spleet van circa 1,5 tot 2 cm</strong> onder de binnendeuren. Regel de afzuigventielen in, meet de volumestromen (in dm³/s) en overhandig het inregelrapport aan de opdrachtgever.`,
           costs: [
             { item: "Zelfregelende toevoerroosters in de verblijfsruimten (incl. montage)", low: 500, high: 900, inTotal: true },
-            { item: "Vraaggestuurde EC-afzuigbox met RV/CO2-sturing", low: 800, high: 1200, inTotal: true },
+            { item: "Vraaggestuurde EC-afzuigbox met RV/CO₂-sturing", low: 800, high: 1200, inTotal: true },
             { item: "Aansluiten op kanalen, ventielen plaatsen & inregelen", low: 500, high: 700, inTotal: true }
           ],
           totalLabel: "Totaal Optie B (vraaggestuurde afzuiging)",
           checks: [
             { title: "1. Inregelrapport Verifiëren", desc: "Vraag om een meetrapport van de afgezogen volumestromen (in dm³/s) per afzuigpunt, zodat de capaciteit aantoonbaar toereikend is." },
             { title: "2. Toevoer in Elke Verblijfsruimte", desc: "Controleer dat de woonkamer en elke slaapkamer een zelfregelend toevoerrooster krijgt; zonder toevoer kan de afzuiging niet goed werken." },
-            { title: "3. Vraagsturing Controleren", desc: "Controleer dat de box automatisch opschakelt op vocht en/of CO2 en dat de laagste stand stil genoeg is voor continu gebruik." }
+            { title: "3. Vraagsturing Controleren", desc: "Controleer dat de box automatisch opschakelt op vocht en/of CO₂ en dat de laagste stand stil genoeg is voor continu gebruik." }
           ]
         },
         2: {
@@ -2392,7 +2392,7 @@
                       Advies &amp; Plan van Aanpak
                     </span>
                   </div>
-                  <p class="text-[10px] text-slate-500 font-medium">Onafhankelijk Vocht-, Binnenklimaat- en Schade Adviesbureau</p>
+                  <p class="text-[10px] text-slate-500 font-medium">Onafhankelijk Vocht-, Binnenklimaat- en Schadeadviesbureau</p>
                 </div>
               </div>
 
