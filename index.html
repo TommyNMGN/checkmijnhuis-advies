@@ -501,7 +501,7 @@
       { key: "rcm",   naam: "PCE-RCM 16",          functie: "temperatuur, RV en CO₂" },
       { key: "vm128", naam: "Metofix VM128 bolmeter", functie: "indicatieve dieptemeting materiaalvocht" },
       { key: "romus", naam: "Romus Mini pinmeter",  functie: "oppervlakkig materiaalvocht, relatief" },
-      { key: "testo", naam: "Testo 835-H1",        functie: "oppervlaktetemperatuur (opsporen koude plekken)" },
+      { key: "testo", naam: "Testo 835-H1",        functie: "oppervlaktetemperatuur, opsporen koude plekken" },
       { key: "cam",   naam: "HIKMICRO B01S",       functie: "thermografie, ter ondersteuning" }
     ];
 
@@ -662,6 +662,17 @@
     const FIT = { maxScale: 1.22, minScale: 0.86, step: 0.02, pageBoost: 0.06, baseGap: 14, maxGap: 40 };
 
     function pageOverflows(p) { return p.scrollHeight > p.clientHeight + 1; }
+    // bij het passend maken een kleine marge aanhouden, zodat print/PDF nooit net iets afsnijdt
+    function fitOverflows(p) {
+      if (pageOverflows(p)) return true;
+      const body = p.querySelector('.page-body'), footer = p.lastElementChild;
+      if (!body || !footer) return false;
+      const kids = Array.from(body.children).filter(k => k.offsetHeight > 0);
+      if (!kids.length) return false;
+      const f = p.getBoundingClientRect().height / p.offsetHeight || 1;
+      const ruimte = (footer.getBoundingClientRect().top - kids[kids.length - 1].getBoundingClientRect().bottom) / f;
+      return ruimte < 6;
+    }
 
     function fitPages() {
       const pages = Array.from(document.querySelectorAll('.a4-page'));
@@ -671,7 +682,7 @@
       let scale = FIT.minScale;
       for (let sc = FIT.maxScale; sc >= FIT.minScale - 0.001; sc = Math.round((sc - FIT.step) * 100) / 100) {
         pages.forEach(p => p.style.setProperty('--s', sc));
-        if (!pages.some(pageOverflows)) { scale = sc; break; }
+        if (!pages.some(fitOverflows)) { scale = sc; break; }
       }
       pages.forEach(p => p.style.setProperty('--s', scale));
 
@@ -680,7 +691,7 @@
         let best = scale;
         for (let sc = Math.round((scale + FIT.step) * 100) / 100; sc <= Math.min(FIT.maxScale + FIT.pageBoost, scale + FIT.pageBoost) + 0.001; sc = Math.round((sc + FIT.step) * 100) / 100) {
           p.style.setProperty('--s', sc);
-          if (pageOverflows(p)) break;
+          if (fitOverflows(p)) break;
           best = sc;
         }
         p.style.setProperty('--s', best);
@@ -689,7 +700,7 @@
       pages.forEach(p => {
         const body = p.querySelector('.page-body');
         const kids = Array.from(body.children).filter(k => k.offsetHeight > 0);
-        if (kids.length < 2 || pageOverflows(p)) return;
+        if (kids.length < 2 || fitOverflows(p)) return;
         const footer = p.lastElementChild;
         const f = p.getBoundingClientRect().height / p.offsetHeight || 1;
         const used = (kids[kids.length - 1].getBoundingClientRect().bottom - body.getBoundingClientRect().top) / f;
@@ -724,6 +735,8 @@
       if ((detailFotos || []).some(f => f && f.data && !(f.bijschrift || '').trim())) w.push("Een <strong>detailfoto</strong> heeft nog geen bijschrift.");
       if (!(detailFotos || []).some(f => f && f.data)) w.push("INFO|Tip: met 2 tot 4 <strong>detailfoto's</strong> (bijvoorbeeld vochtplek, meter op de muur) ziet de klant direct dat het advies over zijn woning gaat.");
       if (!urgentie.niveau) w.push("Kies de <strong>urgentie</strong> voor de samenvatting op pagina 1.");
+      if (kb.show && getMeetpunten().filter(p => p.niveau).length < 3) w.push("Er zijn minder dan 3 <strong>meetpunten</strong> ingevuld. Meet bij voorkeur op 3 à 4 plekken, waaronder één droge referentie; dat maakt het rapport sterker.");
+      if (!(getSam(key).tips || "").trim()) w.push("INFO|De tips bij 'Wat u zelf kunt doen' zijn nog de standaardtips. Heb je ter plaatse eigen tips gegeven, zet die er dan in.");
       if (!(getSam(key).oorzaak || "").trim()) w.push("De <strong>oorzaak</strong> op pagina 1 is nog de standaardzin van het dossier. Klopt die voor deze woning? Pas hem anders aan bij 'Oorzaak in één zin'.");
       const geenSchade = (waarnemingen.lijst || []).includes(GEEN_SCHADE) || (sit && /\bgeen\b[^.]*\b(schimmel|condens|schade|vochtplek)/i.test(sit));
       if (!duid && geenSchade && ['condensatie', 'schimmel', 'opstijgend', 'doorslaand'].includes(key)) {
@@ -1275,7 +1288,7 @@
 
     // Uitgangspunt (hoeveelheid) waarop de richtprijs per optie is gebaseerd
     const PRIJS_BASIS = {
-      condensatie: ["2 kamers", "een gemiddelde eengezinswoning", "een gemiddelde eengezinswoning"],
+      condensatie: ["2 kamers", "een gemiddelde woning", "een gemiddelde woning"],
       opstijgend: ["ca. 16-20 m¹ muur", "ca. 16-20 m¹ muur", "ca. 16-20 m¹ muur"],
       doorslaand: ["ca. 50 m² gevel", "ca. 50 m² gevel", "ca. 50 m² gevel"],
       kelderventilatie: ["één kelderruimte", "één kelderruimte", "één kelderruimte"],
@@ -1500,8 +1513,17 @@
             <i data-lucide="badge-check" class="w-4 h-4 text-indigo-600 shrink-0"></i>${head}
           </p>
           <p class="text-[10px] text-slate-800 leading-snug">${motHtml}</p>
+          ${getVveHtml()}
           <p class="text-[8.5px] text-slate-500 leading-snug italic">Hierboven staan de alternatieven met hun voor- en nadelen. De uiteindelijke keuze voor een oplossing en uitvoerder ligt bij u als opdrachtgever.</p>
         </div>`;
+    }
+
+    // Bij appartementen en boven-/benedenwoningen: gevel en installaties zijn vaak van de VvE
+    const VVE_TYPES = ['Appartement', 'Bovenwoning', 'Benedenwoning'];
+    function getVveHtml() {
+      const t = (typeof obj !== 'undefined' && obj && obj.type) || "";
+      if (!VVE_TYPES.includes(t)) return "";
+      return `<p class="text-[9.5px] text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 leading-snug"><strong>Let op bij een ${t.toLowerCase()}:</strong> de gevel, buitenmuren en gemeenschappelijke installaties zijn meestal eigendom van de VvE. Overleg vóór de uitvoering met de VvE; voor ingrepen zoals boringen in de gevel is meestal toestemming nodig.</p>`;
     }
 
     // Toelichting bij de kostenraming als de aanbevolen optie niet optie A is
@@ -2753,7 +2775,7 @@
                 <ul class="space-y-1">
                   <li class="flex gap-1.5"><span class="text-emerald-600 font-black">✓</span><span>Een onafhankelijke beoordeling van de waarschijnlijke oorzaak, op basis van wat tijdens het bezoek zichtbaar en meetbaar was.</span></li>
                   <li class="flex gap-1.5"><span class="text-emerald-600 font-black">✓</span><span>Een advies voor de aanpak in hoofdlijnen, een werkvoorschrift als uitgangspunt voor de uitvoerder en een kostenindicatie om offertes mee te vergelijken.</span></li>
-                  <li class="flex gap-1.5"><span class="text-emerald-600 font-black">✓</span><span>Het tarief is een vast bedrag voor het hele traject: voorbereiding, onderzoek ter plaatse, meetapparatuur, reistijd en de uitwerking van dit advies.</span></li>
+                  <li class="flex gap-1.5"><span class="text-emerald-600 font-black">✓</span><span>Het tarief is het vooraf afgesproken vaste bedrag voor het hele traject: voorbereiding, reistijd en reiskosten, onderzoek ter plaatse, meetapparatuur en de uitwerking van dit advies.</span></li>
                 </ul>
                 <ul class="space-y-1">
                   <li class="flex gap-1.5"><span class="text-slate-400 font-black">✕</span><span>Geen bouwkundige keuring van de hele woning en geen destructief onderzoek (zoals openbreken of boren).</span></li>
@@ -3186,7 +3208,7 @@ ${kopie.outerHTML}
       sv('obs_overig', waarnemingen.overig);
       renderObsChips(); renderMpEditor(); renderDfEditor(); updateDpLive();
     }
-    function setObj(f, v) { obj[f] = v; updateLocatieBlokken(); }
+    function setObj(f, v) { obj[f] = v; updateLocatieBlokken(); updateAdviesBox(); }
 
     function renderObsChips() {
       const box = document.getElementById('obs_chips');
