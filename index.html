@@ -2452,7 +2452,7 @@
 
             <!-- GEVELFOTO & OBJECTGEGEVENS -->
             <div class="mt-2.5 ${foto ? 'grid grid-cols-[38%_1fr] gap-3' : ''} text-xs">
-              ${foto ? `<div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 min-h-[150px]" style="position:relative"><img src="${foto}" alt="Gevel van het object" style="position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;object-position:50% 40%;display:block"></div>` : ''}
+              ${foto ? `<div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 min-h-[150px]" style="position:relative"><img src="${foto}" alt="Gevel van het object" style="position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:contain;object-position:50% 50%;display:block"></div>` : ''}
               <div class="grid ${foto ? 'grid-cols-1' : 'grid-cols-2'} gap-2">
                 <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 space-y-0.5">
                   <span class="block text-[9px] font-bold text-slate-400 uppercase">Opdrachtgever &amp; Object:</span>
