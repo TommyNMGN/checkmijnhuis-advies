@@ -674,7 +674,20 @@
       return ruimte < 6;
     }
 
+    // Foto's zo groot mogelijk (hele foto zichtbaar); alleen kleiner als de tekst anders te klein zou worden
+    const FOTO_HOOGTES = [250, 225, 200, 175, 150];
     function fitPages() {
+      const pages = Array.from(document.querySelectorAll('.a4-page'));
+      if (!pages.length) return;
+      let sc = FIT.minScale;
+      for (const fh of FOTO_HOOGTES) {
+        pages.forEach(p => p.style.setProperty('--fh', fh + 'px'));
+        sc = fitPagesBij();
+        if (sc >= 1.0) break;
+      }
+      return sc;
+    }
+    function fitPagesBij() {
       const pages = Array.from(document.querySelectorAll('.a4-page'));
       if (!pages.length) return;
       pages.forEach(p => { p.style.setProperty('--g', FIT.baseGap + 'px'); });
@@ -2142,7 +2155,7 @@
       const rows = mp.map((p, i) => `<tr class="border-t border-slate-100">
           <td class="px-2 py-1 text-slate-500 w-5">${i + 1}</td>
           <td class="px-2 py-1 text-slate-800">${escHtml(p.loc) || '<span class="text-slate-400">—</span>'}</td>
-          <td class="px-2 py-1 text-slate-700 whitespace-nowrap">${(p.h || "").trim() ? escHtml(p.h) + ' cm' : '—'}</td>
+          <td class="px-2 py-1 text-slate-700 whitespace-nowrap">${(p.h || "").replace(/\s*cm\s*$/i, '').trim() ? escHtml(p.h.replace(/\s*cm\s*$/i, '').trim()) + ' cm' : '—'}</td>
           <td class="px-2 py-1">${kbBadge(p.niveau)}</td>
         </tr>`).join('');
       return `<div class="border-t border-slate-200 bg-white">
@@ -2163,7 +2176,7 @@
       if (!f.length) return "";
       return `<div class="grid grid-cols-2 gap-2">
         ${f.map((x, i) => `<figure class="rounded-xl border border-slate-200 overflow-hidden bg-white">
-          <img src="${x.data}" alt="" class="w-full h-[185px] object-cover block">
+          <img src="${x.data}" alt="" class="w-full block" style="height:var(--fh, 200px);object-fit:contain;background:#f1f5f9">
           <figcaption class="px-2 py-1 text-[9px] text-slate-700 leading-snug"><strong>Foto ${i + 1}:</strong> ${escHtml(x.bijschrift || '') || '<span class="ph-hint text-amber-600 italic">[bijschrift]</span>'}</figcaption>
         </figure>`).join('')}
       </div>`;
