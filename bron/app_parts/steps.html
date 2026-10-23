@@ -1,0 +1,144 @@
+  <section id="view-invullen" class="no-print app-view max-w-3xl mx-auto px-3 py-3 space-y-3">
+
+    <!-- STAP 1 -->
+    <details class="stap" open>
+      <summary><span class="stap-nr">1</span><span class="stap-titel">Bij aankomst</span><span class="stap-sub">klant &amp; woning</span></summary>
+      <div class="stap-body grid grid-cols-1 md:grid-cols-2 gap-2.5">
+        <p class="md:col-span-2 text-[12px] text-slate-400">Naam en adres kun je ook later thuis invullen. Alles wat je invult wordt direct bewaard.</p>
+        <div><label class="kb-lbl">Opdrachtgever / naam</label><input type="text" id="topClientName" class="kb-inp" oninput="syncClientName(this.value)" placeholder="bijv. Familie De Graaf"></div>
+        <div><label class="kb-lbl">Adres (straat, huisnummer, plaats)</label><input type="text" id="topClientAddress" class="kb-inp" oninput="syncClientAddress(this.value)" placeholder="bijv. Kerkstraat 12, Den Bosch" autocomplete="street-address"></div>
+        <div><label class="kb-lbl">Datum &amp; adviseur</label><input type="text" id="topInspectDate" class="kb-inp" oninput="syncInspectDate(this.value)"></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="kb-lbl">Type woning</label><select id="obj_type" class="kb-inp" onchange="setObj('type', this.value)"></select></div>
+          <div><label class="kb-lbl">Bouwjaar</label><input type="text" inputmode="numeric" id="obj_bouwjaar" class="kb-inp" placeholder="bijv. 1965" oninput="setObj('bouwjaar', this.value)"></div>
+        </div>
+        <div class="md:col-span-2"><label class="kb-lbl">Aanwezig tijdens de inspectie</label><input type="text" id="obj_aanwezig" class="kb-inp" placeholder="bijv. dhr. en mevr. De Graaf" oninput="setObj('aanwezig', this.value)"></div>
+        <div class="md:col-span-2"><label class="kb-lbl">Aanleiding, zoals de bewoner het vertelt</label><textarea id="obj_aanleiding" rows="2" class="kb-inp" style="resize:vertical" placeholder="bijv. Sinds de winter schimmel achter de kast in de slaapkamer en beslagen ramen." oninput="setObj('aanleiding', this.value)"></textarea></div>
+      </div>
+    </details>
+
+    <!-- STAP 2 -->
+    <details class="stap" open>
+      <summary><span class="stap-nr">2</span><span class="stap-titel">Buiten</span><span class="stap-sub">gevelfoto &amp; buitenklimaat</span></summary>
+      <div class="stap-body space-y-2.5">
+        <div class="flex items-center gap-3 flex-wrap">
+          <div id="foto_preview"></div>
+          <label class="foto-btn"><i data-lucide="camera" class="w-4 h-4"></i>Camera<input type="file" accept="image/*" capture="environment" class="hidden" onchange="loadFoto(this)"></label>
+          <label class="foto-btn"><i data-lucide="upload" class="w-4 h-4"></i>Bibliotheek<input type="file" accept="image/*" class="hidden" onchange="loadFoto(this)"></label>
+          <button id="foto_remove" type="button" onclick="removeFoto()" class="hidden text-[13px] text-red-300 underline">Verwijderen</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="kb-lbl">Buiten °C</label><input type="text" inputmode="decimal" id="kb_buitenT" class="kb-inp" placeholder="12" oninput="setKB('buitenT', this.value)"></div>
+          <div><label class="kb-lbl">Buiten RV %</label><input type="text" inputmode="decimal" id="kb_buitenRV" class="kb-inp" placeholder="85" oninput="setKB('buitenRV', this.value)"></div>
+        </div>
+        <div><label class="kb-lbl">Weer &amp; omstandigheden</label><input type="text" id="kb_omst" class="kb-inp" placeholder="bijv. droog weer, verwarming aan, ramen dicht" oninput="setKB('omst', this.value)"></div>
+        <div><label class="kb-lbl">Datum &amp; tijd meting</label><input type="text" id="kb_datum" class="kb-inp" oninput="setKB('datum', this.value)"></div>
+      </div>
+    </details>
+
+    <!-- STAP 3 -->
+    <details class="stap" open>
+      <summary><span class="stap-nr">3</span><span class="stap-titel">Binnen</span><span class="stap-sub">klimaat &amp; luchtkwaliteit</span></summary>
+      <div class="stap-body space-y-2.5">
+        <div><label class="kb-lbl">Ruimte van de meting</label><input type="text" id="kb_binnenRuimte" class="kb-inp" placeholder="bijv. slaapkamer" oninput="setKB('binnenRuimte', this.value)"></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="kb-lbl">Binnen °C</label><input type="text" inputmode="decimal" id="kb_binnenT" class="kb-inp" placeholder="19" oninput="setKB('binnenT', this.value)"></div>
+          <div><label class="kb-lbl">Binnen RV %</label><input type="text" inputmode="decimal" id="kb_binnenRV" class="kb-inp" placeholder="72" oninput="setKB('binnenRV', this.value)"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="kb-lbl">Luchtkwaliteit</label>
+            <select id="kb_lucht" class="kb-inp" onchange="setKB('lucht', this.value)">
+              <option value="">— kies —</option><option value="goed">Goed</option><option value="matig">Matig</option><option value="onvoldoende">Onvoldoende</option>
+            </select></div>
+          <div><label class="kb-lbl">Standaardtekst</label><select id="kb_luchtSjabloon" class="kb-inp" onchange="useLuchtSjabloon(this.value)"></select></div>
+        </div>
+        <div><label class="kb-lbl">Toelichting luchtkwaliteit</label><input type="text" id="kb_luchtToel" class="kb-inp" placeholder="bijv. CO₂ verhoogd na nacht; fijnstof en TVOC normaal" oninput="setKB('luchtToel', this.value)"></div>
+      </div>
+    </details>
+
+    <!-- STAP 4 -->
+    <details class="stap" open>
+      <summary><span class="stap-nr">4</span><span class="stap-titel">Waarnemingen &amp; meetpunten</span><span class="stap-sub">wat zie en meet je</span></summary>
+      <div class="stap-body space-y-3">
+        <div>
+          <label class="kb-lbl">Wat neem je waar? (tik aan)</label>
+          <div id="obs_chips" class="flex flex-wrap gap-1.5"></div>
+          <input type="text" id="obs_overig" class="kb-inp mt-2" placeholder="Overige waarneming (optioneel)" oninput="setObsOverig(this.value)">
+        </div>
+        <div>
+          <label class="kb-lbl">Meetpunten (max. 4)</label>
+          <div id="mp_list" class="space-y-2"></div>
+          <button type="button" id="mp_add" onclick="addMeetpunt()" class="mt-2 w-full py-2.5 rounded-xl bg-slate-800 active:bg-slate-700 border border-slate-700 text-white text-[14px] font-bold flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i>Meetpunt toevoegen</button>
+        </div>
+        <div>
+          <label class="kb-lbl">Gebruikte meetapparatuur</label>
+          <div id="kb_app_list" class="flex flex-wrap gap-x-4 gap-y-1.5 pt-0.5"></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- STAP 5 -->
+    <details class="stap" open>
+      <summary><span class="stap-nr">5</span><span class="stap-titel">Foto's</span><span class="stap-sub">max. 4, met bijschrift</span></summary>
+      <div class="stap-body space-y-2.5">
+        <div id="df_list" class="space-y-2"></div>
+        <div id="df_add" class="grid grid-cols-2 gap-2">
+          <label class="foto-btn justify-center"><i data-lucide="camera" class="w-4 h-4"></i>Camera<input type="file" accept="image/*" capture="environment" class="hidden" onchange="addDetailFoto(this)"></label>
+          <label class="foto-btn justify-center"><i data-lucide="upload" class="w-4 h-4"></i>Bibliotheek<input type="file" accept="image/*" class="hidden" onchange="addDetailFoto(this)"></label>
+        </div>
+      </div>
+    </details>
+
+    <!-- STAP 6 -->
+    <details class="stap" open>
+      <summary><span class="stap-nr">6</span><span class="stap-titel">Situatie &amp; diagnose</span><span class="stap-sub">wat is er aan de hand</span></summary>
+      <div class="stap-body space-y-2.5">
+        <div><label class="kb-lbl">Wat heb je bij deze woning gezien? (ruimten, schadebeeld)</label><textarea id="tx_situatie" rows="4" class="kb-inp" style="resize:vertical" oninput="setSituatieTekst(this.value)"></textarea></div>
+        <div><label class="kb-lbl">Type advies (bronoorzaak)</label>%%SELECTOR%%</div>
+        <div><label class="kb-lbl">Oorzaak in één zin (tik erin om de standaardzin aan te passen)</label><input type="text" id="sam_oorzaak" class="kb-inp" oninput="setSamField('oorzaak', this.value)"></div>
+        <div><label class="kb-lbl">Bouwfysische duiding (tik erin om de standaardtekst aan te passen)</label><textarea id="tx_duiding" rows="4" class="kb-inp" style="resize:vertical" oninput="setDuidingTekst(this.value)"></textarea></div>
+      </div>
+    </details>
+
+    <!-- STAP 7 -->
+    <details class="stap" open>
+      <summary><span class="stap-nr">7</span><span class="stap-titel">Advies</span><span class="stap-sub">aanbeveling, urgentie &amp; tips</span></summary>
+      <div class="stap-body space-y-2.5">
+        <div><label class="kb-lbl">Aanbevolen optie</label><select id="adv_rec" class="kb-inp" onchange="setAdviesRec(this.value)"></select></div>
+        <div><label class="kb-lbl">Sjabloon voor motivatie (daarna aanpassen; tekst tussen [haken] invullen)</label><select id="adv_sjabloon" class="kb-inp" onchange="useSjabloon(this.value)"></select></div>
+        <div><label class="kb-lbl">Motivatie (1 à 2 zinnen, specifiek voor deze woning)</label><textarea id="adv_motivatie" rows="3" class="kb-inp" style="resize:vertical" oninput="setAdviesField('motivatie', this.value)" placeholder="Waarom past deze optie bij deze woning?"></textarea></div>
+        <div><label class="kb-lbl">Prijsindicatie aanbevolen optie (optioneel overschrijven)</label><input type="text" id="adv_prijs" class="kb-inp" oninput="setAdviesField('prijs', this.value)"><p class="text-[12px] text-slate-400 mt-1 leading-snug">Wijkt de hoeveelheid duidelijk af van het uitgangspunt in het grijze voorbeeld? Vul dan zelf in, bijv. <em>€ 4.500,- tot € 7.500,- voor ca. 25 m¹ muur</em>.</p></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="kb-lbl">Urgentie</label>
+            <select id="sam_urgNiveau" class="kb-inp" onchange="setUrgentie('niveau', this.value)">
+              <option value="">— kies —</option><option value="hoog">Hoog</option><option value="gemiddeld">Gemiddeld</option><option value="laag">Laag</option>
+            </select></div>
+          <div><label class="kb-lbl">Toelichting (leeg = standaard)</label><input type="text" id="sam_urgTekst" class="kb-inp" oninput="setUrgentie('tekst', this.value)"></div>
+        </div>
+        <div>
+          <label class="kb-lbl flex items-center justify-between gap-2"><span>Wat de klant zelf kan doen (één tip per regel)</span>
+            <button type="button" onclick="useStandaardTips()" class="normal-case tracking-normal text-emerald-300 underline font-semibold shrink-0">standaardtips invullen</button></label>
+          <textarea id="sam_tips" rows="3" class="kb-inp" style="resize:vertical" oninput="setSamField('tips', this.value)"></textarea>
+        </div>
+      </div>
+    </details>
+
+    <!-- STAP 8 -->
+    <details class="stap" open>
+      <summary><span class="stap-nr">8</span><span class="stap-titel">Controle &amp; versturen</span><span class="stap-sub">nalopen en PDF maken</span></summary>
+      <div class="stap-body space-y-2.5">
+        <div id="checkBox" class="hidden bg-amber-950/40 border border-amber-700/60 rounded-2xl px-3 py-2 text-xs text-amber-100"></div>
+        <p id="checkOk" class="hidden text-[13px] text-emerald-300 font-semibold">Alles is ingevuld. Bekijk het rapport en maak de PDF.</p>
+        <div class="flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-slate-300">
+          <label class="flex items-center gap-2"><input type="checkbox" id="kb_show" checked onchange="setKB('show', this.checked)" class="accent-amber-400 w-4 h-4"> Kernbevindingen tonen</label>
+          <label class="flex items-center gap-2"><input type="checkbox" id="kb_vb" checked onchange="setKB('vb', this.checked)" class="accent-amber-400 w-4 h-4"> Vochtbalans tonen</label>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="showView('voorbeeld')" class="py-3 rounded-xl bg-slate-800 active:bg-slate-700 border border-slate-700 text-white text-[14px] font-bold flex items-center justify-center gap-2"><i data-lucide="eye" class="w-4 h-4"></i>Voorbeeld</button>
+          <button onclick="downloadPdfDeterministic()" class="py-3 rounded-xl bg-emerald-600 active:bg-emerald-700 text-white text-[14px] font-bold flex items-center justify-center gap-2"><i data-lucide="file-down" class="w-4 h-4"></i>PDF maken</button>
+        </div>
+        <button onclick="htmlOpslaan()" class="w-full py-3 rounded-xl bg-slate-800 active:bg-slate-700 border border-slate-700 text-white text-[14px] font-bold flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>HTML opslaan (eigen administratie)</button>
+        <p class="text-[12px] text-slate-400 leading-snug">Het HTML-bestand opent in elke browser, ziet er hetzelfde uit als de PDF en bevat alle ingevulde gegevens. Via <strong>Adviezen › Terugzetten</strong> kun je het later weer in de app openen en aanpassen.</p>
+      </div>
+    </details>
+  </section>

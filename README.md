@@ -16,6 +16,7 @@ Met deze app vul je het vochtadvies (Advies & Plan van Aanpak) ter plaatse in op
 | `sw.js` | Zorgt dat de app offline werkt |
 | `manifest.webmanifest` | Naam en icoon voor het beginscherm |
 | `fonts/`, `icons/` | Lettertype en app-iconen |
+| `bron/` | Bronbestanden om de app aan te passen en opnieuw te bouwen (zie `bron/BOUWEN.md`) |
 
 ## Online zetten via GitHub Pages (eenmalig)
 
