@@ -52,7 +52,7 @@
             </select></div>
           <div><label class="kb-lbl">Standaardtekst</label><select id="kb_luchtSjabloon" class="kb-inp" onchange="useLuchtSjabloon(this.value)"></select></div>
         </div>
-        <div><label class="kb-lbl">Toelichting luchtkwaliteit</label><input type="text" id="kb_luchtToel" class="kb-inp" placeholder="bijv. CO₂ verhoogd na nacht; fijnstof en TVOC normaal" oninput="setKB('luchtToel', this.value)"></div>
+        <div><label class="kb-lbl">Toelichting luchtkwaliteit</label><textarea id="kb_luchtToel" rows="1" class="kb-inp" style="resize:vertical" placeholder="bijv. CO₂ verhoogd na nacht; fijnstof en TVOC normaal" oninput="setKB('luchtToel', this.value)"></textarea></div>
       </div>
     </details>
 
@@ -95,7 +95,7 @@
       <div class="stap-body space-y-2.5">
         <div><label class="kb-lbl">Wat heb je bij deze woning gezien? (ruimten, schadebeeld)</label><textarea id="tx_situatie" rows="4" class="kb-inp" style="resize:vertical" oninput="setSituatieTekst(this.value)"></textarea></div>
         <div><label class="kb-lbl">Type advies (bronoorzaak)</label>%%SELECTOR%%</div>
-        <div><label class="kb-lbl">Oorzaak in één zin (tik erin om de standaardzin aan te passen)</label><input type="text" id="sam_oorzaak" class="kb-inp" oninput="setSamField('oorzaak', this.value)"></div>
+        <div><label class="kb-lbl">Oorzaak in één zin (tik erin om de standaardzin aan te passen)</label><textarea id="sam_oorzaak" rows="2" class="kb-inp" style="resize:vertical" oninput="setSamField('oorzaak', this.value)"></textarea></div>
         <div><label class="kb-lbl">Bouwfysische duiding (tik erin om de standaardtekst aan te passen)</label><textarea id="tx_duiding" rows="4" class="kb-inp" style="resize:vertical" oninput="setDuidingTekst(this.value)"></textarea></div>
       </div>
     </details>
@@ -108,12 +108,12 @@
         <div><label class="kb-lbl">Sjabloon voor motivatie (daarna aanpassen; tekst tussen [haken] invullen)</label><select id="adv_sjabloon" class="kb-inp" onchange="useSjabloon(this.value)"></select></div>
         <div><label class="kb-lbl">Motivatie (1 à 2 zinnen, specifiek voor deze woning)</label><textarea id="adv_motivatie" rows="3" class="kb-inp" style="resize:vertical" oninput="setAdviesField('motivatie', this.value)" placeholder="Waarom past deze optie bij deze woning?"></textarea></div>
         <div><label class="kb-lbl">Prijsindicatie aanbevolen optie (optioneel overschrijven)</label><input type="text" id="adv_prijs" class="kb-inp" oninput="setAdviesField('prijs', this.value)"><p class="text-[12px] text-slate-400 mt-1 leading-snug">Wijkt de hoeveelheid duidelijk af van het uitgangspunt in het grijze voorbeeld? Vul dan zelf in, bijv. <em>€ 4.500,- tot € 7.500,- voor ca. 25 m¹ muur</em>.</p></div>
-        <div class="grid grid-cols-2 gap-2">
+        <div class="space-y-2">
           <div><label class="kb-lbl">Urgentie</label>
             <select id="sam_urgNiveau" class="kb-inp" onchange="setUrgentie('niveau', this.value)">
               <option value="">— kies —</option><option value="hoog">Hoog</option><option value="gemiddeld">Gemiddeld</option><option value="laag">Laag</option>
             </select></div>
-          <div><label class="kb-lbl">Toelichting (leeg = standaard)</label><input type="text" id="sam_urgTekst" class="kb-inp" oninput="setUrgentie('tekst', this.value)"></div>
+          <div><label class="kb-lbl">Toelichting urgentie (tik erin om de standaardtekst aan te passen)</label><textarea id="sam_urgTekst" rows="2" class="kb-inp" style="resize:vertical" oninput="setUrgentie('tekst', this.value)"></textarea></div>
         </div>
         <div>
           <label class="kb-lbl flex items-center justify-between gap-2"><span>Wat de klant zelf kan doen (één tip per regel)</span>

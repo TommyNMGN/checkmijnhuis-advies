@@ -1,1 +1,1 @@
-module.exports = { content: ['/home/claude/checkmijnhuis-app/index.html'], theme: { extend: {} } }
+module.exports = { content: ['../../index.html'], theme: { extend: {} } }

@@ -66,6 +66,19 @@
     }
     function stateJson() { return JSON.stringify(collectState()); }
 
+    // Tekstvakken groeien mee met de tekst, zodat je altijd alles ziet wat je typt
+    function groei(el) {
+      if (!el || el.tagName !== 'TEXTAREA' || !el.offsetParent) return;
+      el.style.height = 'auto';
+      el.style.height = (el.scrollHeight + 2) + 'px';
+    }
+    function groeiAlles() { document.querySelectorAll('#view-invullen textarea').forEach(groei); }
+    document.addEventListener('input', e => groei(e.target));
+    // ook na een sjabloon of 'standaardtips invullen' (tekst wordt dan zonder typen ingevuld)
+    document.addEventListener('change', () => setTimeout(groeiAlles, 0));
+    document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#view-invullen button')) setTimeout(groeiAlles, 0); });
+    document.addEventListener('toggle', e => { if (e.target.matches && e.target.matches('details.stap')) groeiAlles(); }, true);
+
     function refreshAll() {
       syncInputsFromState();
       refreshAdviesPanel();
@@ -74,6 +87,7 @@
       refreshStappen();
       renderAllPages();
       updateTopLabel();
+      setTimeout(groeiAlles, 0);
     }
 
     // ---------- automatisch opslaan ----------
@@ -116,6 +130,7 @@
       document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('nav-active', b.dataset.nav === v));
       if (v === 'dossiers') renderDossierList();
       if (v === 'voorbeeld') { checkPageOverflow(); fitPreview(); }
+      if (v === 'invullen') setTimeout(groeiAlles, 0);
       window.scrollTo(0, 0);
     }
     function fitPreview() {

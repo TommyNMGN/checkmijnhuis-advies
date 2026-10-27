@@ -17,10 +17,9 @@ De app die online staat (`index.html` in de hoofdmap) wordt gebouwd uit deze bro
 python3 build.py ../advies.html ../..          # schrijft ../../index.html
 
 # 2. app.css maken (vanuit de map bron/tailwind, eenmalig: npm install)
-#    Zet in app.config.js het pad bij 'content' naar de gebouwde index.html
 npx tailwindcss -c app.config.js -i app-in.css -o ../../app.css --minify
 
-# 3. In sw.js de VERSIE ophogen (bijv. 'cmh-v1.3.4' -> 'cmh-v1.3.5'),
+# 3. In sw.js de VERSIE ophogen (bijv. 'cmh-v1.3.5' -> 'cmh-v1.3.6'),
 #    anders blijven telefoons de oude versie gebruiken.
 
 # 4. Commit en push naar main; GitHub Pages zet het binnen een paar minuten online.

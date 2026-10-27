@@ -207,7 +207,7 @@
             <option value="opstijgend">2. Opstijgend vocht uit de grond</option>
             <option value="doorslaand">3. Doorslaand vocht via de gevel</option>
             <option value="kelderventilatie">4. Vochtige kelder door condensatie</option>
-            <option value="lateraal">5. Vocht door kelderwanden van buitenaf</option>
+            <option value="lateraal">5. Vocht door de kelderwanden van buitenaf</option>
             <option value="lekkage">6. Lekkage &amp; lekdetectie</option>
             <option value="schimmel">7. Schimmel op koude plekken</option>
           </select>
@@ -504,7 +504,7 @@
 
     // Vaste meetapparatuur. In het advies alleen type + functie (serienummers horen in het feitenrapport, optie 3).
     const APPARATUUR = [
-      { key: "rcm",   naam: "PCE-RCM 16",          functie: "temperatuur, RV en CO₂" },
+      { key: "rcm",   naam: "PCE-RCM 16",          functie: "temperatuur, RV, CO₂, fijnstof en TVOC" },
       { key: "vm128", naam: "Metofix VM128 bolmeter", functie: "indicatieve dieptemeting materiaalvocht" },
       { key: "romus", naam: "Romus Mini pinmeter",  functie: "oppervlakkig materiaalvocht, relatief" },
       { key: "testo", naam: "Testo 835-H1",        functie: "oppervlaktetemperatuur, opsporen koude plekken" },
@@ -622,9 +622,9 @@
       const meta = [kb.datum, kb.omst].map(s => (s || "").trim()).filter(Boolean).map(escHtml).join(" · ");
       return `
         <div class="rounded-xl border border-slate-300 overflow-hidden text-[9.5px]">
-          <div class="bg-slate-900 text-white px-2.5 py-1 flex items-center justify-between gap-3">
+          <div class="bg-slate-900 text-white px-2.5 py-1 flex items-start justify-between gap-3">
             <span class="text-[9px] font-black uppercase tracking-wider shrink-0">Kernbevindingen • Momentopname</span>
-            <span class="text-[8.5px] text-slate-300 truncate">${meta || "Datum &amp; omstandigheden: —"}</span>
+            <span class="text-[8.5px] text-slate-300 text-right leading-snug min-w-0">${meta || "Datum &amp; omstandigheden: —"}</span>
           </div>
           <div class="grid grid-cols-3 divide-x divide-slate-200 bg-white">
             <div class="p-2 space-y-0.5">
@@ -665,7 +665,7 @@
     // 1. Zoek de grootste gemeenschappelijke lettergrootte (--s) waarbij alle pagina's passen,
     //    zodat de tekst zo goed leesbaar mogelijk is en op alle pagina's even groot.
     // 2. Verdeel de overgebleven ruimte per pagina gelijkmatig over de witruimte tussen de blokken (--g).
-    const FIT = { maxScale: 1.22, minScale: 0.86, step: 0.02, pageBoost: 0.06, baseGap: 14, maxGap: 40 };
+    const FIT = { maxScale: 1.22, minScale: 0.86, step: 0.02, pageBoost: 0.06, baseGap: 14, maxGap: 40, minGap: 6 };
 
     function pageOverflows(p) { return p.scrollHeight > p.clientHeight + 1; }
     // bij het passend maken een kleine marge aanhouden, zodat print/PDF nooit net iets afsnijdt
@@ -696,7 +696,7 @@
     function fitPagesBij() {
       const pages = Array.from(document.querySelectorAll('.a4-page'));
       if (!pages.length) return;
-      pages.forEach(p => { p.style.setProperty('--g', FIT.baseGap + 'px'); });
+      pages.forEach(p => { p.style.setProperty('--g', FIT.baseGap + 'px'); p.__krap = false; });
 
       let scale = FIT.minScale;
       for (let sc = FIT.maxScale; sc >= FIT.minScale - 0.001; sc = Math.round((sc - FIT.step) * 100) / 100) {
@@ -705,9 +705,20 @@
       }
       pages.forEach(p => p.style.setProperty('--s', scale));
 
+      // Past een pagina ook met de kleinste letter niet: eerst de witruimte tussen de blokken verkleinen
+      pages.forEach(p => {
+        if (!fitOverflows(p)) return;
+        p.__krap = true;
+        for (let g = FIT.baseGap - 2; g >= FIT.minGap; g -= 2) {
+          p.style.setProperty('--g', g + 'px');
+          if (!fitOverflows(p)) break;
+        }
+      });
+
       // Pagina's met ruimte over mogen iets grotere letters krijgen (max. +6%, nauwelijks zichtbaar verschil)
       pages.forEach(p => {
         let best = scale;
+        if (p.__krap) return;
         for (let sc = Math.round((scale + FIT.step) * 100) / 100; sc <= Math.min(FIT.maxScale + FIT.pageBoost, scale + FIT.pageBoost) + 0.001; sc = Math.round((sc + FIT.step) * 100) / 100) {
           p.style.setProperty('--s', sc);
           if (fitOverflows(p)) break;
@@ -719,7 +730,7 @@
       pages.forEach(p => {
         const body = p.querySelector('.page-body');
         const kids = Array.from(body.children).filter(k => k.offsetHeight > 0);
-        if (kids.length < 2 || fitOverflows(p)) return;
+        if (kids.length < 2 || p.__krap || fitOverflows(p)) return;
         const footer = p.lastElementChild;
         const used = kids[kids.length - 1].getBoundingClientRect().bottom - body.getBoundingClientRect().top;
         const avail = footer.getBoundingClientRect().top - body.getBoundingClientRect().top - 8;
@@ -860,7 +871,7 @@
     // het totaal wordt automatisch berekend, zodat het altijd klopt met de regels erboven.
     const DOSSIERS = {
       condensatie: {
-        title: "Condensatie door Onvoldoende Ventilatie",
+        title: "Condensatie door onvoldoende ventilatie",
         sub: "Onafhankelijk advies & plan van aanpak voor gezonde ventilatie en minder vocht in huis",
         icon: "wind",
         framework: "Bbl (luchtverversing) • NEN 8087",
@@ -870,32 +881,32 @@
         analysisExtra: `Wat we zien (condens op koude plekken en schimmel) past bij te weinig afvoer van vocht op de momenten dat er veel vocht ontstaat: 's nachts in dichte slaapkamers en bij koken, douchen en was drogen. Een meting overdag laat dat niet altijd zien; daarom is het schadebeeld voor deze conclusie leidend.`,
         risks: [
           {
-            title: "1. Gezondheid & Binnenklimaat",
+            title: "1. Gezondheid & binnenklimaat",
             desc: "Langdurig vochtige lucht en schimmel vergroten de kans op klachten aan de luchtwegen en kunnen astma verergeren. Een CO₂-waarde boven circa 1.000 ppm betekent dat er te weinig verse lucht binnenkomt; dat geeft vaak een benauwd gevoel, hoofdpijn en slechter slapen."
           },
           {
-            title: "2. Comfort & Stookkosten",
+            title: "2. Comfort & stookkosten",
             desc: "Een vochtig huis voelt kouder aan, waardoor u de verwarming hoger zet. Vochtige muren isoleren ook slechter. Ventilatie met warmteterugwinning ververst de lucht zonder dat de warmte via open ramen verloren gaat."
           },
           {
-            title: "3. Bouwkundige Aantasting",
+            title: "3. Bouwkundige aantasting",
             desc: "Blijvende condens leidt op den duur tot rot in houten kozijnen, roest aan stalen balken boven ramen en loslatend stucwerk en behang op koude plekken."
           }
         ],
         solution: `Zorgen dat vocht en CO₂ continu naar buiten gaan, met mechanische ventilatie die de warmte uit de afgevoerde lucht terugwint (WTW: warmteterugwinning). Zo blijft de lucht droog en fris, zonder tocht of onnodig warmteverlies.`,
         options: [
           {
-            name: "Optie A: Decentrale Balans-WTW",
+            name: "Optie A: Decentrale balans-WTW",
             desc: "Twee kleine ventilatie-units in de buitenmuur van woonkamer en slaapkamer die als paar samenwerken: om beurten blazen ze verse lucht in en voeren ze vochtige lucht af. De warmte blijft grotendeels binnen. Met vochtsensor, dus automatisch.",
             pros: "✓ Geen kanalen door het huis en weinig breekwerk<br>✓ Houdt veel warmte binnen (vaak 80-90% volgens fabrikant)<br>✓ Stil in de laagste stand en werkt automatisch"
           },
           {
-            name: "Mechanische Afzuiging met Roosters (systeem C)",
+            name: "Mechanische afzuiging met roosters (systeem C)",
             desc: "Een centrale afzuigbox zuigt vochtige lucht af in keuken, badkamer en toilet en gaat vanzelf harder bij veel vocht of CO₂. Verse lucht komt binnen via roosters in de kozijnen.",
             pros: "✓ Goedkoper in aanschaf<br>✕ Kans op tocht en geluid van buiten via de open roosters<br>✕ Warmte gaat mee naar buiten (hogere stookkosten)"
           },
           {
-            name: "Centrale Ventilatie met Warmteterugwinning (systeem D)",
+            name: "Centrale ventilatie met warmteterugwinning (systeem D)",
             desc: "Eén centrale unit die via kanalen in het hele huis verse lucht inblaast en vochtige lucht afzuigt, en daarbij de warmte terugwint.",
             pros: "✓ Meeste comfort en minste warmteverlies<br>✕ Grote verbouwing (kanalen wegwerken, breekwerk)<br>✕ Hoge investering (zie kostenraming)"
           }
@@ -903,7 +914,7 @@
         steps: `<strong>Stap 1: Luchtstroomroutes en overstroom waarborgen</strong><br>
         Zorg voor een onbelemmerde luchtcirculatie tussen de ruimten. Tussen de onderzijde van de binnendeur en de afgewerkte vloer dient een <strong>vrije spleet van circa 1,5 tot 2 cm</strong> aanwezig te zijn; kort zo nodig de binnendeuren in.<br><br>
         <strong>Stap 2: Gevelboringen &amp; montage decentrale WTW</strong><br>
-        Realisatie van 2x diamantboring (Ø 160-180 mm, volgens fabrieksopgave) in de buitengevel met 1-2% afschot naar buiten, zodat condenswater niet naar binnen loopt. Plaatsing van de WTW-units met geïsoleerde muurbuis en afsluitklep. Uitvoerder controleert vooraf leidingen en spouwankers.<br><br>
+        Twee diamantboringen (Ø 160-180 mm, volgens fabrieksopgave) in de buitengevel, met 1-2% afschot naar buiten zodat condenswater niet naar binnen loopt. Plaatsing van de WTW-units met geïsoleerde muurbuis en afsluitklep. Uitvoerder controleert vooraf leidingen en spouwankers.<br><br>
         <strong>Stap 3: Sensorkoppeling, hygrostaat &amp; opleveringsmeting</strong><br>
         Aansluiting op een vaste 230V-voeding. Hygrostaat inregelen op circa <strong>55% RV</strong>. Volumestromen meten (in dm³/s) en het inregelrapport overhandigen aan de opdrachtgever.`,
         costs: [
@@ -914,14 +925,14 @@
         ],
         totalLabel: "Totaal Optie A (2 kamers, incl. montage)",
         checks: [
-          { title: "1. Meetrapport Vragen", desc: "Vraag de installateur om een meetrapport waarin staat hoeveel lucht er per ruimte wordt ververst (in dm³/s). Zo weet u zeker dat het systeem krachtig genoeg is." },
-          { title: "2. Stil in de Slaapkamer", desc: "Controleer in de offerte dat de unit in de laagste stand stil is (onder circa 25 dB(A)), zodat u er 's nachts geen last van heeft." },
-          { title: "3. Kier onder de Deuren", desc: "Controleer of het inkorten van de binnendeuren (een kier van 1,5 tot 2 cm) in de offerte staat; zonder die kier kan de lucht niet door het huis stromen." }
+          { title: "1. Meetrapport vragen", desc: "Vraag de installateur om een meetrapport waarin staat hoeveel lucht er per ruimte wordt ververst (in dm³/s). Zo weet u zeker dat het systeem krachtig genoeg is." },
+          { title: "2. Stil in de slaapkamer", desc: "Controleer in de offerte dat de unit in de laagste stand stil is (onder circa 25 dB(A)), zodat u er 's nachts geen last van heeft." },
+          { title: "3. Kier onder de deuren", desc: "Controleer of het inkorten van de binnendeuren (een kier van 1,5 tot 2 cm) in de offerte staat; zonder die kier kan de lucht niet door het huis stromen." }
         ]
       },
 
       opstijgend: {
-        title: "Opstijgend Vocht uit de Grond",
+        title: "Opstijgend vocht uit de grond",
         sub: "Onafhankelijk advies & plan van aanpak om grondvocht te stoppen en zoutschade te herstellen",
         icon: "arrow-up-circle",
         framework: "WTA 4-10 (injectie) • WTA 2-9 (saneerpleister)",
@@ -931,27 +942,27 @@
         analysisExtra: `Wat we zien (vocht- en zoutschade in een strook vanaf de vloer) en onze metingen passen bij grondvocht dat in de muur omhoog trekt, omdat een goed werkende waterdichte laag onderin de muur ontbreekt. Duurzaam herstel vraagt om een nieuwe waterkerende laag in de muur én zoutbestendig nieuw stucwerk.`,
         risks: [
           {
-            title: "1. Aantasting Metselwerk",
+            title: "1. Aantasting metselwerk",
             desc: "Een muur die lang nat blijft, gaat sneller achteruit door vorst en weer. Zouten tasten de voegen aan en stalen ankers in de muur kunnen gaan roesten."
           },
           {
-            title: "2. Houtrot Vloerbalken",
+            title: "2. Houtrot vloerbalken",
             desc: "Rusten de uiteinden van houten vloerbalken in een vochtige muur, dan kunnen ze gaan rotten en in het ergste geval door zwammen worden aangetast."
           },
           {
-            title: "3. Steeds Terugkerende Schade",
+            title: "3. Steeds terugkerende schade",
             desc: "Nieuw stuc- en schilderwerk op een muur vol zout is vaak binnen één à twee jaar opnieuw beschadigd. Dan betaalt u twee keer."
           }
         ],
         solution: `Het opstijgende vocht stoppen met een nieuwe waterafstotende laag onderin de muur (muurinjectie), en het zoutrijke stucwerk vervangen door zoutbestendig stucwerk dat de muur laat ademen.`,
         options: [
           {
-            name: "Optie A: Chemische Muurinjectie",
+            name: "Optie A: Chemische muurinjectie",
             desc: "In de onderste bereikbare voeg worden om de 10 à 12 cm gaatjes geboord en gevuld met een gecertificeerde waterafstotende crème (silaan/siloxaan). Zo ontstaat een doorlopende laag die het grondvocht tegenhoudt.",
             pros: "✓ Minste breekwerk en de meest beproefde methode<br>✓ Duurzame waterafstotende laag in steen en voeg<br>✓ Ook geschikt voor zeer natte muren (volgens productblad)"
           },
           {
-            name: "Muur Onderkappen",
+            name: "Muur onderkappen",
             desc: "De muur wordt in delen horizontaal doorgezaagd en er wordt een kunststof folie of rvs-plaat in geschoven die het vocht tegenhoudt.",
             pros: "✓ Een echte, fysieke waterkering<br>✕ Zware ingreep met veel stof<br>✕ Kans op scheuren of verzakking in de muur"
           },
@@ -975,14 +986,14 @@
         ],
         totalLabel: "Totaal Optie A (ca. 16-20 m¹ muur)",
         checks: [
-          { title: "1. Productblad Opvragen", desc: "Vraag de aannemer om het productblad van de injectiecrème. Zo weet u zeker dat er een professioneel, gecertificeerd middel wordt gebruikt." },
-          { title: "2. Hoe Hoog het Stucwerk Eraf Gaat", desc: "Controleer of in de offerte staat dat het oude stucwerk tot minstens 50 cm boven de hoogste zichtbare schade wordt weggehaald." },
-          { title: "3. Zoutbestendig Stucwerk", desc: "Zorg dat er zoutbestendig stucwerk (saneerpleister) of een zoutwerende laag wordt gebruikt en geen gewoon gipsstucwerk." }
+          { title: "1. Productblad opvragen", desc: "Vraag de aannemer om het productblad van de injectiecrème. Zo weet u zeker dat er een professioneel, gecertificeerd middel wordt gebruikt." },
+          { title: "2. Hoe hoog het stucwerk eraf gaat", desc: "Controleer of in de offerte staat dat het oude stucwerk tot minstens 50 cm boven de hoogste zichtbare schade wordt weggehaald." },
+          { title: "3. Zoutbestendig stucwerk", desc: "Zorg dat er zoutbestendig stucwerk (saneerpleister) of een zoutwerende laag wordt gebruikt en geen gewoon gipsstucwerk." }
         ]
       },
 
       doorslaand: {
-        title: "Doorslaand Vocht via de Gevel",
+        title: "Doorslaand vocht via de gevel",
         sub: "Onafhankelijk advies & plan van aanpak voor gevelherstel en een waterafstotende gevel",
         icon: "cloud-rain",
         framework: "Bouwfysische praktijk • productbladen",
@@ -992,32 +1003,32 @@
         analysisExtra: `Wat we zien en onze metingen passen bij regenwater dat via de gevel binnendringt, waarschijnlijk via verweerde voegen of poreuze stenen. Dit vocht hangt af van het weer en is daarom niet bij elke meting even goed te zien. Een eenvoudige test die meet hoeveel water de gevel opneemt (buis van Karsten) kan dit vooraf bevestigen.`,
         risks: [
           {
-            title: "1. Vorstschade Metselwerk",
+            title: "1. Vorstschade metselwerk",
             desc: "Water in de stenen zet uit als het vriest. Daardoor kunnen op den duur stukjes van de stenen afspringen."
           },
           {
-            title: "2. Minder Isolatiewaarde",
+            title: "2. Minder isolatiewaarde",
             desc: "Natte isolatie isoleert minder goed, waardoor u meer stookt."
           },
           {
-            title: "3. Schade aan Binnenafwerking",
+            title: "3. Schade aan binnenafwerking",
             desc: "Doorslaand vocht geeft vochtkringen, loslatend stucwerk en schimmel op de binnenmuren."
           }
         ],
         solution: `De gevel weer waterdicht maken: schoonmaken, slechte voegen vervangen en de gevel behandelen met een middel dat regen afstoot maar vocht van binnenuit wel laat ontsnappen (een 'dampopen' hydrofobering).`,
         options: [
           {
-            name: "Optie A: Reiniging + Voegen + Hydrofobering",
+            name: "Optie A: Reiniging + voegen + hydrofobering",
             desc: "Slechte voegen weghalen, de gevel reinigen, opnieuw voegen en daarna een onzichtbaar waterafstotend middel aanbrengen dat diep in de steen trekt (silaan/siloxaan).",
             pros: "✓ De gevel ziet er hetzelfde uit<br>✓ Stoot regen af, maar de muur kan blijven ademen<br>✓ Werkt bij goede uitvoering naar verwachting 10-15 jaar"
           },
           {
-            name: "Vochtwerende Gevelcoating",
+            name: "Vochtwerende gevelcoating",
             desc: "Een rekbare, dekkende gevelverf die kleine scheurtjes afdekt.",
             pros: "✓ Dekt kleine scheurtjes af<br>✓ Strak, egaal uiterlijk<br>✕ Het uiterlijk van de gevel verandert blijvend"
           },
           {
-            name: "Isolatie op de Buitengevel + Pleisterlaag",
+            name: "Isolatie op de buitengevel + pleisterlaag",
             desc: "Isolatieplaten op de buitenkant van de gevel, afgewerkt met een waterafstotende pleisterlaag.",
             pros: "✓ Isoleert het huis tegelijk beter<br>✕ Zeer kostbaar (indicatie € 120-180 per m²)<br>✕ Mogelijk vergunning nodig (het huis ziet er anders uit)"
           }
@@ -1036,14 +1047,14 @@
         ],
         totalLabel: "Totaal Optie A (ca. 50 m² gevel)",
         checks: [
-          { title: "1. Eerst de Voegen", desc: "Controleer dat kapotte voegen eerst worden hersteld, vóórdat het waterafstotende middel wordt aangebracht." },
-          { title: "2. Muur Moet Kunnen Ademen", desc: "Vraag om het productblad en controleer dat het middel 'dampopen' is, zodat vocht niet in de muur wordt opgesloten." },
-          { title: "3. Nieuwe Voegen Laten Drogen", desc: "Nieuwe voegen moeten eerst uitharden en drogen (meestal circa 4 weken) voordat het waterafstotende middel erop mag." }
+          { title: "1. Eerst de voegen", desc: "Controleer dat kapotte voegen eerst worden hersteld, vóórdat het waterafstotende middel wordt aangebracht." },
+          { title: "2. Muur moet kunnen ademen", desc: "Vraag om het productblad en controleer dat het middel 'dampopen' is, zodat vocht niet in de muur wordt opgesloten." },
+          { title: "3. Nieuwe voegen laten drogen", desc: "Nieuwe voegen moeten eerst uitharden en drogen (meestal circa 4 weken) voordat het waterafstotende middel erop mag." }
         ]
       },
 
       kelderventilatie: {
-        title: "Vochtige Kelder door Condensatie",
+        title: "Vochtige kelder door condensatie",
         sub: "Onafhankelijk advies & plan van aanpak tegen vocht en condens in de kelder",
         icon: "thermometer-snowflake",
         framework: "Bouwfysische praktijk • dauwpuntventilatie",
@@ -1053,32 +1064,32 @@
         analysisExtra: `Wat we zien past bij zomercondens: de keldermuren zijn in de warme maanden kouder dan het punt waarop de binnenkomende buitenlucht zijn vocht loslaat (het dauwpunt). Dit speelt vooral in de zomer en is bij een meting in een ander seizoen niet altijd te zien. Wie dan ventileert zonder op de buitenlucht te letten, haalt juist vocht naar binnen.`,
         risks: [
           {
-            title: "1. Schimmel op Inboedel",
-            desc: "Kartonnen dozen, textiel, meubels en kleding kunnen binnen enkele weken aangetast raken door schimmel en muffe geur."
+            title: "1. Schimmel op inboedel",
+            desc: "Kartonnen dozen, textiel, meubels en kleding kunnen binnen enkele weken gaan schimmelen en muf gaan ruiken."
           },
           {
-            title: "2. Corrosie Leidingen & Installaties",
+            title: "2. Corrosie leidingen & installaties",
             desc: "Condens op leidingen, de meterkast en installaties laat ze sneller roesten en kan storingen geven."
           },
           {
-            title: "3. Aantasting Vloerbalken",
+            title: "3. Aantasting vloerbalken",
             desc: "Is de vloer boven de kelder van hout, dan kan het vocht de balken laten rotten en de vloer verzwakken."
           }
         ],
         solution: `Een ventilator met een slimme regeling en twee sensoren, één binnen en één buiten. De ventilator gaat alleen aan als de buitenlucht echt droger is dan de kelderlucht (dauwpuntsturing), dus alleen op momenten dat ventileren helpt.`,
         options: [
           {
-            name: "Optie A: Ventilator met Slimme Regeling",
+            name: "Optie A: Ventilator met slimme regeling",
             desc: "Een regelaar die binnen en buiten meet en een ventilator aanstuurt (dauwpuntsturing), met kleppen die automatisch sluiten als ventileren niet helpt.",
             pros: "✓ Ventileert alleen op drogende momenten<br>✓ Sluit automatisch af bij vochtige buitenlucht<br>✓ Laag energieverbruik"
           },
           {
-            name: "Vaste Luchtontvochtiger",
+            name: "Vaste luchtontvochtiger",
             desc: "Een vaste luchtontvochtiger die het opgevangen water direct naar het riool afvoert.",
             pros: "✓ Haalt het vocht snel uit de lucht<br>✕ Hoger stroomverbruik bij continu gebruik<br>✕ Ververst de lucht niet"
           },
           {
-            name: "Kelderventilatie met Warmteterugwinning",
+            name: "Kelderventilatie met warmteterugwinning",
             desc: "Een ventilatie-unit in de keldermuur die de lucht ververst en daarbij de warmte of koelte terugwint.",
             pros: "✓ Kelder blijft op temperatuur<br>✕ Zonder slimme regeling kans op méér vocht in de zomer<br>✕ Twee gaten in de muur nodig"
           }
@@ -1097,14 +1108,14 @@
         ],
         totalLabel: "Totaal Optie A (compleet)",
         checks: [
-          { title: "1. Plaats Buitensensor Controleren", desc: "Zorg dat de buitensensor op een schaduwrijke plek hangt (noord- of oostgevel), zodat zon de meting niet verstoort." },
-          { title: "2. Goed Sluitende Klep", desc: "Controleer of de ventilator een goed sluitende klep heeft, zodat warme lucht bij stilstand niet binnenkomt." },
-          { title: "3. Instelling van de Regelaar", desc: "Vraag de installateur te laten zien dat de regelaar met een veilige marge is ingesteld: minimaal 2 à 3 °C verschil in dauwpunt tussen binnen en buiten." }
+          { title: "1. Plaats buitensensor controleren", desc: "Zorg dat de buitensensor op een schaduwrijke plek hangt (noord- of oostgevel), zodat zon de meting niet verstoort." },
+          { title: "2. Goed sluitende klep", desc: "Controleer of de ventilator een goed sluitende klep heeft, zodat warme lucht bij stilstand niet binnenkomt." },
+          { title: "3. Instelling van de regelaar", desc: "Vraag de installateur te laten zien dat de regelaar met een veilige marge is ingesteld: minimaal 2 à 3 °C verschil in dauwpunt tussen binnen en buiten." }
         ]
       },
 
       lateraal: {
-        title: "Vocht door de Kelderwanden van Buitenaf",
+        title: "Vocht door de kelderwanden van buitenaf",
         sub: "Onafhankelijk advies & plan van aanpak voor een droge, waterdichte kelder",
         icon: "shield-alert",
         framework: "WTA 4-6 (afdichten kelderwanden)",
@@ -1114,32 +1125,32 @@
         analysisExtra: `Wat we zien en onze metingen passen bij vocht dat van buitenaf door de keldermuur en de naad tussen vloer en muur binnenkomt. Hoe nat het is, hangt af van het grondwater en het seizoen. Duurzaam herstel vraagt om een waterdichte laag aan de binnenkant die tegen de waterdruk kan, met extra aandacht voor die naad.`,
         risks: [
           {
-            title: "1. Verlies van Bruikbaarheid",
+            title: "1. Verlies van bruikbaarheid",
             desc: "Zonder herstel blijft de kelder ongeschikt voor opslag of verblijf door het risico op waterschade en schimmelvorming."
           },
           {
-            title: "2. Aantasting Fundering",
+            title: "2. Aantasting fundering",
             desc: "Doordat de muur steeds nat is en kalk uit oude voegen spoelt, wordt het metselwerk van de fundering op den duur zwakker."
           },
           {
-            title: "3. Vocht naar de Begane Grond",
+            title: "3. Vocht naar de begane grond",
             desc: "Vocht in de keldermuren kan omhoog trekken naar de begane grond en daar plinten en stucwerk beschadigen."
           }
         ],
         solution: `Aan de binnenkant van de kelder een waterdichte laag van speciale mortel aanbrengen die bestand is tegen de waterdruk van buitenaf (een 'binnenkuip'), met een goed afgedichte naad tussen vloer en muur.`,
         options: [
           {
-            name: "Optie A: Waterdichte Binnenkuip",
+            name: "Optie A: Waterdichte binnenkuip",
             desc: "Oud stucwerk weghalen, de naad tussen vloer en muur uitfrezen en dichtzetten, en daarna meerdere lagen waterdichte mortel op de muren aanbrengen.",
             pros: "✓ Bestand tegen waterdruk van buitenaf (volgens productblad)<br>✓ Hecht goed op steen<br>✓ Waterdicht bij vakkundige uitvoering"
           },
           {
-            name: "Drainagesysteem met Pompput",
+            name: "Drainagesysteem met pompput",
             desc: "Speciale banen met noppen op muren en vloer vangen binnenkomend water op en leiden het naar een put met een pomp.",
             pros: "✓ Geschikt bij veel waterdruk<br>✕ Werkt alleen zolang pomp en stroom werken<br>✕ Neemt de oorzaak aan de buitenkant niet weg"
           },
           {
-            name: "Afdichten aan de Buitenkant",
+            name: "Afdichten aan de buitenkant",
             desc: "Aan de buitenkant afgraven tot de fundering en de muur afdichten met een waterdichte bitumenlaag en isolatie.",
             pros: "✓ Pakt het water aan de bron aan<br>✕ Zeer ingrijpend en kostbaar (indicatie € 8.000-15.000)<br>✕ Vaak onmogelijk bij stoep, buren of aanbouw"
           }
@@ -1158,51 +1169,51 @@
         ],
         totalLabel: "Totaal Optie A (ca. 30 m², excl. optionele vloer)",
         checks: [
-          { title: "1. Ondergrond Controleren", desc: "Zorg dat oud stucwerk en verfresten volledig tot op gezond metselwerk zijn verwijderd, voor een goede hechting." },
-          { title: "2. Naad tussen Vloer en Muur", desc: "Controleer of de naad tussen vloer en muur (kimnaad) apart is uitgefreesd en dichtgezet met speciale afdichtingsmortel." },
-          { title: "3. Dikte van de Lagen", desc: "Controleer dat de lagen mortel in de voorgeschreven dikte zijn aangebracht (vraag naar het productblad)." }
+          { title: "1. Ondergrond controleren", desc: "Zorg dat oud stucwerk en verfresten volledig tot op gezond metselwerk zijn verwijderd, voor een goede hechting." },
+          { title: "2. Naad tussen vloer en muur", desc: "Controleer of de naad tussen vloer en muur (kimnaad) apart is uitgefreesd en dichtgezet met speciale afdichtingsmortel." },
+          { title: "3. Dikte van de lagen", desc: "Controleer dat de lagen mortel in de voorgeschreven dikte zijn aangebracht (vraag naar het productblad)." }
         ]
       },
 
       lekkage: {
-        title: "Lekkage & Advies Lekdetectie",
+        title: "Lekkage & advies lekdetectie",
         sub: "Onafhankelijk advies & plan van aanpak voor het opsporen en herstellen van lekkages",
         icon: "droplet",
         framework: "Bouwfysische praktijk • lekdetectie",
         defaultSituation: "Gezien bij badkamer, keuken, leidingkokers of plafonds. Wat we zagen: vochtkringen en verkleuringen, vocht dat niet met het weer samenhangt en mogelijk een watermeter die doorloopt.",
         problem: `Een lekkage ontstaat door een defect: in een waterleiding, afvoer of cv-leiding, of in de kitvoegen van de badkamer.<br><br>
         Water zoekt de makkelijkste weg, door holle ruimten en onder vloeren door. Daardoor zit de zichtbare schade vaak op een andere plek dan het lek zelf. <em>Eerst gericht zoeken, zonder te slopen, voorkomt onnodig breekwerk en houdt de herstelkosten laag.</em>`,
-        analysisExtra: `Wat we zien en onze metingen passen eerder bij een lekkage (steeds, of alleen bij gebruik van water) dan bij vocht van buiten of uit de grond. Waar het lek precies zit, kan alleen een lekzoeker met speciale apparatuur vaststellen, zonder te slopen; zo blijven tegels en vloeren zoveel mogelijk heel.`,
+        analysisExtra: `Wat we zien en onze metingen passen eerder bij een lekkage (steeds, of alleen bij gebruik van water) dan bij vocht van buiten of uit de grond. Waar het lek precies zit, kan alleen een lekzoeker met speciale apparatuur vaststellen, zonder te slopen; zo blijven tegels en vloeren zo veel mogelijk heel.`,
         risks: [
           {
-            title: "1. Aantasting Vloer en Plafond",
+            title: "1. Aantasting vloer en plafond",
             desc: "Lekwater dat in vloeren, balken of plafonds blijft zitten, kan materialen verzwakken en hout laten rotten."
           },
           {
-            title: "2. Installatie- en Veiligheidsrisico",
+            title: "2. Installatie- en veiligheidsrisico",
             desc: "Water langs elektrische leidingen of aansluitpunten kan storingen, kortsluiting of corrosie veroorzaken."
           },
           {
-            title: "3. Afhandeling met Verzekeraar",
-            desc: "Snel melden en een rapport van de lekzoeker zorgen voor een vlotte afhandeling met uw opstalverzekering."
+            title: "3. Problemen met de verzekering",
+            desc: "Wacht u lang met melden of herstellen, dan kan de verzekeraar (een deel van) de schade weigeren. Snel melden en een rapport van de lekzoeker helpen bij een vlotte afhandeling."
           }
         ],
         solution: `Het lek eerst precies laten opsporen zonder te slopen (lekdetectie met geluidsapparatuur, een onschadelijk opsporingsgas of een camera), daarna gericht repareren en de natte delen goed laten drogen.`,
         options: [
           {
-            name: "Optie A: Lekdetectie + Gerichte Reparatie",
+            name: "Optie A: Lekdetectie + gerichte reparatie",
             desc: "Een lekzoeker spoort het lek op met geluidsapparatuur, opsporingsgas of een camera. Daarna maakt de loodgieter op één plek een kleine opening om te repareren.",
             pros: "✓ Minimaal hak- en breekwerk<br>✓ Vaak (deels) gedekt door de opstalverzekering, afhankelijk van de polis<br>✓ Het lek wordt precies gevonden"
           },
           {
-            name: "Kitvoegen in de Badkamer Vernieuwen",
+            name: "Kitvoegen in de badkamer vernieuwen",
             desc: "De oude kitranden rond bad en douche helemaal weghalen en opnieuw waterdicht afkitten.",
             pros: "✓ Eenvoudige eerste stap bij lekkage via kitvoegen<br>✓ Beperkte ingreep<br>✕ Helpt niet bij een lekkende leiding"
           },
           {
-            name: "Professionele Bouwdroging",
+            name: "Professionele bouwdroging",
             desc: "Na de reparatie zorgen bouwdrogers en ventilatoren dat vloeren en muren sneller droog worden.",
-            pros: "✓ Voorkomt schimmelvorming na de lekkage<br>✓ Verkort de hersteltijd aanzienlijk<br>✓ Vaak meeverzekerd als gevolgschade"
+            pros: "✓ Voorkomt schimmelvorming na de lekkage<br>✓ Verkort de hersteltijd aanzienlijk<br>✓ Vaak meeverzekerd als gevolgschade (afhankelijk van de polis)"
           }
         ],
         steps: `<strong>Stap 1: Niet-destructieve lekdetectie</strong><br>
@@ -1219,14 +1230,14 @@
         ],
         totalLabel: "Totaal detectie, reparatie & droging",
         checks: [
-          { title: "1. Polis Controleren", desc: "Meld de lekkage direct bij uw opstalverzekering; lekdetectie en gevolgschade worden vaak vergoed, afhankelijk van uw polisvoorwaarden." },
-          { title: "2. Druktest na Reparatie", desc: "Laat de installateur na de reparatie een druktest uitvoeren om te controleren dat de leiding weer dicht is." },
-          { title: "3. Droogtijd Respecteren", desc: "Begin pas met stuc- of tegelherstel als de constructie aantoonbaar droog is gemeten." }
+          { title: "1. Polis controleren", desc: "Meld de lekkage direct bij uw opstalverzekering; lekdetectie en gevolgschade worden vaak vergoed, afhankelijk van uw polisvoorwaarden." },
+          { title: "2. Druktest na reparatie", desc: "Laat de installateur na de reparatie een druktest uitvoeren om te controleren dat de leiding weer dicht is." },
+          { title: "3. Droogtijd respecteren", desc: "Begin pas met stuc- of tegelherstel als de constructie aantoonbaar droog is gemeten." }
         ]
       },
 
       schimmel: {
-        title: "Schimmel op Koude Plekken",
+        title: "Schimmel op koude plekken",
         sub: "Onafhankelijk advies & plan van aanpak voor koude plekken en schimmel",
         icon: "biohazard",
         framework: "Bouwfysische praktijk • koudebruggen",
@@ -1236,27 +1247,27 @@
         analysisExtra: `Wat we zien past bij schimmel op een plek die kouder is dan de rest van de kamer. Ook als de luchtvochtigheid in de kamer zelf redelijk is, kan zo'n koude plek lang vochtig blijven. Goed herstel vraagt om twee dingen: de koude plek warmer maken (isoleren) én de schimmel verwijderen.`,
         risks: [
           {
-            title: "1. Gezondheid & Binnenklimaat",
+            title: "1. Gezondheid & binnenklimaat",
             desc: "Inademing van schimmelsporen kan leiden tot allergische reacties en luchtwegklachten, vooral bij kinderen, ouderen en mensen met astma."
           },
           {
-            title: "2. Bij Huur of Verhuur",
-            desc: "Bij huur of verhuur kan ernstige schimmelvorming aanleiding geven tot discussie over onderhoud en gebreken."
+            title: "2. Bij huur of verhuur",
+            desc: "Ernstige schimmel kan tussen huurder en verhuurder leiden tot discussie over onderhoud en gebreken."
           },
           {
-            title: "3. Schade aan Stoffering & Meubels",
+            title: "3. Schade aan stoffering & meubels",
             desc: "Schimmel kan zich hechten aan gordijnen, kleding en meubels, met verkleuring en geurhinder tot gevolg."
           }
         ],
         solution: `Zorgen dat schimmel niet meer kan groeien: de schimmel verwijderen, de koude plek isoleren met platen die vocht kunnen opnemen en weer afgeven, en afwerken met een ademende verf waarop schimmel slecht groeit. Waar nodig aangevuld met betere ventilatie.`,
         options: [
           {
-            name: "Optie A: Reiniging + Isolatie + Silicaatverf",
+            name: "Optie A: Reiniging + isolatie + silicaatverf",
             desc: "Schimmel verwijderen met waterstofperoxide, de koude plek isoleren met minerale platen die vocht kunnen bufferen (bijv. calciumsilicaat) en afwerken met silicaatverf.",
             pros: "✓ Pakt de koude plek zelf aan (warmere muur)<br>✓ Silicaatverf remt nieuwe schimmelgroei<br>✓ Geen chloor of agressieve middelen"
           },
           {
-            name: "Ventilatie-unit met Warmteterugwinning",
+            name: "Ventilatie-unit met warmteterugwinning",
             desc: "Een ventilatie-unit in de buitenmuur die vanzelf harder gaat bij veel vocht en de luchtvochtigheid in de kamer rond of onder 55% houdt.",
             pros: "✓ Verlaagt de luchtvochtigheid continu<br>✓ Voert vocht en CO₂ af naar buiten<br>✕ De koude plek zelf blijft bestaan"
           },
@@ -1267,7 +1278,7 @@
           }
         ],
         steps: `<strong>Stap 1: Schimmel verwijderen</strong><br>
-        Reinig de aangetaste plek met waterstofperoxide (3-5%) of alcohol (70-80%). Vermijd chloor op poreuze ondergronden. Sterk aangetast behang of stucwerk verwijderen; draag hierbij stofmasker (FFP2) en handschoenen.<br><br>
+        Reinig de aangetaste plek met waterstofperoxide (3-5%) of alcohol (70-80%). Vermijd chloor op poreuze ondergronden. Sterk aangetast behang of stucwerk verwijderen; draag hierbij een stofmasker (FFP2) en handschoenen.<br><br>
         <strong>Stap 2: Koudebrug isoleren</strong><br>
         Breng dampopen, capillair actieve isolatieplaten (bijv. calciumsilicaat, 25-50 mm) aan op de koude hoek of latei. Laat de isolatie een strook doorlopen op de aansluitende wand of het plafond, zodat de koude plek niet simpelweg verschuift. Dit verhoogt de oppervlaktetemperatuur doorgaans met enkele graden.<br><br>
         <strong>Stap 3: Dampopen, schimmelwerende afwerking</strong><br>
@@ -1280,9 +1291,9 @@
         ],
         totalLabel: "Totaal Optie A (per kamer, excl. optionele WTW)",
         checks: [
-          { title: "1. Juist Schoonmaakmiddel", desc: "Zorg dat de schimmel wordt verwijderd met een geschikt middel en niet alleen met chloor (bleekmiddel)." },
-          { title: "2. Koude Plek Aanpakken", desc: "Alleen overschilderen zonder de koude plek te isoleren leidt meestal binnen enkele maanden tot nieuwe schimmelgroei." },
-          { title: "3. Ademende Verf", desc: "Controleer dat er ademende (dampopen) silicaat- of kalkverf wordt gebruikt en geen latexverf die vocht insluit." }
+          { title: "1. Juist schoonmaakmiddel", desc: "Zorg dat de schimmel wordt verwijderd met een geschikt middel en niet alleen met chloor (bleekmiddel)." },
+          { title: "2. Koude plek aanpakken", desc: "Controleer dat de koude plek wordt geïsoleerd. Alleen overschilderen leidt meestal binnen enkele maanden tot nieuwe schimmel." },
+          { title: "3. Ademende verf", desc: "Controleer dat er ademende (dampopen) silicaat- of kalkverf wordt gebruikt en geen latexverf die vocht insluit." }
         ]
       }
     };
@@ -1323,7 +1334,7 @@
           "De slaapkamers liggen aan de [straatzijde / geluidsbelaste zijde]. Optie A vraagt geen open roosters, waardoor tocht en geluidsinval worden voorkomen terwijl het vocht wel continu wordt afgevoerd."
         ],
         [
-          "Gezien het beschikbare budget en de bestaande afzuigpunten in [keuken en badkamer] is optie B bij deze woning de meest doelmatige stap. Tocht en geluid via toevoerroosters zijn hier naar verwachting goed acceptabel.",
+          "Gezien het beschikbare budget en de bestaande afzuigpunten in [keuken en badkamer] is optie B bij deze woning de meest doelmatige stap. Tocht en geluid via de toevoerroosters zijn hier naar verwachting acceptabel.",
           "Omdat het om een [huurwoning / tijdelijke situatie] gaat, adviseren wij optie B: de ingreep is beperkt en de investering het laagst, terwijl de vochtafvoer wel structureel verbetert."
         ],
         [
@@ -1340,7 +1351,7 @@
           "Gezien de [zeer hoge doorvochtiging / afwijkende muuropbouw] verwachten wij van injectie onvoldoende zekerheid. Een fysieke waterkering via onderkapping biedt hier meer zekerheid, ondanks de grotere ingreep."
         ],
         [
-          "Het betreft een [monumentaal pand] waarbij boorwerk in het metselwerk zoveel mogelijk vermeden moet worden. Elektro-osmose kan dan worden overwogen; omdat de werking onzeker is, adviseren wij het effect met vochtmetingen te laten volgen."
+          "Het betreft een [monumentaal pand] waarbij boorwerk in het metselwerk zo veel mogelijk vermeden moet worden. Elektro-osmose kan dan worden overwogen; omdat de werking onzeker is, adviseren wij het effect met vochtmetingen te laten volgen."
         ]
       ],
       doorslaand: [
@@ -1357,7 +1368,7 @@
       ],
       kelderventilatie: [
         [
-          "De vochtlast in deze kelder komt vooral van zomercondensatie. Een ventilator met slimme regeling, die alleen ventileert als de buitenlucht droger is, pakt precies dat aan tegen lage gebruikskosten, en er is een geschikte plek voor een doorvoer via [koekoek / kelderwand].",
+          "Het vocht in deze kelder komt vooral door zomercondensatie. Een ventilator met slimme regeling ventileert alleen als de buitenlucht droger is en pakt precies dat aan, tegen lage gebruikskosten. Via de [koekoek / kelderwand] is een geschikte plek voor de doorvoer.",
           "De kelder wordt gebruikt voor [opslag], waarbij continu drogen belangrijker is dan verse lucht. Een slimme regeling ventileert alleen als dat de kelder droger maakt en is daarmee de meest doelmatige oplossing."
         ],
         [
@@ -1394,7 +1405,7 @@
       schimmel: [
         [
           "De schimmel zit op een duidelijk koude plek ([buitenhoek / latei]), terwijl de luchtvochtigheid in de ruimte zelf acceptabel is. Het isoleren van die koude plek pakt de oorzaak aan.",
-          "De schimmel keert terug op dezelfde plek ondanks eerder schoonmaken. Dat bevestigt een koude plek (koudebrug); isoleren en afwerken met ademende verf verkleint de kans op herhaling sterk."
+          "De schimmel komt ondanks eerder schoonmaken steeds op dezelfde plek terug. Dat wijst op een koude plek (koudebrug); isoleren en afwerken met ademende verf verkleint de kans op herhaling sterk."
         ],
         [
           "De schimmel komt op meerdere plekken voor en de luchtvochtigheid in de ruimte is structureel te hoog. Betere ventilatie is hier de belangrijkste maatregel; lokale isolatie kan daarna alsnog nodig zijn."
@@ -1541,7 +1552,7 @@
     function getVveHtml() {
       const t = (typeof obj !== 'undefined' && obj && obj.type) || "";
       if (!VVE_TYPES.includes(t)) return "";
-      return `<p class="text-[9.5px] text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 leading-snug"><strong>Let op bij een ${t.toLowerCase()}:</strong> de gevel, buitenmuren en gemeenschappelijke installaties zijn meestal eigendom van de VvE. Overleg vóór de uitvoering met de VvE; voor ingrepen zoals boringen in de gevel is meestal toestemming nodig.</p>`;
+      return `<p class="text-[9.5px] text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 leading-snug"><strong>Let op bij een ${t.toLowerCase()}:</strong> de gevel, de buitenmuren en gemeenschappelijke installaties zijn meestal eigendom van de VvE. Overleg vóór de uitvoering met de VvE; voor ingrepen zoals boringen in de gevel heeft u vaak toestemming nodig.</p>`;
     }
 
     // Toelichting bij de kostenraming als de aanbevolen optie niet optie A is
@@ -1560,12 +1571,14 @@
         return `<tr class="${isRec ? 'bg-indigo-50 font-bold text-indigo-950' : 'text-slate-700'}">
           <td class="p-1.5 w-16 font-black">Optie ${OPTION_LETTERS[i]}</td>
           <td class="p-1.5">${escHtml(optionName(o))}${prijsBasis(currentTemplateKey, i) && !(isRec && (a.prijs || "").trim()) ? ` <span class="font-normal text-slate-500">(${escHtml(prijsBasis(currentTemplateKey, i))})</span>` : ''}${isRec ? ' <span class="ml-1 text-[8px] font-black uppercase px-1.5 py-px rounded bg-indigo-600 text-white">Aanbevolen</span>' : ''}</td>
-          <td class="p-1.5 text-right font-semibold whitespace-nowrap">${optionPriceText(currentTemplateKey, i)}</td>
+          <td class="p-1.5 text-right font-semibold ${isRec && (a.prijs || "").trim() ? '' : 'whitespace-nowrap'}"><span style="display:inline-block;max-width:250px">${optionPriceText(currentTemplateKey, i)}</span></td>
         </tr>`;
       }).join('');
       const detailNote = a.rec === "none"
         ? 'De detailraming hieronder is uitgewerkt voor optie A en dient als referentie bij het vergelijken van offertes. De raming gaat uit van de aanpak zoals beschreven; vervallen er onderdelen, dan valt het bedrag lager uit.'
-        : `Hieronder de detailraming van de aanbevolen optie ${OPTION_LETTERS[a.rec]}. De raming gaat uit van de aanpak en de hoeveelheid zoals vermeld; is de werkelijke hoeveelheid groter of kleiner, dan verandert het bedrag naar verhouding.`;
+        : (a.prijs || "").trim()
+          ? `De prijs van optie ${OPTION_LETTERS[a.rec]} is hierboven afgestemd op uw woning. De detailraming hieronder laat zien hoe de kosten zijn opgebouwd bij het standaarduitgangspunt${prijsBasis(currentTemplateKey, a.rec) ? ` (${escHtml(prijsBasis(currentTemplateKey, a.rec))})` : ''}; de bedragen wijken daarom af van uw prijs.`
+          : `Hieronder de detailraming van de aanbevolen optie ${OPTION_LETTERS[a.rec]}. De raming gaat uit van de aanpak en de hoeveelheid zoals vermeld; is de werkelijke hoeveelheid groter of kleiner, dan verandert het bedrag naar verhouding.`;
       return `
         <div class="border border-slate-200 rounded-lg overflow-hidden mb-1.5">
           <table class="w-full text-left text-[9.5px]">
@@ -1598,7 +1611,7 @@
         1: {
           solution: `Vocht continu afvoeren met een afzuigsysteem in keuken, badkamer en toilet dat vanzelf harder gaat bij veel vocht of CO₂. Verse lucht komt binnen via roosters in de woonkamer en slaapkamers, die zich bij harde wind vanzelf wat dichtknijpen.`,
           steps: `<strong>Stap 1: Luchttoevoer in de verblijfsruimten</strong><br>
-          Plaats zelfregelende ventilatieroosters in de kozijnen of het glas van de woonkamer en de slaapkamers. Stem de capaciteit af op de grootte van de ruimte (eisen Bbl). Zelfregelende roosters knijpen bij harde wind automatisch af en beperken zo tocht. De roosters blijven permanent open.<br><br>
+          Plaats zelfregelende ventilatieroosters in de kozijnen of het glas van de woonkamer en de slaapkamers. Stem de capaciteit af op de grootte en het gebruik van de ruimte. Zelfregelende roosters knijpen bij harde wind automatisch af en beperken zo tocht. De roosters blijven permanent open.<br><br>
           <strong>Stap 2: Vraaggestuurde afzuigunit</strong><br>
           Plaats een energiezuinige afzuigbox met gelijkstroommotor (EC) en afzuigpunten in keuken, badkamer en toilet. Bestaande kanalen controleren, reinigen en waar nodig vervangen. Vraagsturing op luchtvochtigheid (RV) en/of CO₂, zodat de box automatisch opschakelt bij koken, douchen en 's nachts.<br><br>
           <strong>Stap 3: Overstroom, inregelen &amp; opleveringsmeting</strong><br>
@@ -1610,15 +1623,15 @@
           ],
           totalLabel: "Totaal Optie B (vraaggestuurde afzuiging)",
           checks: [
-            { title: "1. Meetrapport Vragen", desc: "Vraag om een meetrapport waarin per afzuigpunt staat hoeveel lucht er wordt afgezogen (in dm³/s), zodat zeker is dat het systeem krachtig genoeg is." },
-            { title: "2. Toevoer in Elke Verblijfsruimte", desc: "Controleer dat de woonkamer en elke slaapkamer een zelfregelend toevoerrooster krijgt; zonder toevoer kan de afzuiging niet goed werken." },
-            { title: "3. Automatische Regeling", desc: "Controleer dat de box vanzelf harder gaat bij veel vocht of CO₂, en dat de laagste stand stil genoeg is om altijd aan te laten." }
+            { title: "1. Meetrapport vragen", desc: "Vraag om een meetrapport waarin per afzuigpunt staat hoeveel lucht er wordt afgezogen (in dm³/s), zodat zeker is dat het systeem krachtig genoeg is." },
+            { title: "2. Toevoer in elke verblijfsruimte", desc: "Controleer dat de woonkamer en elke slaapkamer een zelfregelend toevoerrooster krijgt; zonder toevoer kan de afzuiging niet goed werken." },
+            { title: "3. Automatische regeling", desc: "Controleer dat de box vanzelf harder gaat bij veel vocht of CO₂, en dat de laagste stand stil genoeg is om altijd aan te laten." }
           ]
         },
         2: {
           solution: `Eén centrale ventilatie-unit die via kanalen verse lucht in de woon- en slaapkamers blaast en vochtige lucht uit keuken, badkamer en toilet afzuigt, en daarbij de warmte terugwint. Dit geeft het meeste comfort en het minste energieverlies, en past vooral bij een verbouwing.`,
           steps: `<strong>Stap 1: Ontwerp &amp; capaciteitsberekening</strong><br>
-          Laat de installateur een ventilatieontwerp maken met de benodigde capaciteit per ruimte (eisen Bbl), de plaats van de unit en het kanalentracé. Stem koven en doorvoeren vooraf af met de opdrachtgever.<br><br>
+          Laat de installateur een ventilatieontwerp maken met de benodigde capaciteit per ruimte, de plaats van de unit en het kanalentracé. Stem koven en doorvoeren vooraf af met de opdrachtgever.<br><br>
           <strong>Stap 2: Unit &amp; kanalenstelsel</strong><br>
           Plaats de WTW-unit op zolder of in een techniekruimte, met condensafvoer en een bypass voor de zomer. Buitenluchtkanalen dampdicht geïsoleerd uitvoeren; geluiddempers opnemen richting de slaapkamers.<br><br>
           <strong>Stap 3: Inregelen &amp; onderhoudsinstructie</strong><br>
@@ -1631,9 +1644,9 @@
           ],
           totalLabel: "Totaal Optie C (centrale balansventilatie)",
           checks: [
-            { title: "1. Meetrapport per Ventiel", desc: "Vraag om een meetrapport waarin per ventiel staat hoeveel lucht er in- en uitgaat (in dm³/s)." },
-            { title: "2. Geluid in Slaapkamers", desc: "Controleer dat geluiddempers zijn opgenomen, zodat de installatie 's nachts niet hoorbaar is in de slaapkamers." },
-            { title: "3. Onderhoud &amp; Bereikbaarheid", desc: "Zorg dat de unit goed bereikbaar is voor filtervervanging en dat u een onderhoudsinstructie ontvangt." }
+            { title: "1. Meetrapport per ventiel", desc: "Vraag om een meetrapport waarin per ventiel staat hoeveel lucht er in- en uitgaat (in dm³/s)." },
+            { title: "2. Geluid in slaapkamers", desc: "Controleer dat geluiddempers zijn opgenomen, zodat de installatie 's nachts niet hoorbaar is in de slaapkamers." },
+            { title: "3. Onderhoud &amp; bereikbaarheid", desc: "Zorg dat de unit goed bereikbaar is voor filtervervanging en dat u een onderhoudsinstructie ontvangt." }
           ]
         }
       },
@@ -1655,9 +1668,9 @@
           ],
           totalLabel: "Totaal Optie B (ca. 16-20 m¹ muur)",
           checks: [
-            { title: "1. Muur Blijft Stevig", desc: "Controleer dat de offerte beschrijft in welke stappen er wordt gezaagd en hoe de muur daarbij stevig blijft staan." },
-            { title: "2. Doorlopende Waterkering", desc: "Controleer dat de folie of platen met overlap worden aangebracht, zodat er nergens een onderbreking in de kering ontstaat." },
-            { title: "3. Zoutbestendig Stucwerk", desc: "Zorg dat er zoutbestendig stucwerk (saneerpleister) of een zoutwerende laag wordt gebruikt en geen gewoon gipsstucwerk." }
+            { title: "1. Muur blijft stevig", desc: "Controleer dat de offerte beschrijft in welke stappen er wordt gezaagd en hoe de muur daarbij stevig blijft staan." },
+            { title: "2. Doorlopende waterkering", desc: "Controleer dat de folie of platen met overlap worden aangebracht, zodat er nergens een onderbreking in de kering ontstaat." },
+            { title: "3. Zoutbestendig stucwerk", desc: "Zorg dat er zoutbestendig stucwerk (saneerpleister) of een zoutwerende laag wordt gebruikt en geen gewoon gipsstucwerk." }
           ]
         },
         2: {
@@ -1676,9 +1689,9 @@
           ],
           totalLabel: "Totaal Optie C (ca. 16-20 m¹ muur)",
           checks: [
-            { title: "1. Resultaatafspraak Vastleggen", desc: "Leg schriftelijk vast welk resultaat de leverancier garandeert en wat er gebeurt als het vocht onvoldoende afneemt." },
-            { title: "2. Meten Vooraf en Achteraf", desc: "Laat vóór de plaatsing en daarna op dezelfde plekken het vocht meten, zodat het effect aantoonbaar is." },
-            { title: "3. Zoutbestendig Stucwerk", desc: "Zorg dat er zoutbestendig stucwerk (saneerpleister) wordt gebruikt en geen gewoon gipsstucwerk." }
+            { title: "1. Resultaatafspraak vastleggen", desc: "Leg schriftelijk vast welk resultaat de leverancier garandeert en wat er gebeurt als het vocht onvoldoende afneemt." },
+            { title: "2. Meten vooraf en achteraf", desc: "Laat vóór de plaatsing en daarna op dezelfde plekken het vocht meten, zodat het effect aantoonbaar is." },
+            { title: "3. Zoutbestendig stucwerk", desc: "Zorg dat er zoutbestendig stucwerk (saneerpleister) wordt gebruikt en geen gewoon gipsstucwerk." }
           ]
         }
       },
@@ -1699,9 +1712,9 @@
           ],
           totalLabel: "Totaal Optie B (ca. 50 m² gevel)",
           checks: [
-            { title: "1. Muur Moet Kunnen Ademen", desc: "Vraag om het productblad en controleer dat de gevelverf 'dampopen' is, zodat vocht niet in de muur wordt opgesloten." },
-            { title: "2. Scheuren Vooraf Herstellen", desc: "Controleer dat scheuren en slechte voegen vóór het coaten worden hersteld." },
-            { title: "3. Lagen &amp; Weersomstandigheden", desc: "Controleer dat minimaal twee lagen worden aangebracht, bij droog weer en boven circa 5 °C." }
+            { title: "1. Muur moet kunnen ademen", desc: "Vraag om het productblad en controleer dat de gevelverf 'dampopen' is, zodat vocht niet in de muur wordt opgesloten." },
+            { title: "2. Scheuren vooraf herstellen", desc: "Controleer dat scheuren en slechte voegen vóór het coaten worden hersteld." },
+            { title: "3. Lagen &amp; weersomstandigheden", desc: "Controleer dat minimaal twee lagen worden aangebracht, bij droog weer en boven circa 5 °C." }
           ]
         },
         2: {
@@ -1719,16 +1732,16 @@
           ],
           totalLabel: "Totaal Optie C (ca. 50 m² gevel)",
           checks: [
-            { title: "1. Vergunning Nagaan", desc: "Controleer vooraf bij de gemeente of een omgevingsvergunning nodig is." },
-            { title: "2. Waterdichte Aansluitingen", desc: "Controleer dat aansluitingen bij kozijnen, dorpels en sokkel in de offerte zijn uitgewerkt." },
-            { title: "3. Compleet Systeem met Garantie", desc: "Vraag om een compleet systeem van één leverancier dat de muur laat ademen, met garantie op het geheel." }
+            { title: "1. Vergunning nagaan", desc: "Controleer vooraf bij de gemeente of een omgevingsvergunning nodig is." },
+            { title: "2. Waterdichte aansluitingen", desc: "Controleer dat aansluitingen bij kozijnen, dorpels en sokkel in de offerte zijn uitgewerkt." },
+            { title: "3. Compleet systeem met garantie", desc: "Vraag om een compleet systeem van één leverancier dat de muur laat ademen, met garantie op het geheel." }
           ]
         }
       },
 
       kelderventilatie: {
         1: {
-          solution: `De kelderlucht continu droog houden met een vaste luchtontvochtiger die het water direct naar het riool afvoert. De kelder wordt daarbij zoveel mogelijk afgesloten van warme, vochtige buitenlucht.`,
+          solution: `De kelderlucht continu droog houden met een vaste luchtontvochtiger die het water direct naar het riool afvoert. De kelder wordt daarbij zo veel mogelijk afgesloten van warme, vochtige buitenlucht.`,
           steps: `<strong>Stap 1: Passieve openingen afsluiten</strong><br>
           Sluit open roosters en kieren af met afsluitbare kleppen. Een droger werkt alleen doelmatig in een ruimte waar geen vochtige buitenlucht vrij binnenstroomt.<br><br>
           <strong>Stap 2: Droger plaatsen &amp; afvoer aansluiten</strong><br>
@@ -1741,9 +1754,9 @@
           ],
           totalLabel: "Totaal Optie B (vaste droger)",
           checks: [
-            { title: "1. Krachtig Genoeg", desc: "Controleer dat de luchtontvochtiger krachtig genoeg is voor de grootte van de kelder." },
-            { title: "2. Permanente Afvoer", desc: "Zorg voor een vaste afvoer naar het riool, zodat het apparaat niet stilvalt door een volle opvangbak." },
-            { title: "3. Juiste Instelling", desc: "Controleer dat het apparaat is ingesteld op een luchtvochtigheid van circa 55 tot 60%." }
+            { title: "1. Krachtig genoeg", desc: "Controleer dat de luchtontvochtiger krachtig genoeg is voor de grootte van de kelder." },
+            { title: "2. Permanente afvoer", desc: "Zorg voor een vaste afvoer naar het riool, zodat het apparaat niet stilvalt door een volle opvangbak." },
+            { title: "3. Juiste instelling", desc: "Controleer dat het apparaat is ingesteld op een luchtvochtigheid van circa 55 tot 60%." }
           ]
         },
         2: {
@@ -1761,9 +1774,9 @@
           ],
           totalLabel: "Totaal Optie C (kelder-WTW)",
           checks: [
-            { title: "1. Slimme Regeling Aanwezig", desc: "Controleer dat de unit wordt geregeld op het vocht binnen en buiten; zonder die regeling kan de unit in de zomer juist vocht naar binnen halen." },
+            { title: "1. Slimme regeling aanwezig", desc: "Controleer dat de unit wordt geregeld op het vocht binnen en buiten; zonder die regeling kan de unit in de zomer juist vocht naar binnen halen." },
             { title: "2. Condensafvoer", desc: "Controleer dat de condensafvoer van de unit goed is aangesloten." },
-            { title: "3. Goed Sluitende Klep", desc: "Controleer dat de unit een goed sluitende klep heeft voor momenten dat er niet geventileerd wordt." }
+            { title: "3. Goed sluitende klep", desc: "Controleer dat de unit een goed sluitende klep heeft voor momenten dat er niet geventileerd wordt." }
           ]
         }
       },
@@ -1785,8 +1798,8 @@
           totalLabel: "Totaal Optie B (ca. 30 m²)",
           checks: [
             { title: "1. Hoogwateralarm", desc: "Controleer dat de pomp een hoogwateralarm heeft, zodat een storing direct opvalt." },
-            { title: "2. Onderhoud Pompput", desc: "Zorg dat de pompput bereikbaar blijft en vraag naar het onderhoudsadvies voor pomp en put." },
-            { title: "3. Afvoer &amp; Terugslagklep", desc: "Controleer dat de afvoer een terugslagklep heeft, zodat water niet terug kan stromen." }
+            { title: "2. Onderhoud pompput", desc: "Zorg dat de pompput bereikbaar blijft en vraag naar het onderhoudsadvies voor pomp en put." },
+            { title: "3. Afvoer &amp; terugslagklep", desc: "Controleer dat de afvoer een terugslagklep heeft, zodat water niet terug kan stromen." }
           ]
         },
         2: {
@@ -1794,7 +1807,7 @@
           steps: `<strong>Stap 1: Voorbereiden &amp; ontgraven</strong><br>
           Doe vooraf een KLIC-melding (kabels en leidingen) en laat de stabiliteit tijdens het ontgraven beoordelen. Graaf de buitenzijde af tot op de fundering, zo nodig gefaseerd.<br><br>
           <strong>Stap 2: Afdichten</strong><br>
-          Reinig de wanden, vlak oneffenheden uit en breng een bitumineuze afdichting aan, met een holle hoek bij de overgang naar de fundering. Laat de afdichting doorlopen tot boven het maaiveld.<br><br>
+          Reinig de wanden, vlak oneffenheden uit en breng een bitumineuze afdichting aan, met een holkeel (afgeronde hoek) bij de overgang naar de fundering. Laat de afdichting doorlopen tot boven het maaiveld.<br><br>
           <strong>Stap 3: Bescherming &amp; aanvullen</strong><br>
           Breng een beschermlaag of drainageplaat aan, eventueel met perimeterisolatie. Vul de sleuf in lagen aan en herstel bestrating en tuin.`,
           costs: [
@@ -1805,16 +1818,16 @@
           ],
           totalLabel: "Totaal Optie C (afdichting buitenzijde)",
           checks: [
-            { title: "1. KLIC-melding &amp; Stabiliteit", desc: "Controleer dat de uitvoerder een KLIC-melding doet en maatregelen neemt voor de stabiliteit tijdens het graven." },
-            { title: "2. Doorlopende Afdichting", desc: "Controleer dat de afdichting doorloopt tot boven het maaiveld en goed aansluit op de fundering." },
-            { title: "3. Beschermlaag vóór Aanvullen", desc: "Zorg dat de afdichting wordt beschermd voordat de sleuf wordt aangevuld." }
+            { title: "1. KLIC-melding &amp; stabiliteit", desc: "Controleer dat de uitvoerder een KLIC-melding doet en maatregelen neemt voor de stabiliteit tijdens het graven." },
+            { title: "2. Doorlopende afdichting", desc: "Controleer dat de afdichting doorloopt tot boven het maaiveld en goed aansluit op de fundering." },
+            { title: "3. Beschermlaag vóór aanvullen", desc: "Zorg dat de afdichting wordt beschermd voordat de sleuf wordt aangevuld." }
           ]
         }
       },
 
       lekkage: {
         1: {
-          solution: `Het opnieuw waterdicht maken van de aansluitingen rond bad en douche door het kitwerk volledig te vernieuwen. Blijft het vocht daarna terugkomen, dan volgt gerichte lekdetectie.`,
+          solution: `De aansluitingen rond bad en douche weer waterdicht maken door het kitwerk volledig te vernieuwen. Komt het vocht daarna terug, dan volgt gerichte lekdetectie.`,
           steps: `<strong>Stap 1: Oude kit volledig verwijderen</strong><br>
           Verwijder alle oude kitvoegen volledig, inclusief resten. Reinig en ontvet de voegen.<br><br>
           <strong>Stap 2: Laten drogen</strong><br>
@@ -1826,14 +1839,14 @@
           ],
           totalLabel: "Totaal Optie B (kitwerk)",
           checks: [
-            { title: "1. Oude Kit Volledig Weg", desc: "Controleer dat de oude kit volledig is verwijderd en niet is overgekit." },
-            { title: "2. Droge Ondergrond", desc: "Zorg dat de voegen droog zijn voordat er opnieuw wordt gekit." },
-            { title: "3. Effect Controleren", desc: "Controleer na enkele weken of de vochtplekken drogen; blijft het vocht, laat dan lekdetectie uitvoeren." }
+            { title: "1. Oude kit volledig weg", desc: "Controleer dat de oude kit volledig is verwijderd en niet is overgekit." },
+            { title: "2. Droge ondergrond", desc: "Zorg dat de voegen droog zijn voordat er opnieuw wordt gekit." },
+            { title: "3. Effect controleren", desc: "Controleer na enkele weken of de vochtplekken drogen; blijft het vocht, laat dan lekdetectie uitvoeren." }
           ]
         },
         2: {
-          solution: `Het versneld en gecontroleerd drogen van de constructie nadat het lek is hersteld, om schimmelvorming en gevolgschade te voorkomen.`,
-          steps: `<strong>Stap 1: Lek eerst hersteld</strong><br>
+          solution: `De constructie versneld en gecontroleerd laten drogen nadat het lek is hersteld, om schimmel en gevolgschade te voorkomen.`,
+          steps: `<strong>Stap 1: Eerst het lek herstellen</strong><br>
           Begin pas met drogen als het lek aantoonbaar is hersteld, bijvoorbeeld met een druktest door de installateur.<br><br>
           <strong>Stap 2: Bouwdrogers plaatsen</strong><br>
           Plaats bouwdrogers en ventilatoren in de betreffende ruimte, met ramen en deuren dicht. Leeg de drogers regelmatig of sluit ze aan op een afvoer.<br><br>
@@ -1844,9 +1857,9 @@
           ],
           totalLabel: "Totaal Optie C (bouwdroging)",
           checks: [
-            { title: "1. Lek Eerst Hersteld", desc: "Controleer dat het lek is hersteld voordat er wordt gedroogd." },
-            { title: "2. Meten vóór Herafwerking", desc: "Begin pas met herafwerking als de constructie aantoonbaar droog is gemeten." },
-            { title: "3. Kosten Bewaren", desc: "Bewaar bonnen en facturen; bouwdroging is vaak meeverzekerd als gevolgschade." }
+            { title: "1. Lek eerst hersteld", desc: "Controleer dat het lek is hersteld voordat er wordt gedroogd." },
+            { title: "2. Meten vóór herafwerking", desc: "Begin pas met herafwerking als de constructie aantoonbaar droog is gemeten." },
+            { title: "3. Kosten bewaren", desc: "Bewaar bonnen en facturen; bouwdroging is vaak meeverzekerd als gevolgschade, afhankelijk van uw polis." }
           ]
         }
       },
@@ -1855,7 +1868,7 @@
         1: {
           solution: `De luchtvochtigheid in de kamer verlagen met een ventilatie-unit die vanzelf harder gaat bij veel vocht, en de schimmel verwijderen. De koude plek zelf blijft bestaan; controleer daarom na de winter of de schimmel wegblijft.`,
           steps: `<strong>Stap 1: Schimmel verwijderen</strong><br>
-          Reinig de aangetaste plek met waterstofperoxide (3-5%) of alcohol (70-80%). Vermijd chloor op poreuze ondergronden. Draag stofmasker (FFP2) en handschoenen.<br><br>
+          Reinig de aangetaste plek met waterstofperoxide (3-5%) of alcohol (70-80%). Vermijd chloor op poreuze ondergronden. Draag een stofmasker (FFP2) en handschoenen.<br><br>
           <strong>Stap 2: Gevelboring &amp; montage WTW-unit</strong><br>
           Diamantboring in de buitengevel volgens fabrieksopgave, met afschot naar buiten. Plaats de unit met afsluitklep en vochtsensor.<br><br>
           <strong>Stap 3: Instellen &amp; controleren</strong><br>
@@ -1866,15 +1879,15 @@
           ],
           totalLabel: "Totaal Optie B (per kamer)",
           checks: [
-            { title: "1. Vochtsturing Controleren", desc: "Controleer dat de unit automatisch opschakelt bij een hoge luchtvochtigheid." },
-            { title: "2. Geluid in Slaapkamer", desc: "Controleer dat de unit in de basisstand stil draait, vooral in slaapkamers." },
-            { title: "3. Controle na de Winter", desc: "Controleer na de winter of de schimmel wegblijft; zo niet, laat dan de koude plek alsnog isoleren." }
+            { title: "1. Vochtsturing controleren", desc: "Controleer dat de unit automatisch opschakelt bij een hoge luchtvochtigheid." },
+            { title: "2. Geluid in slaapkamer", desc: "Controleer dat de unit in de basisstand stil draait, vooral in slaapkamers." },
+            { title: "3. Controle na de winter", desc: "Controleer na de winter of de schimmel wegblijft; zo niet, laat dan de koude plek alsnog isoleren." }
           ]
         },
         2: {
           solution: `De koude plek warm houden met plaatselijke wandverwarming, zodat de muur daar niet lang vochtig blijft. Geschikt voor smalle of lastig bereikbare plekken waar isoleren niet goed mogelijk is.`,
           steps: `<strong>Stap 1: Schimmel verwijderen</strong><br>
-          Reinig de aangetaste plek met waterstofperoxide (3-5%) of alcohol (70-80%). Verwijder sterk aangetast behang of stucwerk; draag stofmasker (FFP2) en handschoenen.<br><br>
+          Reinig de aangetaste plek met waterstofperoxide (3-5%) of alcohol (70-80%). Verwijder sterk aangetast behang of stucwerk; draag een stofmasker (FFP2) en handschoenen.<br><br>
           <strong>Stap 2: Wandverwarming aanbrengen</strong><br>
           Breng een verwarmingslint of -folie aan achter de plint of in het stucwerk langs de koude plek. Laat de aansluiting op een aparte groep met thermostaat uitvoeren door een erkend installateur.<br><br>
           <strong>Stap 3: Afwerken &amp; instellen</strong><br>
@@ -1886,9 +1899,9 @@
           ],
           totalLabel: "Totaal Optie C (per kamer)",
           checks: [
-            { title: "1. Thermostaat &amp; Regeling", desc: "Controleer dat er een thermostaat is, zodat het systeem niet continu op vol vermogen draait." },
-            { title: "2. Erkend Installateur", desc: "Laat de elektrische aansluiting uitvoeren door een erkend installateur, op een aparte groep." },
-            { title: "3. Ademende Verf", desc: "Controleer dat er ademende (dampopen) silicaat- of kalkverf wordt gebruikt en geen latexverf die vocht insluit." }
+            { title: "1. Thermostaat &amp; regeling", desc: "Controleer dat er een thermostaat is, zodat het systeem niet continu op vol vermogen draait." },
+            { title: "2. Erkend installateur", desc: "Laat de elektrische aansluiting uitvoeren door een erkend installateur, op een aparte groep." },
+            { title: "3. Ademende verf", desc: "Controleer dat er ademende (dampopen) silicaat- of kalkverf wordt gebruikt en geen latexverf die vocht insluit." }
           ]
         }
       }
@@ -1966,7 +1979,7 @@
     const URGENTIE = {
       hoog: { label: "Hoog", cls: "bg-red-100 text-red-800 border-red-300", tekst: "Binnen enkele weken aanpakken; schade en klachten nemen toe zolang het probleem blijft bestaan." },
       gemiddeld: { label: "Gemiddeld", cls: "bg-amber-100 text-amber-800 border-amber-300", tekst: "Aanpakken binnen enkele maanden; uitstel vergroot de kans op schade." },
-      laag: { label: "Laag", cls: "bg-emerald-100 text-emerald-800 border-emerald-300", tekst: "Meenemen bij gepland onderhoud; geen directe schade te verwachten." }
+      laag: { label: "Laag", cls: "bg-emerald-100 text-emerald-800 border-emerald-300", tekst: "Meenemen bij gepland onderhoud; op korte termijn is geen grote schade te verwachten." }
     };
 
     function getSam(key = currentTemplateKey) {
@@ -2432,7 +2445,7 @@
                       Advies &amp; Plan van Aanpak
                     </span>
                   </div>
-                  <p class="text-[10px] text-slate-500 font-medium">Onafhankelijk Vocht-, Binnenklimaat- en Schadeadviesbureau</p>
+                  <p class="text-[10px] text-slate-500 font-medium">Onafhankelijk vocht-, binnenklimaat- en schadeadviesbureau</p>
                 </div>
               </div>
 
@@ -2482,7 +2495,7 @@
             <div class="mt-2.5 space-y-1.5 text-xs">
               <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
                 <span class="w-4 h-4 rounded bg-slate-900 text-white text-[9px] font-black flex items-center justify-center">1</span>
-                Situatie ter Plaatse
+                Situatie ter plaatse
               </h2>
               <div class="bg-blue-50/70 border-l-4 border-blue-600 p-2.5 rounded-r-xl space-y-1">
                 <div id="aanleidingHolder">${getAanleidingHtml()}</div>
@@ -2497,7 +2510,7 @@
             </div>
           </div>
           <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
-            <span class="shrink-0">CheckMijnHuis • Onafhankelijk Bouwfysisch Advies</span>
+            <span class="shrink-0">CheckMijnHuis • Onafhankelijk bouwfysisch advies</span>
             <span class="min-w-0 truncate text-center">${data.title} • Pagina 1 van 5</span>
             <span class="shrink-0">www.checkmijnhuis.nl</span>
           </div>
@@ -2512,10 +2525,10 @@
                 ${getVectorLogo(24)}
                 <div>
                   <span class="font-black text-slate-900 text-xs">CheckMijn<span class="text-blue-600">Huis</span></span>
-                  <span class="text-[9px] text-slate-500 block leading-tight">Advies &amp; Plan van Aanpak • ${data.title}</span>
+                  <span class="text-[9px] text-slate-500 block leading-tight">Advies &amp; plan van aanpak • ${data.title}</span>
                 </div>
               </div>
-              <span id="hdrObject2" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
+              <span id="hdrObject2" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-right" style="max-width:55%">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
             </div>
 
 
@@ -2523,7 +2536,7 @@
             <div class="mt-2.5 space-y-1.5 text-xs">
               <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
                 <span class="w-4 h-4 rounded bg-slate-900 text-white text-[9px] font-black flex items-center justify-center">2</span>
-                Metingen &amp; Bevindingen
+                Metingen &amp; bevindingen
               </h2>
               <div id="kbHolder">${getKBHtml()}</div>
             </div>
@@ -2535,7 +2548,7 @@
 
           </div>
           <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
-            <span class="shrink-0">CheckMijnHuis • Onafhankelijk Bouwfysisch Advies</span>
+            <span class="shrink-0">CheckMijnHuis • Onafhankelijk bouwfysisch advies</span>
             <span class="min-w-0 truncate text-center">${data.title} • Pagina 2 van 5</span>
             <span class="shrink-0">www.checkmijnhuis.nl</span>
           </div>
@@ -2550,10 +2563,10 @@
                 ${getVectorLogo(24)}
                 <div>
                   <span class="font-black text-slate-900 text-xs">CheckMijn<span class="text-blue-600">Huis</span></span>
-                  <span class="text-[9px] text-slate-500 block leading-tight">Advies &amp; Plan van Aanpak • ${data.title}</span>
+                  <span class="text-[9px] text-slate-500 block leading-tight">Advies &amp; plan van aanpak • ${data.title}</span>
                 </div>
               </div>
-              <span id="hdrObject3" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
+              <span id="hdrObject3" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-right" style="max-width:55%">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
             </div>
 
             <!-- HOOFDSTUK 2: ACHTERGROND -->
@@ -2572,7 +2585,7 @@
             <div class="mt-2.5 space-y-1.5 text-xs">
               <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5 text-amber-900">
                 <span class="w-4 h-4 rounded bg-amber-600 text-white text-[9px] font-black flex items-center justify-center">4</span>
-                Risico&#39;s bij Uitstel of Niet-Ingrijpen
+                Risico&#39;s bij uitstel of niet ingrijpen
               </h2>
 
               <div class="grid grid-cols-3 gap-2 text-[9.5px]">
@@ -2589,7 +2602,7 @@
             <div class="mt-2.5 space-y-1 text-xs">
               <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
                 <span class="w-4 h-4 rounded bg-slate-900 text-white text-[9px] font-black flex items-center justify-center">5</span>
-                Bouwfysische Oplossingsrichting
+                Bouwfysische oplossingsrichting
               </h2>
               <p class="text-slate-700 text-[10.5px] leading-relaxed">${optie.solution}</p>
             </div>
@@ -2599,7 +2612,7 @@
               <div class="flex items-center justify-between border-b border-slate-200 pb-0.5">
                 <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
                   <span class="w-4 h-4 rounded bg-slate-900 text-white text-[9px] font-black flex items-center justify-center">6</span>
-                  Onafhankelijke Vergelijking van Oplossingen
+                  Onafhankelijke vergelijking van oplossingen
                 </h2>
                 <span class="shrink-0 whitespace-nowrap text-[8.5px] text-slate-500">Voor- en nadelen op een rij</span>
               </div>
@@ -2625,7 +2638,7 @@
             </div>
           </div>
           <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
-            <span class="shrink-0">CheckMijnHuis • Onafhankelijk Bouwfysisch Advies</span>
+            <span class="shrink-0">CheckMijnHuis • Onafhankelijk bouwfysisch advies</span>
             <span class="min-w-0 truncate text-center">${data.title} • Pagina 3 van 5</span>
             <span class="shrink-0">www.checkmijnhuis.nl</span>
           </div>
@@ -2640,10 +2653,10 @@
                 ${getVectorLogo(24)}
                 <div>
                   <span class="font-black text-slate-900 text-xs">CheckMijn<span class="text-blue-600">Huis</span></span>
-                  <span class="text-[9px] text-slate-500 block leading-tight">Advies &amp; Plan van Aanpak • Uitvoering &amp; Kosten</span>
+                  <span class="text-[9px] text-slate-500 block leading-tight">Advies &amp; plan van aanpak • Uitvoering &amp; kosten</span>
                 </div>
               </div>
-              <span id="hdrObject4" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
+              <span id="hdrObject4" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-right" style="max-width:55%">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
             </div>
 
             <!-- HOOFDSTUK 5: TECHNISCH WERKVOORSCHRIFT & UITGANGSPUNTEN -->
@@ -2651,10 +2664,10 @@
               <div class="flex items-center justify-between border-b border-slate-200 pb-0.5">
                 <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
                   <span class="w-4 h-4 rounded bg-indigo-900 text-white text-[9px] font-black flex items-center justify-center">7</span>
-                  Technisch Werkvoorschrift (voor de uitvoerende partij)
+                  Technisch werkvoorschrift (voor de uitvoerende partij)
                 </h2>
                 <span class="shrink-0 whitespace-nowrap text-[8.5px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                  Technisch Uitgangskader
+                  Technisch uitgangskader
                 </span>
               </div>
 
@@ -2669,7 +2682,7 @@
             <div class="mt-2 p-2 rounded-xl bg-blue-50/70 border border-blue-200 text-[9px] text-blue-950 leading-snug flex items-center gap-2">
               <i data-lucide="info" class="w-4 h-4 text-blue-600 shrink-0"></i>
               <p>
-                <strong>Aanbeveling voor offerteaanvraag &amp; vergelijking:</strong> U kunt dit advies als bouwfysisch uitgangspunt meegeven aan uitvoerende partijen. Vraag hen om hun offerte en werkwijze te specificeren conform deze stappen en kwaliteitsnormen; zo kunt u voorstellen helder vergelijken en vergroot u de kans op een duurzaam resultaat.
+                <strong>Tip voor het opvragen van offertes:</strong> geef dit advies mee aan de uitvoerende partijen en vraag hen in de offerte aan te geven hoe zij de stappen hierboven uitvoeren, met welke producten en in welke hoeveelheden. Zo kunt u de offertes goed vergelijken en vergroot u de kans op een duurzaam resultaat.
               </p>
             </div>
 
@@ -2687,7 +2700,7 @@
               <div class="flex items-center justify-between border-b border-slate-200 pb-0.5">
                 <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
                   <span class="w-4 h-4 rounded bg-emerald-800 text-white text-[9px] font-black flex items-center justify-center">9</span>
-                  Indicatieve Kostenraming Uitvoering (Richtprijzen 2026)
+                  Indicatieve kostenraming uitvoering (richtprijzen 2026)
                 </h2>
                 <span class="shrink-0 whitespace-nowrap text-[8.5px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                   Incl. btw &amp; arbeidsloon
@@ -2699,9 +2712,9 @@
                 <table class="w-full text-left text-[9.5px]">
                   <thead class="bg-slate-100 uppercase text-[8.5px] text-slate-700 font-bold border-b border-slate-200">
                     <tr>
-                      <th class="p-1.5">Onderdeel / Werkzaamheid</th>
-                      <th class="p-1.5 text-center w-28">Indicatie Laag</th>
-                      <th class="p-1.5 text-center w-28">Indicatie Hoog</th>
+                      <th class="p-1.5">Onderdeel / werkzaamheid</th>
+                      <th class="p-1.5 text-center w-28">Indicatie laag</th>
+                      <th class="p-1.5 text-center w-28">Indicatie hoog</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100 text-slate-700">
@@ -2723,7 +2736,7 @@
             </div>
           </div>
           <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
-            <span class="shrink-0">CheckMijnHuis • Onafhankelijk Bouwfysisch Advies</span>
+            <span class="shrink-0">CheckMijnHuis • Onafhankelijk bouwfysisch advies</span>
             <span class="min-w-0 truncate text-center">${data.title} • Pagina 4 van 5</span>
             <span class="shrink-0">www.checkmijnhuis.nl</span>
           </div>
@@ -2738,10 +2751,10 @@
                 ${getVectorLogo(24)}
                 <div>
                   <span class="font-black text-slate-900 text-xs">CheckMijn<span class="text-blue-600">Huis</span></span>
-                  <span class="text-[9px] text-slate-500 block leading-tight">Advies &amp; Plan van Aanpak • Oplevering &amp; Verantwoording</span>
+                  <span class="text-[9px] text-slate-500 block leading-tight">Advies &amp; plan van aanpak • Oplevering &amp; verantwoording</span>
                 </div>
               </div>
-              <span id="hdrObject5" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
+              <span id="hdrObject5" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-right" style="max-width:55%">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
             </div>
 
             <!-- HOOFDSTUK 7: OPLEVERINGS- & ACCEPTATIEPROTOCOL -->
@@ -2749,7 +2762,7 @@
               <div class="flex items-center justify-between border-b border-slate-200 pb-0.5">
                 <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5 text-blue-900">
                   <span class="min-w-[16px] px-0.5 h-4 rounded bg-blue-700 text-white text-[9px] font-black flex items-center justify-center">10</span>
-                  Controlepunten bij Oplevering
+                  Controlepunten bij oplevering
                 </h2>
                 <span class="text-[8.5px] text-slate-500 shrink-0 whitespace-nowrap pl-3">Controleer dit vóór u akkoord geeft</span>
               </div>
@@ -2798,7 +2811,7 @@
                 <ul class="space-y-1">
                   <li class="flex gap-1.5"><span class="text-slate-400 font-black">✕</span><span>Geen bouwkundige keuring van de hele woning en geen destructief onderzoek (zoals openbreken of boren).</span></li>
                   <li class="flex gap-1.5"><span class="text-slate-400 font-black">✕</span><span>Geen offerte en geen uitvoering; de kosten zijn richtprijzen en offertes kunnen afwijken.</span></li>
-                  <li class="flex gap-1.5"><span class="text-slate-400 font-black">✕</span><span>Geen uitvoering in detail: producten, hoeveelheden en werkvolgorde bepaalt de uitvoerder, die verantwoordelijk is voor de uitvoering en het resultaat.</span></li>
+                  <li class="flex gap-1.5"><span class="text-slate-400 font-black">✕</span><span>Geen uitgewerkt bestek: producten, hoeveelheden en werkvolgorde bepaalt de uitvoerder, die verantwoordelijk is voor de uitvoering en het resultaat.</span></li>
                 </ul>
               </div>
             </div>
@@ -2807,23 +2820,23 @@
             <div class="mt-2.5 p-2 rounded-xl bg-slate-50 border border-slate-300 text-[8px] text-slate-700 leading-snug space-y-1 shadow-2xs">
               <p class="font-bold flex items-center gap-1 text-[8.5px] text-slate-900 border-b border-slate-200 pb-0.5">
                 <i data-lucide="shield-check" class="w-3.5 h-3.5 text-blue-600"></i>
-                12. Juridisch Kader, Reikwijdte &amp; Aansprakelijkheid
+                12. Juridisch kader, reikwijdte &amp; aansprakelijkheid
               </p>
               <div class="grid grid-cols-2 gap-2 pt-0.5">
                 <div class="space-y-0.5">
                   <p>
-                    <strong>12.1 Aard der Werkzaamheden &amp; Inspanningsverplichting:</strong> CheckMijnHuis treedt op als onafhankelijk bouwfysisch adviseur. Het advies en plan van aanpak vormen een professionele inspanningsverbintenis gebaseerd op een visuele inspectie en niet-destructieve metingen ter plaatse, naar de algemeen aanvaarde bouwfysische praktijk en stand der techniek op de inspectiedatum. De metingen vormen een momentopname. Constructieve berekeningen, leidingtracés achter gesloten constructies en latente/verborgen gebreken vallen buiten het onderzoekskader. Dit advies is geen toetsing aan wet- en regelgeving (zoals het Bbl) of aan normen (zoals NEN of WTA).
+                    <strong>12.1 Aard van de werkzaamheden &amp; inspanningsverplichting:</strong> CheckMijnHuis treedt op als onafhankelijk bouwfysisch adviseur. De opdracht betreft een inspanningsverplichting en geen resultaatsverplichting. Het advies en plan van aanpak zijn gebaseerd op een visuele inspectie en niet-destructieve metingen ter plaatse, volgens de algemeen aanvaarde bouwfysische praktijk en de stand der techniek op de inspectiedatum. De metingen vormen een momentopname. Constructieve berekeningen, leidingtracés achter gesloten constructies en latente/verborgen gebreken vallen buiten het onderzoekskader. Dit advies is geen toetsing aan wet- en regelgeving (zoals het Bbl) of aan normen (zoals NEN of WTA).
                   </p>
                   <p>
-                    <strong>12.2 Zelfstandige Uitvoeringsverantwoordelijkheid:</strong> CheckMijnHuis voert zelf géén herstel-, aannemers- of installatiewerkzaamheden uit. De opdrachtgever behoudt te allen tijde de volledige vrijheid in de selectie en contractering van uitvoerende partijen. De uitvoerende partij draagt zelfstandig de volledige verantwoordelijkheid voor werkopname, constructieve toetsing, verificatie van ondergronden en leidingen, deugdelijke uitvoering conform geldende normen en wettelijke garantieverlening.
+                    <strong>12.2 Verantwoordelijkheid voor de uitvoering:</strong> CheckMijnHuis voert zelf géén herstel-, aannemers- of installatiewerkzaamheden uit. De opdrachtgever behoudt te allen tijde de volledige vrijheid in de selectie en contractering van uitvoerende partijen. De uitvoerende partij draagt zelfstandig de volledige verantwoordelijkheid voor werkopname, constructieve toetsing, verificatie van ondergronden en leidingen, deugdelijke uitvoering conform geldende normen en wettelijke garantieverlening.
                   </p>
                 </div>
                 <div class="space-y-0.5">
                   <p>
-                    <strong>12.3 Indicatieve Kostenraming:</strong> De bedragen zijn indicatieve richtprijzen (prijspeil 2026), gebaseerd op gangbare marktprijzen en ervaringscijfers. Ze dienen uitsluitend als vrijblijvend referentiekader voor budgettering en het vergelijken van offertes. Werkelijke prijzen hangen af van de situatie ter plaatse, hoeveelheden en de gekozen uitvoerder. Op arbeid voor schilder- en stukadoorswerk aan woningen ouder dan twee jaar geldt het verlaagde btw-tarief, waardoor die posten lager kunnen uitvallen.
+                    <strong>12.3 Indicatieve kostenraming:</strong> De bedragen zijn indicatieve richtprijzen (prijspeil 2026), gebaseerd op gangbare marktprijzen en ervaringscijfers. Ze dienen uitsluitend als vrijblijvend referentiekader voor budgettering en het vergelijken van offertes. Werkelijke prijzen hangen af van de situatie ter plaatse, hoeveelheden en de gekozen uitvoerder. Op arbeid voor schilder- en stukadoorswerk aan woningen ouder dan twee jaar geldt het verlaagde btw-tarief, waardoor die posten lager kunnen uitvallen.
                   </p>
                   <p>
-                    <strong>12.4 Aansprakelijkheid &amp; Derden:</strong> Op deze opdracht zijn de algemene voorwaarden van CheckMijnHuis van toepassing. Eventuele aansprakelijkheid is beperkt tot het factuurbedrag van de onderliggende adviesopdracht, behoudens opzet of bewuste roekeloosheid. Dit document is strikt vertrouwelijk en uitsluitend opgesteld ten behoeve van de vermelde opdrachtgever en locatie; derden kunnen hieraan geen rechten ontlenen.
+                    <strong>12.4 Aansprakelijkheid &amp; derden:</strong> Op deze opdracht zijn de algemene voorwaarden van CheckMijnHuis van toepassing. Eventuele aansprakelijkheid is beperkt tot het factuurbedrag van de onderliggende adviesopdracht, behoudens opzet of bewuste roekeloosheid. Dit document is strikt vertrouwelijk en uitsluitend opgesteld ten behoeve van de vermelde opdrachtgever en locatie; derden kunnen hieraan geen rechten ontlenen.
                   </p>
                 </div>
               </div>
@@ -2848,7 +2861,7 @@
             </div>
           </div>
           <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
-            <span class="shrink-0">CheckMijnHuis • Onafhankelijk Bouwfysisch Advies</span>
+            <span class="shrink-0">CheckMijnHuis • Onafhankelijk bouwfysisch advies</span>
             <span class="min-w-0 truncate text-center">${data.title} • Pagina 5 van 5</span>
             <span class="shrink-0">www.checkmijnhuis.nl</span>
           </div>
