@@ -1160,7 +1160,7 @@
           { item: "Afkappen, reinigen en ondergrond voorbereiden (ca. 30 m²)", low: 900, high: 1500, inTotal: true },
           { item: "Kimnaadafdichting (uitfrezen, afdichtingsmortel & kimband, ca. 18-24 m¹)", low: 1200, high: 2200, inTotal: true },
           { item: "Meerlaagse minerale afdichting conform verwerkingsvoorschriften", low: 2700, high: 4800, inTotal: true },
-          { item: "Vloerafdichting / waterdichte egalisatie", low: 800, high: 1800, note: "optioneel" }
+          { item: "Vloerafdichting / waterdichte egalisatie (afhankelijk van oppervlakte en staat van de vloer)", offerte: true, low: 0, high: 0, note: "optioneel" }
         ],
         totalLabel: "Totaal Optie A (ca. 30 m², excl. optionele vloer)",
         checks: [
@@ -2716,8 +2716,8 @@
                     ${optie.costs.filter(c => c.note !== 'alternatief').map(c => `
                       <tr class="${c.inTotal ? '' : 'text-slate-500'}">
                         <td class="p-1.5 font-medium">${c.item}${c.note ? ` <span class="ml-1 text-[8px] font-bold uppercase tracking-wide px-1.5 py-px rounded bg-slate-100 text-slate-500 border border-slate-200">${c.note}</span>` : ''}</td>
-                        <td class="p-1.5 text-center font-semibold ${c.inTotal ? 'text-slate-900' : 'text-slate-500'}">${fmtEuro(c.low)}</td>
-                        <td class="p-1.5 text-center font-semibold ${c.inTotal ? 'text-slate-900' : 'text-slate-500'}">${fmtEuro(c.high)}</td>
+                        ${c.offerte ? `<td colspan="2" class="p-1.5 text-center font-semibold italic text-slate-500">volgens offerte</td>` : `<td class="p-1.5 text-center font-semibold ${c.inTotal ? 'text-slate-900' : 'text-slate-500'}">${fmtEuro(c.low)}</td>
+                        <td class="p-1.5 text-center font-semibold ${c.inTotal ? 'text-slate-900' : 'text-slate-500'}">${fmtEuro(c.high)}</td>`}
                       </tr>
                     `).join('')}
                     <tr class="bg-emerald-50 font-bold text-emerald-950 border-t-2 border-emerald-200">

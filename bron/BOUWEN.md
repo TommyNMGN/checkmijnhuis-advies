@@ -19,7 +19,7 @@ python3 build.py ../advies.html ../..          # schrijft ../../index.html
 # 2. app.css maken (vanuit de map bron/tailwind, eenmalig: npm install)
 npx tailwindcss -c app.config.js -i app-in.css -o ../../app.css --minify
 
-# 3. In sw.js de VERSIE ophogen (bijv. 'cmh-v1.3.6' -> 'cmh-v1.3.7'),
+# 3. In sw.js de VERSIE ophogen (bijv. 'cmh-v1.3.7' -> 'cmh-v1.3.8'),
 #    anders blijven telefoons de oude versie gebruiken.
 
 # 4. Commit en push naar main; GitHub Pages zet het binnen een paar minuten online.
