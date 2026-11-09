@@ -95,7 +95,8 @@
       <div class="stap-body space-y-2.5">
         <div><label class="kb-lbl">Wat heb je bij deze woning gezien? (ruimten, schadebeeld)</label><textarea id="tx_situatie" rows="4" class="kb-inp" style="resize:vertical" oninput="setSituatieTekst(this.value)"></textarea></div>
         <div><label class="kb-lbl">Type advies (bronoorzaak)</label>%%SELECTOR%%</div>
-        <div><label class="kb-lbl">Oorzaak in één zin (tik erin om de standaardzin aan te passen)</label><textarea id="sam_oorzaak" rows="2" class="kb-inp" style="resize:vertical" oninput="setSamField('oorzaak', this.value)"></textarea></div>
+        <div id="ctl_herstelWrap" class="hidden"><label class="kb-lbl">Eerdere klacht en herstel, zoals gemeld (wat, door wie, wanneer)</label><textarea id="ctl_herstel" rows="2" class="kb-inp" style="resize:vertical" placeholder="bijv. Lekkage van de afvoer onder de douche, in augustus 2026 hersteld door de loodgieter; daarna is de vloer opnieuw betegeld." oninput="setControle('herstel', this.value)"></textarea></div>
+        <div><label class="kb-lbl" id="lbl_oorzaak">Oorzaak in één zin (tik erin om de standaardzin aan te passen)</label><textarea id="sam_oorzaak" rows="2" class="kb-inp" style="resize:vertical" oninput="setSamField('oorzaak', this.value)"></textarea></div>
         <div><label class="kb-lbl">Bouwfysische duiding (tik erin om de standaardtekst aan te passen)</label><textarea id="tx_duiding" rows="4" class="kb-inp" style="resize:vertical" oninput="setDuidingTekst(this.value)"></textarea></div>
       </div>
     </details>
@@ -104,6 +105,15 @@
     <details class="stap" open>
       <summary><span class="stap-nr">7</span><span class="stap-titel">Advies</span><span class="stap-sub">aanbeveling, urgentie &amp; tips</span></summary>
       <div class="stap-body space-y-2.5">
+        <div id="adv_controle" class="hidden space-y-2.5">
+          <p class="text-[12px] text-slate-400 leading-snug">Bij een controlemeting zijn er geen opties, kosten of urgentie. Adviseer alleen een nieuwe meting als dat echt iets toevoegt, bijvoorbeeld bij een meting kort na het herstel of een constructie die langzaam droogt.</p>
+          <label class="flex items-center gap-2 text-[14px] text-slate-200 font-semibold"><input type="checkbox" id="ctl_opnieuw" class="accent-amber-400 w-4 h-4" onchange="setControle('opnieuw', this.checked)"> Opnieuw meten adviseren</label>
+          <div id="ctl_opnieuwWrap" class="hidden space-y-2.5">
+            <div><label class="kb-lbl">Termijn</label><input type="text" id="ctl_termijn" class="kb-inp" placeholder="bijv. 3 maanden" oninput="setControle('termijn', this.value)"></div>
+            <div><label class="kb-lbl">Reden (kort)</label><textarea id="ctl_reden" rows="2" class="kb-inp" style="resize:vertical" placeholder="bijv. De meting is kort na het herstel gedaan; de dekvloer onder de tegels kan nog drogen." oninput="setControle('reden', this.value)"></textarea></div>
+          </div>
+        </div>
+        <div id="adv_normaal" class="space-y-2.5">
         <div><label class="kb-lbl">Aanbevolen optie</label><select id="adv_rec" class="kb-inp" onchange="setAdviesRec(this.value)"></select></div>
         <div><label class="kb-lbl">Sjabloon voor motivatie (daarna aanpassen; tekst tussen [haken] invullen)</label><select id="adv_sjabloon" class="kb-inp" onchange="useSjabloon(this.value)"></select></div>
         <div><label class="kb-lbl">Motivatie (1 à 2 zinnen, specifiek voor deze woning)</label><textarea id="adv_motivatie" rows="3" class="kb-inp" style="resize:vertical" oninput="setAdviesField('motivatie', this.value)" placeholder="Waarom past deze optie bij deze woning?"></textarea></div>
@@ -114,6 +124,7 @@
               <option value="">— kies —</option><option value="hoog">Hoog</option><option value="gemiddeld">Gemiddeld</option><option value="laag">Laag</option>
             </select></div>
           <div><label class="kb-lbl">Toelichting urgentie (tik erin om de standaardtekst aan te passen)</label><textarea id="sam_urgTekst" rows="2" class="kb-inp" style="resize:vertical" oninput="setUrgentie('tekst', this.value)"></textarea></div>
+        </div>
         </div>
         <div>
           <label class="kb-lbl flex items-center justify-between gap-2"><span>Wat de klant zelf kan doen (één tip per regel)</span>

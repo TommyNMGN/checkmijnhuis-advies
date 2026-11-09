@@ -51,6 +51,7 @@
       customSituations = {}; customDuidingen = {};
       kb = JSON.parse(KB_DEFAULT_JSON);
       adviesState = {}; samenvatting = {}; urgentie = { niveau: "", tekst: "" }; fotoData = "";
+      controle = { herstel: "", opnieuw: false, termijn: "", reden: "" };
       obj = { type: "", bouwjaar: "", aanwezig: "", aanleiding: "" };
       waarnemingen = { lijst: [], overig: "" };
       detailFotos = [];

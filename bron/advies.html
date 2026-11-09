@@ -210,6 +210,7 @@
             <option value="lateraal">5. Vocht door de kelderwanden van buitenaf</option>
             <option value="lekkage">6. Lekkage &amp; lekdetectie</option>
             <option value="schimmel">7. Schimmel op koude plekken</option>
+            <option value="controle">8. Controlemeting na herstel</option>
           </select>
 
           <!-- DOWNLOAD HTML VOOR BUREAUBLAD -->
@@ -643,7 +644,7 @@
           ${getMeetpuntenHtml()}
           ${getVochtbalansHtml()}
           ${getApparatuurHtml()}
-          <p class="px-2.5 py-1 text-[7.5px] italic text-slate-500 bg-slate-50 border-t border-slate-200 leading-snug">${KB_DISCLAIMER}</p>
+          <p class="px-2.5 py-1 text-[7.5px] italic text-slate-500 bg-slate-50 border-t border-slate-200 leading-snug">${isControle() ? KB_DISCLAIMER.replace('dit advies', 'dit rapport') : KB_DISCLAIMER}</p>
         </div>`;
     }
 
@@ -763,10 +764,17 @@
       if (!fotoData) w.push("Er is nog geen <strong>gevelfoto</strong> toegevoegd.");
       if ((detailFotos || []).some(f => f && f.data && !(f.bijschrift || '').trim())) w.push("Een <strong>detailfoto</strong> heeft nog geen bijschrift.");
       if (!(detailFotos || []).some(f => f && f.data)) w.push("INFO|Tip: met 2 tot 4 <strong>detailfoto's</strong> (bijvoorbeeld vochtplek, meter op de muur) ziet de klant direct dat het advies over zijn woning gaat.");
-      if (!urgentie.niveau) w.push("Kies de <strong>urgentie</strong> voor de samenvatting op pagina 1.");
+      if (key === 'controle') {
+        const mpc = getMeetpunten().map(p => p.niveau).filter(Boolean);
+        if (!(controle.herstel || "").trim()) w.push("Vul bij stap 6 de <strong>eerdere klacht en het herstel</strong> in (wat, door wie, wanneer).");
+        if (mpc.some(n => n === 'verhoogd' || n === 'nat')) w.push("Er zijn meetpunten als <strong>verhoogd of nat</strong> genoteerd. Klopt de uitkomst dan nog, en is een controlemeting het juiste type? Pas de uitkomst aan of kies een ander type advies.");
+        if (mpc.length && !mpc.includes('droog')) w.push("INFO|Tip: meet bij een controlemeting ook een <strong>droge referentieplek</strong>, zodat de uitkomst goed onderbouwd is.");
+        if (controle.opnieuw && !(controle.termijn || "").trim()) w.push("Je adviseert opnieuw te meten: vul de <strong>termijn</strong> in (bijv. 3 maanden).");
+      }
+      if (key !== 'controle' && !urgentie.niveau) w.push("Kies de <strong>urgentie</strong> voor de samenvatting op pagina 1.");
       if (kb.show && getMeetpunten().filter(p => p.niveau).length < 3) w.push("Er zijn minder dan 3 <strong>meetpunten</strong> ingevuld. Meet bij voorkeur op 3 à 4 plekken, waaronder één droge referentie; dat maakt het rapport sterker.");
       if (!(getSam(key).tips || "").trim()) w.push("INFO|De tips bij 'Wat u zelf kunt doen' zijn nog de standaardtips. Heb je ter plaatse eigen tips gegeven, zet die er dan in.");
-      if (!(getSam(key).oorzaak || "").trim()) w.push("De <strong>oorzaak</strong> op pagina 1 is nog de standaardzin van het dossier. Klopt die voor deze woning? Pas hem anders aan bij 'Oorzaak in één zin'.");
+      if (key !== 'controle' && !(getSam(key).oorzaak || "").trim()) w.push("De <strong>oorzaak</strong> op pagina 1 is nog de standaardzin van het dossier. Klopt die voor deze woning? Pas hem anders aan bij 'Oorzaak in één zin'.");
       const geenSchade = (waarnemingen.lijst || []).includes(GEEN_SCHADE) || (sit && /\bgeen\b[^.]*\b(schimmel|condens|schade|vochtplek)/i.test(sit));
       if (!duid && geenSchade && ['condensatie', 'schimmel', 'opstijgend', 'doorslaand'].includes(key)) {
         w.push("In de situatie staat dat er <strong>geen schade</strong> is waargenomen, terwijl de standaardduiding uitgaat van een schadebeeld. Pas de <strong>duiding</strong> aan (bijvoorbeeld: preventief advies).");
@@ -822,7 +830,7 @@
 
     // OPSLAAN / HERSTELLEN VAN ALLE INVOER
     function collectState() {
-      return { clientName, clientAddress, inspectDate, currentTemplateKey, customSituations, customDuidingen, kb, adviesState, samenvatting, urgentie, fotoData, obj, waarnemingen, detailFotos };
+      return { clientName, clientAddress, inspectDate, currentTemplateKey, customSituations, customDuidingen, kb, adviesState, samenvatting, urgentie, fotoData, obj, waarnemingen, detailFotos, controle };
     }
 
     function restoreState() {
@@ -840,6 +848,7 @@
         if (s.adviesState && typeof s.adviesState === 'object') adviesState = s.adviesState;
         if (s.samenvatting && typeof s.samenvatting === 'object') samenvatting = s.samenvatting;
         if (s.urgentie && typeof s.urgentie === 'object') urgentie = Object.assign(urgentie, s.urgentie);
+        if (s.controle && typeof s.controle === 'object') controle = Object.assign({ herstel: "", opnieuw: false, termijn: "", reden: "" }, s.controle);
         if (typeof s.fotoData === 'string' && s.fotoData.startsWith('data:image/')) fotoData = s.fotoData;
         if (s.obj && typeof s.obj === 'object') obj = Object.assign({ type: "", bouwjaar: "", aanwezig: "", aanleiding: "" }, s.obj);
         if (s.waarnemingen && typeof s.waarnemingen === 'object') waarnemingen = { lijst: Array.isArray(s.waarnemingen.lijst) ? s.waarnemingen.lijst : [], overig: s.waarnemingen.overig || "" };
@@ -1295,6 +1304,17 @@
           { title: "2. Koude plek aanpakken", desc: "Controleer dat de koude plek wordt geïsoleerd. Alleen overschilderen leidt meestal binnen enkele maanden tot nieuwe schimmel." },
           { title: "3. Ademende verf", desc: "Controleer dat er ademende (dampopen) silicaat- of kalkverf wordt gebruikt en geen latexverf die vocht insluit." }
         ]
+      },
+      // 8. CONTROLEMETING NA HERSTEL: geen oorzaak, opties of kosten; eigen pagina 3, rapport van 3 pagina's
+      controle: {
+        title: "Controlemeting na herstel",
+        sub: "Onafhankelijke vochtmeting ter controle, nadat een eerder vochtprobleem is hersteld",
+        icon: "check-circle",
+        framework: "",
+        defaultSituation: "Bij de inspectie zagen wij in de gecontroleerde ruimten geen zichtbare vochtplekken, schimmel of andere actuele vochtschade.",
+        problem: "",
+        analysisExtra: "De metingen en wat wij ter plaatse zagen wijzen erop dat de gemeten plekken op het moment van de inspectie niet (meer) verhoogd vochtig waren. Dat past bij een probleem dat na het herstel is verholpen. Het blijft een momentopname: de uitkomst geldt voor de gemeten plekken op de dag van de meting.",
+        risks: [], solution: "", options: [], steps: "", costs: [], totalLabel: "", checks: []
       }
     };
 
@@ -1442,6 +1462,7 @@
     }
 
     function adviesIsIncomplete() {
+      if (isControle()) return false;
       const t = (getAdvies().motivatie || "").trim();
       return !t || /\[[^\]]*\]/.test(t);
     }
@@ -1457,6 +1478,7 @@
         recSel.value = String(a.rec);
       }
       refreshSjabloonList();
+      refreshControleUi();
       const mot = document.getElementById('adv_motivatie');
       if (mot) mot.value = a.motivatie || "";
       const pr = document.getElementById('adv_prijs');
@@ -1928,6 +1950,164 @@
     let samenvatting = {};        // per dossier: { oorzaak, tips }
     let urgentie = { niveau: "", tekst: "" };
 
+    // Controlemeting na herstel
+    let controle = { herstel: "", opnieuw: false, termijn: "", reden: "" };
+    function isControle() { return currentTemplateKey === 'controle'; }
+
+    const CTL_UITLEG = "Wij hebben gemeten op de plekken waar het eerdere probleem zich voordeed en bij voorkeur ook op een droge referentieplek (zie hoofdstuk 2). Zijn de waarden op de eerdere probleemplekken vergelijkbaar met die van de referentie, dan wijst dat erop dat daar op dat moment geen verhoogd materiaalvocht aanwezig was. Metingen zonder breekwerk zijn indicatief: ze laten zien of een plek droog, verhoogd of nat is ten opzichte van de omgeving, maar geven geen exact vochtgehalte.";
+    const CTL_SIGNALEN = [
+      "Nieuwe of terugkerende vochtplekken, verkleuring of kringen op muren, plafonds of vloeren.",
+      "Schimmel, een muffe geur of beslagen ramen op plekken waar dat eerder niet was.",
+      "Bladderende verf, loslatend behang of stucwerk, of een witte aanslag (zoutuitbloei).",
+      "Een vloer die loszit of opbolt, of houten plinten en kozijnen die zacht worden.",
+      "Een watermeter die doorloopt terwijl alle kranen dicht zijn."
+    ];
+
+    function getHerstelHtml() {
+      if (!isControle()) return "";
+      const h = (controle.herstel || "").trim();
+      return `<p class="text-[10px] text-slate-700 leading-snug px-1"><strong class="text-blue-900">Eerdere klacht en herstel (zoals gemeld):</strong> ${h ? escHtml(h).replace(/\n/g, '<br>') : '<span class="ph-hint" style="color:#d97706;font-style:italic">[Eerdere klacht en herstel invullen in stap 6]</span>'}</p>`;
+    }
+    function getCtlUitkomstHtml() {
+      return `<div class="rounded-xl border-2 border-emerald-600 bg-emerald-50/60 px-3 py-2 flex items-start gap-2">
+        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-700 shrink-0 mt-px"></i>
+        <p class="text-[10.5px] text-slate-950 font-semibold leading-snug">${escHtml(getOorzaak())}</p>
+      </div>`;
+    }
+    function getCtlOpnieuwHtml() {
+      if (!controle.opnieuw) return "";
+      const t = (controle.termijn || "").trim(), r = (controle.reden || "").trim();
+      return `<div class="rounded-xl border border-blue-300 bg-blue-50/60 px-3 py-2 text-[10px] text-slate-800 leading-snug space-y-0.5">
+        <p class="font-black text-blue-950 text-[10px] uppercase tracking-wider">Advies: opnieuw meten ${t ? 'over ' + escHtml(t) : '<span class="ph-hint normal-case" style="color:#d97706;font-style:italic">[termijn]</span>'}</p>
+        ${r ? `<p>${escHtml(r).replace(/\n/g, '<br>')}</p>` : ''}
+        <p class="text-slate-600">Kort na een herstel kan een muur of vloer van binnen nog vocht bevatten terwijl het oppervlak al droog is. Een tweede meting laat zien of de constructie ook op langere termijn droog blijft. Dit is een aparte dienst.</p>
+      </div>`;
+    }
+    function updateControleBlokken() {
+      const set = (id, html) => { const e = document.getElementById(id); if (e) e.innerHTML = html; };
+      set('herstelHolder', getHerstelHtml());
+      set('ctlUitkomstHolder', getCtlUitkomstHtml());
+      set('ctlOpnieuwHolder', getCtlOpnieuwHtml());
+      set('samenvattingHolder', getSamenvattingHtml(DOSSIERS[currentTemplateKey]));
+      if (window.lucide) lucide.createIcons();
+      checkPageOverflow();
+    }
+    function setControle(field, val) {
+      controle[field] = val;
+      if (field === 'opnieuw') { const w = document.getElementById('ctl_opnieuwWrap'); if (w) w.classList.toggle('hidden', !val); }
+      updateControleBlokken();
+    }
+    // Invulstappen 6 en 7 aanpassen aan het gekozen type
+    function refreshControleUi() {
+      const c = isControle();
+      const tog = (id, show) => { const e = document.getElementById(id); if (e) e.classList.toggle('hidden', !show); };
+      tog('adv_normaal', !c); tog('adv_controle', c); tog('ctl_herstelWrap', c);
+      tog('ctl_opnieuwWrap', c && !!controle.opnieuw);
+      const lbl = document.getElementById('lbl_oorzaak');
+      if (lbl) lbl.textContent = c ? "Uitkomst van de meting in één zin (tik erin om de standaardzin aan te passen)" : "Oorzaak in één zin (tik erin om de standaardzin aan te passen)";
+      const sv = (id, v) => { const e = document.getElementById(id); if (e) e.value = v || ""; };
+      sv('ctl_herstel', controle.herstel); sv('ctl_termijn', controle.termijn); sv('ctl_reden', controle.reden);
+      const cb = document.getElementById('ctl_opnieuw'); if (cb) cb.checked = !!controle.opnieuw;
+    }
+
+    function getControlePaginaHtml(data, nPag) {
+      const h2 = (nr, kleur, tekst, extra = '') => `<h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5 ${extra}"><span class="w-4 h-4 rounded ${kleur} text-white text-[9px] font-black flex items-center justify-center">${nr}</span>${tekst}</h2>`;
+      return `
+        <!-- PAGINA 3 (CONTROLEMETING): BEVINDINGEN & VERANTWOORDING -->
+        <div class="a4-page" id="page-3">
+          <div class="page-body">
+            <div class="border-b-2 border-slate-900 pb-2 flex items-center justify-between text-xs text-slate-500">
+              <div class="flex items-center gap-2">
+                ${getVectorLogo(24)}
+                <div>
+                  <span class="font-black text-slate-900 text-xs">CheckMijn<span class="text-blue-600">Huis</span></span>
+                  <span class="text-[9px] text-slate-500 block leading-tight">Controlemeting • Bevindingen &amp; verantwoording</span>
+                </div>
+              </div>
+              <span id="hdrObject3" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-right" style="max-width:55%">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
+            </div>
+
+            <div class="mt-2.5 space-y-1.5 text-xs">
+              ${h2(3, 'bg-emerald-700', 'Wat de meting laat zien', 'text-emerald-900')}
+              <div id="ctlUitkomstHolder">${getCtlUitkomstHtml()}</div>
+              <p class="text-slate-700 leading-relaxed text-[10px]">${CTL_UITLEG}</p>
+              <div id="ctlOpnieuwHolder">${getCtlOpnieuwHtml()}</div>
+            </div>
+
+            <div class="mt-2.5 space-y-1.5 text-xs">
+              ${h2(4, 'bg-amber-600', 'Waar u op kunt letten', 'text-amber-900')}
+              <div class="rounded-xl border border-amber-200 bg-amber-50/40 px-3 py-2 space-y-1">
+                <ul class="space-y-1 text-[10px] text-slate-800 leading-snug">
+                  ${CTL_SIGNALEN.map(t => `<li class="flex gap-1.5"><span class="text-amber-600 font-black">!</span><span>${t}</span></li>`).join('')}
+                </ul>
+                <p class="text-[10px] text-slate-700 leading-snug pt-0.5">Ziet u een van deze signalen, neem dan contact op. Bij twijfel kunt u altijd even bellen.</p>
+              </div>
+            </div>
+
+            <div class="mt-2.5 space-y-1 text-xs">
+              ${h2(5, 'bg-emerald-600', 'Wat u zelf kunt doen', 'text-emerald-900')}
+              <div id="tipsHolder">${getTipsHtml()}</div>
+            </div>
+
+            <div class="rounded-xl border border-slate-300 bg-white p-2.5 text-[9.5px] text-slate-700 leading-snug">
+              <p class="font-black text-slate-900 text-[10px] uppercase tracking-wider mb-1.5">Wat dit rapport wel en niet is</p>
+              <div class="grid grid-cols-2 gap-3">
+                <ul class="space-y-1">
+                  <li class="flex gap-1.5"><span class="text-emerald-600 font-black">✓</span><span>Een onafhankelijke vochtmeting op de gemeten plekken, met de waarden zoals aangetroffen op de dag van de inspectie.</span></li>
+                  <li class="flex gap-1.5"><span class="text-emerald-600 font-black">✓</span><span>Een beoordeling of op die plekken op dat moment verhoogd materiaalvocht aanwezig was, op basis van wat zichtbaar en meetbaar was zonder breekwerk.</span></li>
+                  <li class="flex gap-1.5"><span class="text-emerald-600 font-black">✓</span><span>Het tarief is het vooraf afgesproken vaste bedrag voor het hele traject: voorbereiding, reistijd en reiskosten, onderzoek ter plaatse, meetapparatuur en de uitwerking van dit rapport.</span></li>
+                </ul>
+                <ul class="space-y-1">
+                  <li class="flex gap-1.5"><span class="text-slate-400 font-black">✕</span><span>Geen vaststelling van de omvang, de oorzaak of de kosten van de eerdere schade.</span></li>
+                  <li class="flex gap-1.5"><span class="text-slate-400 font-black">✕</span><span>Geen oordeel over de kwaliteit of de volledigheid van het uitgevoerde herstel.</span></li>
+                  <li class="flex gap-1.5"><span class="text-slate-400 font-black">✕</span><span>Geen garantie dat er in de toekomst geen vochtproblemen ontstaan, en geen uitspraak over plekken die niet zijn gemeten of niet bereikbaar waren.</span></li>
+                  <li class="flex gap-1.5"><span class="text-slate-400 font-black">✕</span><span>Niet bedoeld als grondslag voor een schadevaststelling, schade-uitkering of afkoopsom. De meetwaarden mogen als informatie met uw verzekeraar worden gedeeld.</span></li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="mt-2.5 p-2 rounded-xl bg-slate-50 border border-slate-300 text-[8px] text-slate-700 leading-snug space-y-1 shadow-2xs">
+              <p class="font-bold flex items-center gap-1 text-[8.5px] text-slate-900 border-b border-slate-200 pb-0.5">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-blue-600"></i>
+                6. Juridisch kader, reikwijdte &amp; aansprakelijkheid
+              </p>
+              <div class="grid grid-cols-2 gap-2 pt-0.5">
+                <div class="space-y-0.5">
+                  <p><strong>6.1 Aard van de werkzaamheden &amp; inspanningsverplichting:</strong> CheckMijnHuis treedt op als onafhankelijk bouwfysisch adviseur. De opdracht betreft een inspanningsverplichting en geen resultaatsverplichting. Dit rapport is gebaseerd op een visuele inspectie en niet-destructieve metingen ter plaatse, volgens de algemeen aanvaarde bouwfysische praktijk en de stand der techniek op de inspectiedatum. De metingen vormen een momentopname: de uitkomst geldt alleen voor de gemeten plekken op de inspectiedatum. Vochtwaarden kunnen veranderen door seizoen, weer, gebruik of nieuwe gebreken. Constructies achter afwerkingen, leidingtracés en latente/verborgen gebreken vallen buiten het onderzoekskader. Dit rapport is geen toetsing aan wet- en regelgeving (zoals het Bbl) of aan normen (zoals NEN of WTA).</p>
+                  <p><strong>6.2 Eerdere schade &amp; herstel:</strong> De gegevens over de eerdere klacht en het herstel zijn overgenomen zoals door de opdrachtgever gemeld en zijn niet door CheckMijnHuis gecontroleerd. CheckMijnHuis heeft het herstel niet uitgevoerd of begeleid en doet geen uitspraak over de kwaliteit ervan.</p>
+                </div>
+                <div class="space-y-0.5">
+                  <p><strong>6.3 Geen schaderapport:</strong> Dit rapport is geen schade- of expertiserapport. Het is niet bedoeld als bewijsvoering en niet als grondslag voor de vaststelling van schade, een schade-uitkering of een afkoopsom. De opdrachtgever kan de meetwaarden als informatie delen met zijn of haar verzekeraar.</p>
+                  <p><strong>6.4 Aansprakelijkheid &amp; derden:</strong> Op deze opdracht zijn de algemene voorwaarden van CheckMijnHuis van toepassing. Eventuele aansprakelijkheid is beperkt tot het factuurbedrag van de onderliggende opdracht, behoudens opzet of bewuste roekeloosheid. Dit document is strikt vertrouwelijk en uitsluitend opgesteld ten behoeve van de vermelde opdrachtgever en locatie; derden, waaronder verzekeraars, kunnen hieraan geen rechten ontlenen.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-2 flex items-start justify-between gap-4 pt-1.5 border-t-2 border-slate-900 text-[9.5px] text-slate-700">
+              <div class="flex items-start gap-2">
+                ${getVectorLogo(20)}
+                <div class="leading-snug">
+                  <span class="block text-[7.5px] uppercase font-bold text-slate-400">Opgesteld door:</span>
+                  <span class="whitespace-nowrap"><strong class="text-slate-950">${ADVISEUR.naam}</strong> <span class="text-slate-500">• ${ADVISEUR.functie}</span></span>
+                  <span class="block text-slate-500 whitespace-nowrap">${ADVISEUR.bedrijf} • KvK ${ADVISEUR.kvk}</span>
+                  <span class="block text-slate-500 whitespace-nowrap">${ADVISEUR.telefoon} • ${ADVISEUR.email}</span>
+                </div>
+              </div>
+              <div class="text-right leading-snug shrink-0 whitespace-nowrap">
+                <span class="block text-[7.5px] uppercase font-bold text-slate-400">Documentstatus:</span>
+                <span class="block font-bold text-emerald-800">Definitief rapport controlemeting</span>
+                <span class="block text-slate-500">Vragen? Bel of mail gerust.</span>
+              </div>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
+            <span class="shrink-0">CheckMijnHuis • Onafhankelijk bouwfysisch advies</span>
+            <span class="min-w-0 truncate text-center">${data.title} • Pagina 3 van ${nPag}</span>
+            <span class="shrink-0">www.checkmijnhuis.nl</span>
+          </div>
+        </div>`;
+    }
+
     const OORZAAK_STANDAARD = {
       condensatie: "Te hoge luchtvochtigheid in de woning door onvoldoende afvoer van waterdamp.",
       opstijgend: "Grondvocht dat via het metselwerk omhoog trekt (opstijgend vocht), met zoutschade als gevolg.",
@@ -1935,7 +2115,8 @@
       kelderventilatie: "Condensatie in de kelder doordat warme, vochtige buitenlucht afkoelt tegen de koude wanden.",
       lateraal: "Vocht dat van buitenaf door de keldermuren en de naad tussen vloer en muur binnenkomt.",
       lekkage: "Een lekkage van een leiding, afvoer of kitvoeg; geen vocht van buiten of uit de grond.",
-      schimmel: "Schimmel op een plek die kouder is dan de rest van de kamer (koudebrug)."
+      schimmel: "Schimmel op een plek die kouder is dan de rest van de kamer (koudebrug).",
+      controle: "Op de gemeten plekken zijn op de dag van de meting geen verhoogde vochtwaarden aangetroffen."
     };
 
     const TIPS_STANDAARD = {
@@ -1973,6 +2154,11 @@
         "Verwijder zichtbare schimmel met waterstofperoxide (3%) of alcohol, niet met chloor; draag handschoenen.",
         "Zet meubels 5 tot 10 cm van buitenmuren, zodat warme lucht erachter kan komen.",
         "Ventileer continu en houd de luchtvochtigheid bij voorkeur tussen 40 en 60%."
+      ],
+      controle: [
+        "Ventileer goed, zeker in de eerste maanden na het herstel, zodat eventueel restvocht kan drogen.",
+        "Maak foto's van de herstelde plekken met datum, zodat u later kunt vergelijken.",
+        "Bewaar de facturen en rapporten van het herstel bij uw woningpapieren."
       ]
     };
 
@@ -1996,6 +2182,19 @@
     }
 
     function getSamenvattingHtml(data) {
+      if (isControle()) {
+        const rij = (lbl, val) => `<div class="grid grid-cols-[110px_1fr] gap-2 py-1 border-t border-indigo-100 first:border-t-0"><span class="text-[8.5px] font-black uppercase tracking-wider text-indigo-800 pt-px">${lbl}</span><span class="text-[10.5px] text-slate-900 leading-snug">${val}</span></div>`;
+        const t = (controle.termijn || "").trim();
+        const vervolg = controle.opnieuw
+          ? `Opnieuw meten${t ? ' over ' + escHtml(t) : ''}; zie hoofdstuk 3.`
+          : "Op basis van deze meting zijn geen vervolgstappen nodig. Let op de signalen in hoofdstuk 4; bij twijfel kunt u contact opnemen.";
+        return `
+        <div class="rounded-xl border-2 border-indigo-600 bg-indigo-50/40 px-3 py-2">
+          <p class="text-[10px] font-black uppercase tracking-wider text-slate-950 mb-1 flex items-center gap-1.5"><i data-lucide="clipboard-check" class="w-4 h-4 text-indigo-600"></i>Uitkomst in het kort</p>
+          ${rij("Uitkomst", escHtml(getOorzaak()))}
+          ${rij("Vervolg", vervolg)}
+        </div>`;
+      }
       const a = getAdvies();
       const adviesTxt = a.rec === "none"
         ? "Geen uitgesproken voorkeur; zie de vergelijking van oplossingen (hoofdstuk 6)."
@@ -2032,6 +2231,8 @@
       if (h) h.innerHTML = getSamenvattingHtml(data);
       const t = document.getElementById('tipsHolder');
       if (t) t.innerHTML = getTipsHtml();
+      const u = document.getElementById('ctlUitkomstHolder');
+      if (u) u.innerHTML = getCtlUitkomstHtml();
       if (window.lucide) lucide.createIcons();
       checkPageOverflow();
     }
@@ -2428,6 +2629,9 @@
       const costTotals = getCostTotals(optie);
       const advies = getAdvies();
       const foto = fotoData;
+      const C = isControle();
+      const nPag = C ? 3 : 5;
+      const soort = C ? 'Controlemeting' : 'Advies &amp; plan van aanpak';
       const container = document.getElementById('dossierContainer');
 
       container.innerHTML = `
@@ -2442,7 +2646,7 @@
                   <div class="flex items-center gap-2">
                     <span class="text-xl font-black tracking-tight text-slate-950">CheckMijn<span class="text-blue-600">Huis</span></span>
                     <span class="whitespace-nowrap text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-200">
-                      Advies &amp; Plan van Aanpak
+                      ${C ? 'Controlemeting' : 'Advies &amp; Plan van Aanpak'}
                     </span>
                   </div>
                   <p class="text-[10px] text-slate-500 font-medium">Onafhankelijk vocht-, binnenklimaat- en schadeadviesbureau</p>
@@ -2450,7 +2654,7 @@
               </div>
 
               <div class="text-right text-[9px] text-slate-600 space-y-0.5 shrink-0 pl-3 whitespace-nowrap">
-                <p>Status: <span class="text-emerald-700 font-bold">Definitief advies</span></p>
+                <p>Status: <span class="text-emerald-700 font-bold">${C ? 'Definitief rapport' : 'Definitief advies'}</span></p>
                 <p>Methode: <span class="text-indigo-900 font-bold">Inspectie &amp; metingen ter plaatse</span></p>
                 <p>Rol: <strong class="text-slate-900 font-bold">Onafhankelijk adviseur</strong></p>
               </div>
@@ -2459,7 +2663,7 @@
             <!-- TITEL BANNER -->
             <div class="mt-2.5 p-3 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-between">
               <div>
-                <span class="text-[8.5px] font-black uppercase tracking-wider text-indigo-800 block">Vochtadvies • Oorzaak &amp; aanpak</span>
+                <span class="text-[8.5px] font-black uppercase tracking-wider text-indigo-800 block">${C ? 'Controlemeting • Na herstel' : 'Vochtadvies • Oorzaak &amp; aanpak'}</span>
                 <h1 class="text-sm font-black text-slate-900 tracking-tight">${data.title}</h1>
                 <p class="text-[10px] text-indigo-950">${data.sub}</p>
               </div>
@@ -2499,6 +2703,7 @@
               </h2>
               <div class="bg-blue-50/70 border-l-4 border-blue-600 p-2.5 rounded-r-xl space-y-1">
                 <div id="aanleidingHolder">${getAanleidingHtml()}</div>
+                <div id="herstelHolder">${getHerstelHtml()}</div>
                 <span class="text-[9px] font-black text-blue-900 uppercase tracking-wider block px-1">Wat wij ter plaatse zagen:</span>
                 <p id="docSituation" class="text-[10.5px] text-slate-800 leading-snug font-medium p-1 rounded" contenteditable="true" oninput="syncSituationText(this.innerText)">${activeSituation}</p>
                 <div id="waarnemingenHolder">${getWaarnemingenHtml()}</div>
@@ -2511,7 +2716,7 @@
           </div>
           <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
             <span class="shrink-0">CheckMijnHuis • Onafhankelijk bouwfysisch advies</span>
-            <span class="min-w-0 truncate text-center">${data.title} • Pagina 1 van 5</span>
+            <span class="min-w-0 truncate text-center">${data.title} • Pagina 1 van ${nPag}</span>
             <span class="shrink-0">www.checkmijnhuis.nl</span>
           </div>
         </div>
@@ -2525,7 +2730,7 @@
                 ${getVectorLogo(24)}
                 <div>
                   <span class="font-black text-slate-900 text-xs">CheckMijn<span class="text-blue-600">Huis</span></span>
-                  <span class="text-[9px] text-slate-500 block leading-tight">Advies &amp; plan van aanpak • ${data.title}</span>
+                  <span class="text-[9px] text-slate-500 block leading-tight">${soort} • ${data.title}</span>
                 </div>
               </div>
               <span id="hdrObject2" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-right" style="max-width:55%">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
@@ -2549,11 +2754,12 @@
           </div>
           <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
             <span class="shrink-0">CheckMijnHuis • Onafhankelijk bouwfysisch advies</span>
-            <span class="min-w-0 truncate text-center">${data.title} • Pagina 2 van 5</span>
+            <span class="min-w-0 truncate text-center">${data.title} • Pagina 2 van ${nPag}</span>
             <span class="shrink-0">www.checkmijnhuis.nl</span>
           </div>
         </div>
 
+        ${C ? getControlePaginaHtml(data, nPag) : `
         <!-- PAGINA 3: ACHTERGROND, RISICO'S & OPLOSSINGEN -->
         <div class="a4-page" id="page-3">
           <div class="page-body">
@@ -2563,7 +2769,7 @@
                 ${getVectorLogo(24)}
                 <div>
                   <span class="font-black text-slate-900 text-xs">CheckMijn<span class="text-blue-600">Huis</span></span>
-                  <span class="text-[9px] text-slate-500 block leading-tight">Advies &amp; plan van aanpak • ${data.title}</span>
+                  <span class="text-[9px] text-slate-500 block leading-tight">${soort} • ${data.title}</span>
                 </div>
               </div>
               <span id="hdrObject3" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-right" style="max-width:55%">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
@@ -2639,7 +2845,7 @@
           </div>
           <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
             <span class="shrink-0">CheckMijnHuis • Onafhankelijk bouwfysisch advies</span>
-            <span class="min-w-0 truncate text-center">${data.title} • Pagina 3 van 5</span>
+            <span class="min-w-0 truncate text-center">${data.title} • Pagina 3 van ${nPag}</span>
             <span class="shrink-0">www.checkmijnhuis.nl</span>
           </div>
         </div>
@@ -2737,7 +2943,7 @@
           </div>
           <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
             <span class="shrink-0">CheckMijnHuis • Onafhankelijk bouwfysisch advies</span>
-            <span class="min-w-0 truncate text-center">${data.title} • Pagina 4 van 5</span>
+            <span class="min-w-0 truncate text-center">${data.title} • Pagina 4 van ${nPag}</span>
             <span class="shrink-0">www.checkmijnhuis.nl</span>
           </div>
         </div>
@@ -2862,10 +3068,11 @@
           </div>
           <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
             <span class="shrink-0">CheckMijnHuis • Onafhankelijk bouwfysisch advies</span>
-            <span class="min-w-0 truncate text-center">${data.title} • Pagina 5 van 5</span>
+            <span class="min-w-0 truncate text-center">${data.title} • Pagina 5 van ${nPag}</span>
             <span class="shrink-0">www.checkmijnhuis.nl</span>
           </div>
         </div>
+        `}
       `;
 
       if (window.lucide) lucide.createIcons();
