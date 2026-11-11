@@ -95,6 +95,13 @@
       <div class="stap-body space-y-2.5">
         <div><label class="kb-lbl">Type advies</label>%%SELECTOR%%</div>
         <div><label class="kb-lbl">Wat heb je bij deze woning gezien? (ruimten, schadebeeld)</label><textarea id="tx_situatie" rows="4" class="kb-inp" style="resize:vertical" oninput="setSituatieTekst(this.value)"></textarea></div>
+        <div id="bijk_wrap" class="space-y-1.5">
+          <label class="kb-lbl">Bijkomende oorzaken (alleen als die een eigen aanpak nodig hebben)</label>
+          <div class="grid grid-cols-2 gap-2">
+            <select id="bijk_key_0" class="kb-inp" onchange="setBijkomend(0, 'key', this.value)"></select>
+            <select id="bijk_key_1" class="kb-inp" onchange="setBijkomend(1, 'key', this.value)"></select>
+          </div>
+        </div>
         <div id="ctl_herstelWrap" class="hidden"><label class="kb-lbl">Eerdere klacht en herstel, zoals gemeld (wat, door wie, wanneer)</label><textarea id="ctl_herstel" rows="2" class="kb-inp" style="resize:vertical" placeholder="bijv. Lekkage van de afvoer onder de douche, in augustus 2026 hersteld door de loodgieter; daarna is de vloer opnieuw betegeld." oninput="setControle('herstel', this.value)"></textarea></div>
         <div><label class="kb-lbl" id="lbl_oorzaak">Oorzaak in één zin (tik erin om de standaardzin aan te passen)</label><textarea id="sam_oorzaak" rows="2" class="kb-inp" style="resize:vertical" oninput="setSamField('oorzaak', this.value)"></textarea></div>
         <div><label class="kb-lbl">Bouwfysische duiding (tik erin om de standaardtekst aan te passen)</label><textarea id="tx_duiding" rows="4" class="kb-inp" style="resize:vertical" oninput="setDuidingTekst(this.value)"></textarea></div>
@@ -125,6 +132,7 @@
             </select></div>
           <div><label class="kb-lbl">Toelichting urgentie (tik erin om de standaardtekst aan te passen)</label><textarea id="sam_urgTekst" rows="2" class="kb-inp" style="resize:vertical" oninput="setUrgentie('tekst', this.value)"></textarea></div>
         </div>
+        <div id="bijk_adv" class="hidden space-y-2.5"></div>
         </div>
         <div>
           <label class="kb-lbl flex items-center justify-between gap-2"><span>Wat de klant zelf kan doen (één tip per regel)</span>

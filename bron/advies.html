@@ -765,6 +765,14 @@
       if (!fotoData) w.push("Er is nog geen <strong>gevelfoto</strong> toegevoegd.");
       if ((detailFotos || []).some(f => f && f.data && !(f.bijschrift || '').trim())) w.push("Een <strong>detailfoto</strong> heeft nog geen bijschrift.");
       if (!(detailFotos || []).some(f => f && f.data)) w.push("INFO|Tip: met 2 tot 4 <strong>detailfoto's</strong> (bijvoorbeeld vochtplek, meter op de muur) ziet de klant direct dat het advies over zijn woning gaat.");
+      if (key === 'controle' && bijkomend.some(b => b.key)) w.push("Een controlemeting kan niet met <strong>bijkomende oorzaken</strong> worden gecombineerd; die worden niet getoond. Zet ze in stap 6 op 'geen'.");
+      if (key !== 'controle') {
+        bijkomend.forEach(b => { if (b.key === key) w.push(`De bijkomende oorzaak <strong>${DOSSIERS[b.key].title}</strong> is gelijk aan de hoofdoorzaak. Kies in stap 6 een andere, of zet hem op 'geen'.`); });
+        if (bijkomend[0].key && bijkomend[0].key === bijkomend[1].key) w.push("Dezelfde <strong>bijkomende oorzaak</strong> is twee keer gekozen.");
+        const BK = getBijkomend();
+        BK.forEach(b => { const m = (b.motivatie || '').trim(); if (!m || /\[[^\]]*\]/.test(m)) w.push(`Vul bij stap 7 de <strong>motivatie</strong> in voor de bijkomende oorzaak <strong>${DOSSIERS[b.key].title}</strong>.`); });
+        if (BK.length) w.push("INFO|Controleer dat elke <strong>bijkomende oorzaak</strong> wordt onderbouwd door een meetpunt, waarneming of foto in het rapport, en dat je hem ter plaatse met de klant hebt besproken.");
+      }
       if (key === 'controle') {
         const mpc = getMeetpunten().map(p => p.niveau).filter(Boolean);
         if (!(controle.herstel || "").trim()) w.push("Vul bij stap 6 de <strong>eerdere klacht en het herstel</strong> in (wat, door wie, wanneer).");
@@ -831,7 +839,7 @@
 
     // OPSLAAN / HERSTELLEN VAN ALLE INVOER
     function collectState() {
-      return { clientName, clientAddress, inspectDate, currentTemplateKey, customSituations, customDuidingen, kb, adviesState, samenvatting, urgentie, fotoData, obj, waarnemingen, detailFotos, controle };
+      return { clientName, clientAddress, inspectDate, currentTemplateKey, customSituations, customDuidingen, kb, adviesState, samenvatting, urgentie, fotoData, obj, waarnemingen, detailFotos, controle, bijkomend, bijkVolgorde };
     }
 
     function restoreState() {
@@ -849,6 +857,8 @@
         if (s.adviesState && typeof s.adviesState === 'object') adviesState = s.adviesState;
         if (s.samenvatting && typeof s.samenvatting === 'object') samenvatting = s.samenvatting;
         if (s.urgentie && typeof s.urgentie === 'object') urgentie = Object.assign(urgentie, s.urgentie);
+        if (Array.isArray(s.bijkomend)) bijkomend = [0, 1].map(i => Object.assign({ key: "", rec: 0, motivatie: "" }, s.bijkomend[i] || {}));
+        if (typeof s.bijkVolgorde === 'string') bijkVolgorde = s.bijkVolgorde;
         if (s.controle && typeof s.controle === 'object') controle = Object.assign({ herstel: "", opnieuw: false, termijn: "", reden: "" }, s.controle);
         if (typeof s.fotoData === 'string' && s.fotoData.startsWith('data:image/')) fotoData = s.fotoData;
         if (s.obj && typeof s.obj === 'object') obj = Object.assign({ type: "", bouwjaar: "", aanwezig: "", aanleiding: "" }, s.obj);
@@ -1553,6 +1563,7 @@
       }
       refreshSjabloonList();
       refreshControleUi();
+      refreshBijkomendUi();
       const mot = document.getElementById('adv_motivatie');
       if (mot) mot.value = a.motivatie || "";
       const pr = document.getElementById('adv_prijs');
@@ -2069,6 +2080,119 @@
     let samenvatting = {};        // per dossier: { oorzaak, tips }
     let urgentie = { niveau: "", tekst: "" };
 
+    // Bijkomende oorzaken (maximaal 2) naast de hoofdoorzaak
+    let bijkomend = [{ key: "", rec: 0, motivatie: "" }, { key: "", rec: 0, motivatie: "" }];
+    let bijkVolgorde = "";
+    const VOLGORDE_STANDAARD = "Pak eerst de oorzaken aan waardoor vocht de muren, vloeren of de woning binnenkomt, en laat de constructie daarna goed drogen. Herstel pas daarna stuc- en schilderwerk. Ventilatie of ontvochtiging kan vaak tegelijk worden aangepakt, maar werkt pas volledig als het binnenkomende vocht is gestopt. Stem de volgorde af met de uitvoerder(s), zeker als er meerdere partijen aan het werk zijn.";
+    function getBijkomend() {
+      if (isControle()) return [];
+      const gezien = new Set([currentTemplateKey]);
+      return bijkomend.filter(b => {
+        if (!b.key || b.key === 'controle' || !DOSSIERS[b.key] || gezien.has(b.key)) return false;
+        gezien.add(b.key); return true;
+      });
+    }
+    function bijkRecVan(b) { const r = parseInt(b.rec, 10); return (r >= 0 && r <= 2) ? r : 0; }
+    function getBijkKaartHtml(b, nr) {
+      const d = DOSSIERS[b.key], r = bijkRecVan(b), inh = getOptieInhoud(b.key, r);
+      const p = optionRange(b.key, r), basis = prijsBasis(b.key, r);
+      const prijs = p ? `${fmtEuro(p[0])} tot ${fmtEuro(p[1])} incl. btw${basis ? `, uitgaande van ${escHtml(basis)}` : ''} (richtprijs; offertes kunnen afwijken)` : 'volgens offerte';
+      const mot = (b.motivatie || '').trim();
+      const rij = (lbl, val) => `<div class="grid grid-cols-[118px_1fr] gap-2 py-1 border-t border-slate-200 first:border-t-0"><span class="text-[8.5px] font-black uppercase tracking-wider text-slate-500 pt-px">${lbl}</span><span class="text-[10px] text-slate-800 leading-snug">${val}</span></div>`;
+      return `
+        <div class="rounded-xl border border-slate-300 bg-white px-3 py-2">
+          <p class="text-[10.5px] font-black text-slate-950 mb-1">${nr}. ${escHtml(d.title)}</p>
+          ${rij('Oorzaak', escHtml(OORZAAK_STANDAARD[b.key] || ''))}
+          ${rij('Ons advies', `<strong>Optie ${OPTION_LETTERS[r]}: ${escHtml(optionName(d.options[r]))}.</strong> ${inh.solution}`)}
+          ${rij('Waarom', mot ? escHtml(mot).replace(/\n/g, '<br>') : '<span class="ph-hint" style="color:#d97706;font-style:italic">[Motivatie invullen in stap 7]</span>')}
+          ${rij('Richtprijs', prijs)}
+          ${rij('Aandachtspunten', `<ul class="space-y-0.5">${(inh.checks || []).map(c => `<li class="flex gap-1.5"><span class="text-blue-600 font-black">•</span><span><strong>${escHtml(c.title.replace(/^\d+\.\s*/, ''))}:</strong> ${escHtml(c.desc)}</span></li>`).join('')}</ul>`)}
+        </div>`;
+    }
+    function getBijkVolgordeHtml() {
+      const t = (bijkVolgorde || '').trim() || VOLGORDE_STANDAARD;
+      return `<div class="rounded-xl border-2 border-blue-600 bg-blue-50/50 px-3 py-2">
+        <p class="text-[10px] font-black uppercase tracking-wider text-blue-950 mb-0.5">Volgorde van aanpak</p>
+        <p class="text-[10px] text-slate-800 leading-snug">${escHtml(t).replace(/\n/g, '<br>')}</p>
+      </div>`;
+    }
+    function getBijkomendPaginaHtml(data, paginaNr, nPag) {
+      const B = getBijkomend();
+      return `
+        <!-- EXTRA PAGINA: BIJKOMENDE OORZAKEN -->
+        <div class="a4-page" id="page-bijk">
+          <div class="page-body">
+            <div class="border-b-2 border-slate-900 pb-2 flex items-center justify-between text-xs text-slate-500">
+              <div class="flex items-center gap-2">
+                ${getVectorLogo(24)}
+                <div>
+                  <span class="font-black text-slate-900 text-xs">CheckMijn<span class="text-blue-600">Huis</span></span>
+                  <span class="text-[9px] text-slate-500 block leading-tight">Advies &amp; plan van aanpak • Bijkomende oorzaken</span>
+                </div>
+              </div>
+              <span id="hdrObjectB" class="text-[9.5px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-right" style="max-width:55%">Object: ${escHtml(clientAddress.trim()) || '—'}</span>
+            </div>
+
+            <div class="mt-2.5 space-y-1.5 text-xs">
+              <h2 class="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5"><span class="w-4 h-4 rounded bg-slate-700 text-white text-[9px] font-black flex items-center justify-center">+</span>Bijkomende oorzaken</h2>
+              <p class="text-slate-700 leading-relaxed text-[10px]">Naast de hoofdoorzaak (${escHtml(data.title.toLowerCase())}) speelt in deze woning ook het volgende. Voor deze oorzaken is de aanpak in hoofdlijnen beschreven; vraag de uitvoerder om een uitgewerkt voorstel.</p>
+              ${B.map((b, i) => `<div id="bijkKaart${i}">${getBijkKaartHtml(b, i + 1)}</div>`).join('')}
+              <p class="text-[9px] italic text-slate-500 leading-snug px-1">De bedragen staan per oorzaak en zijn bewust niet opgeteld. Bij gecombineerde uitvoering kunnen posten zoals stuc- en schilderwerk samenvallen; de totale kosten liggen dan lager dan de optelsom.</p>
+            </div>
+
+            <div id="bijkVolgordeHolder">${getBijkVolgordeHtml()}</div>
+          </div>
+          <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
+            <span class="shrink-0">CheckMijnHuis • Onafhankelijk bouwfysisch advies</span>
+            <span class="min-w-0 truncate text-center">${data.title} • Pagina ${paginaNr} van ${nPag}</span>
+            <span class="shrink-0">www.checkmijnhuis.nl</span>
+          </div>
+        </div>`;
+    }
+    function updateBijkBlokken() {
+      getBijkomend().forEach((b, i) => { const e = document.getElementById('bijkKaart' + i); if (e) e.innerHTML = getBijkKaartHtml(b, i + 1); });
+      const v = document.getElementById('bijkVolgordeHolder'); if (v) v.innerHTML = getBijkVolgordeHtml();
+      const sv = document.getElementById('samenvattingHolder'); if (sv) sv.innerHTML = getSamenvattingHtml(DOSSIERS[currentTemplateKey]);
+      if (window.lucide) lucide.createIcons();
+      checkPageOverflow();
+    }
+    function setBijkomend(i, field, val) {
+      const b = bijkomend[i]; if (!b) return;
+      if (field === 'key') {
+        b.key = val; b.rec = 0; b.motivatie = "";
+        refreshBijkomendUi();
+        rerenderKeepScroll();
+        return;
+      }
+      if (field === 'rec') { b.rec = parseInt(val, 10) || 0; refreshBijkomendUi(); }
+      else b[field] = val;
+      updateBijkBlokken();
+    }
+    function setBijkVolgorde(val) { bijkVolgorde = val; updateBijkBlokken(); }
+    // Invulstappen: keuze in stap 6, optie en motivatie in stap 7
+    function refreshBijkomendUi() {
+      const c = isControle();
+      const wrap = document.getElementById('bijk_wrap'); if (wrap) wrap.classList.toggle('hidden', c);
+      const keuzes = Object.keys(DOSSIERS).filter(k => k !== 'controle');
+      [0, 1].forEach(i => {
+        const sel = document.getElementById('bijk_key_' + i); if (!sel) return;
+        sel.innerHTML = `<option value="">— geen —</option>` + keuzes.map((k, n) => `<option value="${k}"${k === currentTemplateKey ? ' disabled' : ''}>${n + 1}. ${escHtml(DOSSIERS[k].title)}</option>`).join('');
+        sel.value = bijkomend[i].key || "";
+      });
+      const adv = document.getElementById('bijk_adv'); if (!adv) return;
+      const B = getBijkomend();
+      if (!B.length) { adv.innerHTML = ""; adv.classList.add('hidden'); return; }
+      adv.classList.remove('hidden');
+      adv.innerHTML = B.map(b => {
+        const i = bijkomend.indexOf(b), d = DOSSIERS[b.key], r = bijkRecVan(b);
+        return `<div class="rounded-xl border border-slate-600 p-2.5 space-y-2">
+          <p class="text-[13px] font-bold text-amber-300">Bijkomend: ${escHtml(d.title)}</p>
+          <div><label class="kb-lbl">Aanbevolen optie</label><select class="kb-inp" onchange="setBijkomend(${i}, 'rec', this.value)">${d.options.map((o, n) => `<option value="${n}"${n === r ? ' selected' : ''}>Optie ${OPTION_LETTERS[n]}: ${escHtml(optionName(o))}</option>`).join('')}</select></div>
+          <div><label class="kb-lbl">Waarom deze optie? (1 à 2 zinnen)</label><textarea rows="2" class="kb-inp" style="resize:vertical" placeholder="bijv. ${escHtml(((MOTIVATIE_SJABLONEN[b.key] || [])[r] || [''])[0].slice(0, 110))}…" oninput="setBijkomend(${i}, 'motivatie', this.value)">${escHtml(b.motivatie || '')}</textarea></div>
+        </div>`;
+      }).join('') + `<div><label class="kb-lbl">Volgorde van aanpak (tik erin om de standaardtekst aan te passen)</label><textarea id="bijk_volgorde" rows="3" class="kb-inp" style="resize:vertical" placeholder="Standaardtekst: ${escHtml(VOLGORDE_STANDAARD)}" oninput="setBijkVolgorde(this.value)">${escHtml(bijkVolgorde || '')}</textarea></div>`;
+    }
+
     // Controlemeting na herstel
     let controle = { herstel: "", opnieuw: false, termijn: "", reden: "" };
     function isControle() { return currentTemplateKey === 'controle'; }
@@ -2338,6 +2462,7 @@
           ${row("Ons advies", adviesTxt)}
           ${row("Kosten", kostenTxt)}
           ${row("Urgentie", urgTxt)}
+          ${getBijkomend().length ? row("Ook vastgesteld", getBijkomend().map((b, i) => { const t = DOSSIERS[b.key].title; return escHtml(i ? t.charAt(0).toLowerCase() + t.slice(1) : t); }).join(' en ') + "; zie <em>Bijkomende oorzaken</em> op pagina 5.") : ''}
         </div>`;
     }
 
@@ -2700,7 +2825,7 @@
       if (el && el.innerText !== val) el.innerText = val;
       const topInp = document.getElementById('topClientAddress');
       if (topInp && topInp.value !== val) topInp.value = val;
-      ['hdrObject2', 'hdrObject3', 'hdrObject4', 'hdrObject5'].forEach(id => {
+      ['hdrObject2', 'hdrObject3', 'hdrObject4', 'hdrObjectB', 'hdrObject5'].forEach(id => {
         const h = document.getElementById(id);
         if (h) h.innerText = `Object: ${val.trim() || '—'}`;
       });
@@ -2755,7 +2880,8 @@
       const advies = getAdvies();
       const foto = fotoData;
       const C = isControle();
-      const nPag = C ? 3 : 5;
+      const heeftBijk = !C && getBijkomend().length > 0;
+      const nPag = C ? 3 : (heeftBijk ? 6 : 5);
       const soort = C ? 'Rapport' : 'Advies &amp; plan van aanpak';
       const container = document.getElementById('dossierContainer');
 
@@ -3073,6 +3199,8 @@
           </div>
         </div>
 
+        ${heeftBijk ? getBijkomendPaginaHtml(data, 5, nPag) : ''}
+
         <!-- PAGINA 4: OPLEVERING, VERVOLG & VERANTWOORDING -->
         <div class="a4-page" id="page-5">
           <div class="page-body">
@@ -3193,7 +3321,7 @@
           </div>
           <div class="pt-2 border-t border-slate-200 flex justify-between items-center gap-4 text-[8.5px] text-slate-400 whitespace-nowrap">
             <span class="shrink-0">CheckMijnHuis • Onafhankelijk bouwfysisch advies</span>
-            <span class="min-w-0 truncate text-center">${data.title} • Pagina 5 van ${nPag}</span>
+            <span class="min-w-0 truncate text-center">${data.title} • Pagina ${nPag} van ${nPag}</span>
             <span class="shrink-0">www.checkmijnhuis.nl</span>
           </div>
         </div>

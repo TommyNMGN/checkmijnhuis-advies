@@ -52,6 +52,7 @@
       kb = JSON.parse(KB_DEFAULT_JSON);
       adviesState = {}; samenvatting = {}; urgentie = { niveau: "", tekst: "" }; fotoData = "";
       controle = { herstel: "", opnieuw: false, termijn: "", reden: "" };
+      bijkomend = [{ key: "", rec: 0, motivatie: "" }, { key: "", rec: 0, motivatie: "" }]; bijkVolgorde = "";
       obj = { type: "", bouwjaar: "", aanwezig: "", aanleiding: "" };
       waarnemingen = { lijst: [], overig: "" };
       detailFotos = [];
@@ -477,7 +478,7 @@ ${kopie.outerHTML}
     // ---------- standaardtekst bewerkbaar maken ----------
     // Tik je in een leeg veld, dan komt de standaardtekst erin te staan, zodat je die kunt aanpassen
     // in plaats van alles opnieuw te typen. Laat je hem ongewijzigd, dan blijft het veld 'standaard'.
-    const STD_VELDEN = ['tx_situatie', 'tx_duiding', 'sam_oorzaak', 'sam_urgTekst', 'sam_tips'];
+    const STD_VELDEN = ['tx_situatie', 'tx_duiding', 'sam_oorzaak', 'sam_urgTekst', 'sam_tips', 'bijk_volgorde'];
     function standaardVan(el) {
       const ph = (el.placeholder || '').replace(/^Standaardtekst:\s*/, '');
       return /^Kies eerst/.test(ph) ? '' : ph;
