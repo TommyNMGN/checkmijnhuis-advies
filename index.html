@@ -366,8 +366,7 @@
     <details class="stap" open>
       <summary><span class="stap-nr">6</span><span class="stap-titel">Situatie &amp; diagnose</span><span class="stap-sub">wat is er aan de hand</span></summary>
       <div class="stap-body space-y-2.5">
-        <div><label class="kb-lbl">Wat heb je bij deze woning gezien? (ruimten, schadebeeld)</label><textarea id="tx_situatie" rows="4" class="kb-inp" style="resize:vertical" oninput="setSituatieTekst(this.value)"></textarea></div>
-        <div><label class="kb-lbl">Type advies (bronoorzaak)</label><select id="templateSelector" onchange="switchTemplate(this.value)" class="kb-inp">
+        <div><label class="kb-lbl">Type advies</label><select id="templateSelector" onchange="switchTemplate(this.value)" class="kb-inp">
             <option value="condensatie">1. Condensatie door onvoldoende ventilatie</option>
             <option value="opstijgend">2. Opstijgend vocht uit de grond</option>
             <option value="doorslaand">3. Doorslaand vocht via de gevel</option>
@@ -378,6 +377,7 @@
             <option value="schoorsteen">8. Vochtvlekken bij een oud rookkanaal</option>
             <option value="controle">9. Controlemeting na herstel</option>
           </select></div>
+        <div><label class="kb-lbl">Wat heb je bij deze woning gezien? (ruimten, schadebeeld)</label><textarea id="tx_situatie" rows="4" class="kb-inp" style="resize:vertical" oninput="setSituatieTekst(this.value)"></textarea></div>
         <div id="ctl_herstelWrap" class="hidden"><label class="kb-lbl">Eerdere klacht en herstel, zoals gemeld (wat, door wie, wanneer)</label><textarea id="ctl_herstel" rows="2" class="kb-inp" style="resize:vertical" placeholder="bijv. Lekkage van de afvoer onder de douche, in augustus 2026 hersteld door de loodgieter; daarna is de vloer opnieuw betegeld." oninput="setControle('herstel', this.value)"></textarea></div>
         <div><label class="kb-lbl" id="lbl_oorzaak">Oorzaak in één zin (tik erin om de standaardzin aan te passen)</label><textarea id="sam_oorzaak" rows="2" class="kb-inp" style="resize:vertical" oninput="setSamField('oorzaak', this.value)"></textarea></div>
         <div><label class="kb-lbl">Bouwfysische duiding (tik erin om de standaardtekst aan te passen)</label><textarea id="tx_duiding" rows="4" class="kb-inp" style="resize:vertical" oninput="setDuidingTekst(this.value)"></textarea></div>
@@ -898,7 +898,7 @@
         risks: [
           {
             title: "1. Gezondheid & binnenklimaat",
-            desc: "Langdurig vochtige lucht en schimmel vergroten de kans op klachten aan de luchtwegen en kunnen astma verergeren. Een CO₂-waarde boven circa 1.000 ppm betekent dat er te weinig verse lucht binnenkomt; dat geeft vaak een benauwd gevoel, hoofdpijn en slechter slapen."
+            desc: "Langdurig vochtige lucht en schimmel vergroten de kans op klachten aan de luchtwegen en kunnen astma verergeren. Een CO₂-waarde boven circa 1.000 ppm wijst erop dat er te weinig verse lucht binnenkomt; dat geeft vaak een benauwd gevoel, hoofdpijn en slechter slapen."
           },
           {
             title: "2. Comfort & stookkosten",
@@ -1227,7 +1227,7 @@
             pros: "✓ Eenvoudige eerste stap bij lekkage via kitvoegen<br>✓ Beperkte ingreep<br>✕ Helpt niet bij een lekkende leiding"
           },
           {
-            name: "Professionele bouwdroging",
+            name: "Bouwdroging na herstel",
             desc: "Na de reparatie zorgen bouwdrogers en ventilatoren dat vloeren en muren sneller droog worden.",
             pros: "✓ Voorkomt schimmelvorming na de lekkage<br>✓ Verkort de hersteltijd aanzienlijk<br>✓ Vaak meeverzekerd als gevolgschade (afhankelijk van de polis)"
           }
@@ -1487,7 +1487,7 @@
           "Het vocht ontstaat bij gebruik van [douche / bad] en concentreert zich rond de kitvoegen. Vernieuwen van het kitwerk is hier de eerste, eenvoudige stap; blijft het probleem, dan volgt lekdetectie."
         ],
         [
-          "Het lek is inmiddels hersteld, maar de constructie is nog [nat / verhoogd]. Professionele droging beperkt de kans op schimmelvorming en zorgt dat herafwerking pas plaatsvindt als de constructie droog is."
+          "Het lek is inmiddels hersteld, maar de constructie is nog [nat / verhoogd]. Gecontroleerd drogen beperkt de kans op schimmelvorming en zorgt dat herafwerking pas plaatsvindt als de constructie droog is."
         ]
       ],
       schimmel: [
@@ -1672,7 +1672,7 @@
         const isRec = a.rec === i;
         return `<tr class="${isRec ? 'bg-indigo-50 font-bold text-indigo-950' : 'text-slate-700'}">
           <td class="p-1.5 w-16 font-black">Optie ${OPTION_LETTERS[i]}</td>
-          <td class="p-1.5">${escHtml(optionName(o))}${prijsBasis(currentTemplateKey, i) && !(isRec && (a.prijs || "").trim()) ? ` <span class="font-normal text-slate-500">(${escHtml(prijsBasis(currentTemplateKey, i))})</span>` : ''}${isRec ? ' <span class="ml-1 text-[8px] font-black uppercase px-1.5 py-px rounded bg-indigo-600 text-white">Aanbevolen</span>' : ''}</td>
+          <td class="p-1.5">${escHtml(optionName(o))}${prijsBasis(currentTemplateKey, i) && !(isRec && (a.prijs || "").trim()) ? ` <span class="font-normal text-slate-500">· ${escHtml(prijsBasis(currentTemplateKey, i))}</span>` : ''}${isRec ? ' <span class="ml-1 text-[8px] font-black uppercase px-1.5 py-px rounded bg-indigo-600 text-white">Aanbevolen</span>' : ''}</td>
           <td class="p-1.5 text-right font-semibold ${isRec && (a.prijs || "").trim() ? '' : 'whitespace-nowrap'}"><span style="display:inline-block;max-width:250px">${optionPriceText(currentTemplateKey, i)}</span></td>
         </tr>`;
       }).join('');
@@ -2331,7 +2331,7 @@
         ? "Geen uitgesproken voorkeur; zie de vergelijking van oplossingen (hoofdstuk 6)."
         : `Optie ${OPTION_LETTERS[a.rec]}: ${escHtml(optionName(data.options[a.rec]))}`;
       const basis = (a.prijs || "").trim() ? "" : prijsBasis(currentTemplateKey, a.rec);
-      const kostenTxt = a.rec === "none" ? "Zie de kostenraming per optie (hoofdstuk 9)." : `${escHtml(getRecPriceText())} incl. btw${basis ? `, uitgaande van ${escHtml(basis)}` : ""} (richtprijs; de werkelijke hoeveelheid en offertes bepalen de prijs)`;
+      const kostenTxt = a.rec === "none" ? "Zie de kostenraming per optie (hoofdstuk 9)." : `${escHtml(getRecPriceText())} incl. btw${basis ? `, uitgaande van ${escHtml(basis)}` : ""} (richtprijs; offertes kunnen afwijken)`;
       const u = URGENTIE[urgentie.niveau];
       const urgTxt = u
         ? `<span class="inline-block px-1.5 py-px rounded border ${u.cls} font-black text-[8.5px] uppercase tracking-wide mr-1">${u.label}</span>${escHtml((urgentie.tekst || "").trim() || u.tekst)}`
@@ -2762,7 +2762,7 @@
       const foto = fotoData;
       const C = isControle();
       const nPag = C ? 3 : 5;
-      const soort = C ? 'Controlemeting' : 'Advies &amp; plan van aanpak';
+      const soort = C ? 'Rapport' : 'Advies &amp; plan van aanpak';
       const container = document.getElementById('dossierContainer');
 
       container.innerHTML = `
@@ -2777,7 +2777,7 @@
                   <div class="flex items-center gap-2">
                     <span class="text-xl font-black tracking-tight text-slate-950">CheckMijn<span class="text-blue-600">Huis</span></span>
                     <span class="whitespace-nowrap text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-200">
-                      ${C ? 'Controlemeting' : 'Advies &amp; Plan van Aanpak'}
+                      ${C ? 'Controlemeting' : 'Advies &amp; plan van aanpak'}
                     </span>
                   </div>
                   <p class="text-[10px] text-slate-500 font-medium">Onafhankelijk vocht-, binnenklimaat- en schadeadviesbureau</p>
@@ -2794,7 +2794,7 @@
             <!-- TITEL BANNER -->
             <div class="mt-2.5 p-3 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-between">
               <div>
-                <span class="text-[8.5px] font-black uppercase tracking-wider text-indigo-800 block">${C ? 'Controlemeting • Na herstel' : 'Vochtadvies • Oorzaak &amp; aanpak'}</span>
+                <span class="text-[8.5px] font-black uppercase tracking-wider text-indigo-800 block">${C ? 'Vochtmeting • Controle na herstel' : 'Vochtadvies • Oorzaak &amp; aanpak'}</span>
                 <h1 class="text-sm font-black text-slate-900 tracking-tight">${data.title}</h1>
                 <p class="text-[10px] text-indigo-950">${data.sub}</p>
               </div>
@@ -3063,7 +3063,7 @@
                       </tr>
                     `).join('')}
                     <tr class="bg-emerald-50 font-bold text-emerald-950 border-t-2 border-emerald-200">
-                      <td class="p-1.5 uppercase text-[9px]">${optie.totalLabel} <span class="normal-case font-semibold text-emerald-800">(incl. btw)</span></td>
+                      <td class="p-1.5 text-[9.5px]">${optie.totalLabel} <span class="font-semibold text-emerald-800">· incl. btw</span></td>
                       <td class="p-1.5 text-center font-black text-emerald-800">${fmtEuro(costTotals.low)}</td>
                       <td class="p-1.5 text-center font-black text-emerald-800">${fmtEuro(costTotals.high)}</td>
                     </tr>

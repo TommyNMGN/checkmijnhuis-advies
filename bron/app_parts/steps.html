@@ -93,8 +93,8 @@
     <details class="stap" open>
       <summary><span class="stap-nr">6</span><span class="stap-titel">Situatie &amp; diagnose</span><span class="stap-sub">wat is er aan de hand</span></summary>
       <div class="stap-body space-y-2.5">
+        <div><label class="kb-lbl">Type advies</label>%%SELECTOR%%</div>
         <div><label class="kb-lbl">Wat heb je bij deze woning gezien? (ruimten, schadebeeld)</label><textarea id="tx_situatie" rows="4" class="kb-inp" style="resize:vertical" oninput="setSituatieTekst(this.value)"></textarea></div>
-        <div><label class="kb-lbl">Type advies (bronoorzaak)</label>%%SELECTOR%%</div>
         <div id="ctl_herstelWrap" class="hidden"><label class="kb-lbl">Eerdere klacht en herstel, zoals gemeld (wat, door wie, wanneer)</label><textarea id="ctl_herstel" rows="2" class="kb-inp" style="resize:vertical" placeholder="bijv. Lekkage van de afvoer onder de douche, in augustus 2026 hersteld door de loodgieter; daarna is de vloer opnieuw betegeld." oninput="setControle('herstel', this.value)"></textarea></div>
         <div><label class="kb-lbl" id="lbl_oorzaak">Oorzaak in één zin (tik erin om de standaardzin aan te passen)</label><textarea id="sam_oorzaak" rows="2" class="kb-inp" style="resize:vertical" oninput="setSamField('oorzaak', this.value)"></textarea></div>
         <div><label class="kb-lbl">Bouwfysische duiding (tik erin om de standaardtekst aan te passen)</label><textarea id="tx_duiding" rows="4" class="kb-inp" style="resize:vertical" oninput="setDuidingTekst(this.value)"></textarea></div>
