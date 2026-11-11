@@ -375,7 +375,8 @@
             <option value="lateraal">5. Vocht door de kelderwanden van buitenaf</option>
             <option value="lekkage">6. Lekkage &amp; lekdetectie</option>
             <option value="schimmel">7. Schimmel op koude plekken</option>
-            <option value="controle">8. Controlemeting na herstel</option>
+            <option value="schoorsteen">8. Vochtvlekken bij een oud rookkanaal</option>
+            <option value="controle">9. Controlemeting na herstel</option>
           </select></div>
         <div id="ctl_herstelWrap" class="hidden"><label class="kb-lbl">Eerdere klacht en herstel, zoals gemeld (wat, door wie, wanneer)</label><textarea id="ctl_herstel" rows="2" class="kb-inp" style="resize:vertical" placeholder="bijv. Lekkage van de afvoer onder de douche, in augustus 2026 hersteld door de loodgieter; daarna is de vloer opnieuw betegeld." oninput="setControle('herstel', this.value)"></textarea></div>
         <div><label class="kb-lbl" id="lbl_oorzaak">Oorzaak in één zin (tik erin om de standaardzin aan te passen)</label><textarea id="sam_oorzaak" rows="2" class="kb-inp" style="resize:vertical" oninput="setSamField('oorzaak', this.value)"></textarea></div>
@@ -881,7 +882,7 @@
       if (cb) cb.checked = !!kb.show;
     }
 
-    // DATABASE VAN DE 7 BOUWFYSISCHE DOSSIERS
+    // DATABASE VAN DE BOUWFYSISCHE DOSSIERS (8 adviestypes + controlemeting)
     // Kosten: bedragen als getallen (incl. btw). Rijen met inTotal: true tellen mee in het totaal;
     // het totaal wordt automatisch berekend, zodat het altijd klopt met de regels erboven.
     const DOSSIERS = {
@@ -1311,7 +1312,67 @@
           { title: "3. Ademende verf", desc: "Controleer dat er ademende (dampopen) silicaat- of kalkverf wordt gebruikt en geen latexverf die vocht insluit." }
         ]
       },
-      // 8. CONTROLEMETING NA HERSTEL: geen oorzaak, opties of kosten; eigen pagina 3, rapport van 3 pagina's
+      // 8. VOCHTVLEKKEN BIJ EEN OUD ROOKKANAAL
+      schoorsteen: {
+        title: "Vochtvlekken bij een oud rookkanaal",
+        sub: "Onafhankelijk advies & plan van aanpak voor vocht- en roetvlekken bij een schoorsteen die niet meer wordt gebruikt",
+        icon: "house",
+        framework: "Bouwfysische praktijk • rookkanalen",
+        defaultSituation: "Gezien op de schoorsteenboezem in de woonvertrekken. Wat we zagen: bruine of gelige vlekken en kringen in stucwerk en verf, die in de loop van de tijd groter zijn geworden. Het rookkanaal is niet meer in gebruik en is dichtgezet.",
+        problem: `Bij het stoken van hout, kolen, olie of gas zetten zich jarenlang roet, teer en zouten af aan de binnenkant van het rookkanaal. Zolang het kanaal in gebruik is, houdt de warmte het droog. Wordt het kanaal buiten gebruik gesteld en dichtgezet, dan koelt het af en staat de lucht erin stil. De zouten trekken vocht aan uit de lucht (ze zijn <strong>hygroscopisch</strong>), en vocht dat in het kanaal komt, kan er niet meer uit.<br><br>
+        Dat vocht trekt langzaam door het metselwerk naar binnen en neemt opgeloste roet- en teerresten mee. Op het stucwerk verschijnen dan bruine of gelige vlekken en kringen, vaak juist op de verdiepingen waar het kanaal langs warme, bewoonde ruimten loopt. <em>Overschilderen helpt maar even: zolang er zouten in de muur zitten en het kanaal niet ventileert, komen de vlekken door de verf heen terug.</em>`,
+        analysisExtra: `Wat we zien, vlekken die niet met het weer meebewegen en zich in de loop van jaren opbouwen, past bij vocht en roetzouten uit een dichtgezet rookkanaal dat niet wordt geventileerd. Inregenen via de bovenkant van de schoorsteen ligt minder voor de hand, maar is vanaf de grond niet volledig uit te sluiten. Bij de beoordeling is er rekening mee gehouden dat zouten in het metselwerk met een pinmeter hogere waarden kunnen geven dan het werkelijke vochtgehalte.`,
+        risks: [
+          {
+            title: "1. Vlekken komen steeds terug",
+            desc: "Zolang het kanaal niet ventileert en er zouten in de muur zitten, komen vlekken door nieuwe verf of nieuw behang heen. Telkens overschilderen kost geld zonder dat het probleem verdwijnt."
+          },
+          {
+            title: "2. Aantasting van het stucwerk",
+            desc: "Zouten die in het stucwerk uitkristalliseren, kunnen stucwerk en verf op den duur laten loszitten en afbrokkelen."
+          },
+          {
+            title: "3. Geur & binnenklimaat",
+            desc: "Vochtige roet- en teerresten kunnen een muffe of teerachtige geur geven, vooral bij warm en vochtig weer."
+          }
+        ],
+        solution: `Het rookkanaal weer laten ventileren, zodat vocht eruit kan, en de vlekken afsluiten met een isolerende grondverf, zodat de roet- en teerresten niet meer door de afwerking heen komen. Laat bij twijfel de bovenkant van de schoorsteen controleren door een dakdekker.`,
+        options: [
+          {
+            name: "Optie A: Kanaal ventileren + vlekken afsluiten",
+            desc: "Ventilatieroosters onderin het kanaal en een geventileerde kap bovenop, zodat er weer lucht door het kanaal stroomt. De vlekken worden afgesloten met een isolerende grondverf en een dampopen verf.",
+            pros: "✓ Pakt de oorzaak aan: stilstaande, vochtige lucht in het kanaal<br>✓ Beperkte ingreep en lage kosten<br>✕ Bij veel zouten kunnen vlekken toch terugkomen"
+          },
+          {
+            name: "Ventileren, vegen + zoutbestendig pleister",
+            desc: "Zoals optie A, maar het kanaal wordt ook geveegd en het aangetaste stucwerk wordt vervangen door een zoutbestendig pleister dat zouten kan opvangen.",
+            pros: "✓ Verwijdert roetresten en aangetast stucwerk<br>✓ Meeste zekerheid bij ernstige of hardnekkige vlekken<br>✕ Meer werk en hogere kosten"
+          },
+          {
+            name: "Geventileerde voorzetwand",
+            desc: "Een nieuwe wand op een regelwerk voor de schoorsteenboezem, met een geventileerde ruimte erachter. Het kanaal zelf wordt ook geventileerd.",
+            pros: "✓ Vlekken zijn niet meer zichtbaar<br>✕ De zouten blijven in de muur zitten<br>✕ Kost wat ruimte en past niet bij elk interieur"
+          }
+        ],
+        steps: `<strong>Stap 1: Kanaal ventileren</strong><br>
+        Breng onderin het rookkanaal een ventilatierooster aan (bijv. 10 x 20 cm), bij voorkeur op elke verdieping waar het kanaal langs bewoonde ruimten loopt. Controleer of de kap bovenop de schoorsteen ventileert en regen tegenhoudt; vervang een dichte afdekplaat door een geventileerde kap. Laat het werk op het dak uitvoeren door een dakdekker en laat daarbij ook voegwerk, lood en slabben controleren.<br><br>
+        <strong>Stap 2: Ondergrond voorbereiden</strong><br>
+        Verwijder losse verf en loszittend stucwerk op de vlekken. Laat de muur na het aanbrengen van de roosters enkele weken drogen voordat er wordt afgewerkt.<br><br>
+        <strong>Stap 3: Vlekken afsluiten &amp; afwerken</strong><br>
+        Breng een isolerende grondverf aan die geschikt is voor roet- en teervlekken, volgens de verwerkingsvoorschriften van de fabrikant. Werk af met een dampopen muurverf. Vermijd dampdichte latexverf of vinylbehang op de schoorsteenboezem.`,
+        costs: [
+          { item: "Ventilatieroosters in het kanaal, 2 stuks (incl. sparing en afwerking)", low: 250, high: 500, inTotal: true },
+          { item: "Controle schoorsteenkap door dakdekker, zo nodig vervangen door geventileerde kap", low: 100, high: 650, inTotal: true },
+          { item: "Vlekken afsluiten: voorbereiden, isolerende grondverf en dampopen verf", low: 350, high: 750, inTotal: true }
+        ],
+        totalLabel: "Totaal Optie A (één schoorsteenboezem, twee verdiepingen)",
+        checks: [
+          { title: "1. Roosters open houden", desc: "Controleer dat de ventilatieroosters zijn aangebracht en vrij blijven; zet er geen kast voor." },
+          { title: "2. Kap ventileert", desc: "Laat bevestigen dat de kap bovenop de schoorsteen ventileert en regen tegenhoudt." },
+          { title: "3. Geschikte grondverf", desc: "Controleer dat er een isolerende grondverf voor roet- en teervlekken is gebruikt en geen gewone voorstrijk." }
+        ]
+      },
+      // 9. CONTROLEMETING NA HERSTEL: geen oorzaak, opties of kosten; eigen pagina 3, rapport van 3 pagina's
       controle: {
         title: "Controlemeting na herstel",
         sub: "Onafhankelijke vochtmeting ter controle, nadat een eerder vochtprobleem is hersteld",
@@ -1349,7 +1410,8 @@
       kelderventilatie: ["één kelderruimte", "één kelderruimte", "één kelderruimte"],
       lateraal: ["ca. 30 m² kelderwand", "ca. 30 m² kelderwand en -vloer", "één keldergevel van gemiddelde lengte"],
       lekkage: ["één lekpunt", "één douche of bad", "één ruimte"],
-      schimmel: ["één kamer", "één kamer", "één kamer"]
+      schimmel: ["één kamer", "één kamer", "één kamer"],
+      schoorsteen: ["één schoorsteenboezem over twee verdiepingen", "één schoorsteenboezem over twee verdiepingen, ca. 8-10 m² stucwerk", "één schoorsteenboezem over twee verdiepingen, ca. 8-10 m² wand"]
     };
     function prijsBasis(key, i) { return ((PRIJS_BASIS[key] || [])[i]) || ""; }
 
@@ -1438,6 +1500,18 @@
         ],
         [
           "De koude plek is te smal of te lastig bereikbaar om te isoleren ([bijv. betonlatei boven kozijn]). Wandverwarming houdt de plek warm genoeg om schimmelgroei te voorkomen, met stroomverbruik als nadeel."
+        ]
+      ],
+      schoorsteen: [
+        [
+          "De vlekken zijn [licht tot matig] en het stucwerk zit nog vast. Het kanaal laten ventileren en de vlekken afsluiten pakt de oorzaak aan met een beperkte ingreep.",
+          "Het kanaal is aan [boven- en onderzijde] dichtgezet, waardoor de lucht erin stilstaat. Ventileren is hier de belangrijkste stap; daarna kunnen de vlekken blijvend worden afgesloten."
+        ],
+        [
+          "De vlekken zijn [groot / al jaren aanwezig] en het stucwerk is op enkele plekken [los / aangetast]. Vegen en zoutbestendig pleister geven hier meer zekerheid dan alleen afsluiten."
+        ],
+        [
+          "De schoorsteenboezem wordt [bij een verbouwing toch aangepast / mag minder zichtbaar zijn]. Een geventileerde voorzetwand is dan een praktische oplossing, mits het kanaal zelf ook wordt geventileerd."
         ]
       ]
     };
@@ -1932,6 +2006,51 @@
             { title: "3. Ademende verf", desc: "Controleer dat er ademende (dampopen) silicaat- of kalkverf wordt gebruikt en geen latexverf die vocht insluit." }
           ]
         }
+      },
+      schoorsteen: {
+        1: {
+          solution: `Het rookkanaal ventileren, het kanaal laten vegen om roet- en teerresten te verwijderen, en het aangetaste stucwerk vervangen door een zoutbestendig pleister. Zo worden zowel de bron als de schade aangepakt. Laat bij twijfel de bovenkant van de schoorsteen controleren door een dakdekker.`,
+          steps: `<strong>Stap 1: Kanaal vegen &amp; ventileren</strong><br>
+          Laat het rookkanaal vegen en inspecteren door een erkend schoorsteenveger, bij voorkeur met een camera. Breng daarna ventilatieroosters onderin het kanaal aan en zorg voor een geventileerde kap bovenop (dakwerk door een dakdekker).<br><br>
+          <strong>Stap 2: Aangetast stucwerk verwijderen</strong><br>
+          Verwijder het stucwerk op en rond de vlekken tot op het metselwerk, met een marge van circa 50 cm buiten de zichtbare aantasting. Borstel de voegen schoon en laat de muur drogen.<br><br>
+          <strong>Stap 3: Zoutbestendig pleister &amp; afwerking</strong><br>
+          Breng een zoutbestendig pleistersysteem (saneerpleister) aan volgens de verwerkingsvoorschriften van de fabrikant en werk af met een dampopen verf. Gebruik geen dampdichte afwerking.`,
+          costs: [
+            { item: "Kanaal vegen en inspecteren (schoorsteenveger, evt. camera)", low: 100, high: 250, inTotal: true },
+            { item: "Ventilatieroosters in het kanaal, 2 stuks (incl. sparing en afwerking)", low: 250, high: 500, inTotal: true },
+            { item: "Controle schoorsteenkap door dakdekker, zo nodig vervangen door geventileerde kap", low: 100, high: 650, inTotal: true },
+            { item: "Stucwerk verwijderen en zoutbestendig pleister aanbrengen (ca. 8-10 m²)", low: 1000, high: 2000, inTotal: true },
+            { item: "Dampopen verf (schoorsteenboezem compleet)", low: 250, high: 500, inTotal: true }
+          ],
+          totalLabel: "Totaal Optie B (één schoorsteenboezem, twee verdiepingen)",
+          checks: [
+            { title: "1. Veegbewijs", desc: "Vraag om een veegbewijs of inspectieverslag van het kanaal." },
+            { title: "2. Marge rond de vlekken", desc: "Controleer dat het stucwerk ruim buiten de zichtbare vlekken is vervangen, niet alleen op de vlek zelf." },
+            { title: "3. Dampopen afwerking", desc: "Controleer dat er een dampopen verf is gebruikt en geen latexverf of vinylbehang." }
+          ]
+        },
+        2: {
+          solution: `Een geventileerde voorzetwand voor de schoorsteenboezem plaatsen, zodat de vlekken niet meer zichtbaar zijn, en het kanaal zelf ventileren. De zouten blijven in de muur zitten: de voorzetwand verbergt het probleem, maar neemt de bron niet weg.`,
+          steps: `<strong>Stap 1: Kanaal ventileren</strong><br>
+          Breng ventilatieroosters onderin het kanaal aan en zorg voor een geventileerde kap bovenop (dakwerk door een dakdekker).<br><br>
+          <strong>Stap 2: Voorzetwand plaatsen</strong><br>
+          Plaats een regelwerk op circa 2-3 cm afstand van de schoorsteenboezem, met ventilatieopeningen onder en boven, zodat de ruimte achter de wand kan ventileren. Bekleed met gipsplaat of een vochtbestendige plaat. Zorg dat het ventilatierooster van het kanaal door de voorzetwand heen wordt doorgezet.<br><br>
+          <strong>Stap 3: Afwerken</strong><br>
+          Werk de naden af en schilder met een dampopen muurverf.`,
+          costs: [
+            { item: "Ventilatieroosters in het kanaal, 2 stuks (incl. doorvoer door de voorzetwand)", low: 250, high: 500, inTotal: true },
+            { item: "Geventileerde voorzetwand op regelwerk, twee verdiepingen (ca. 8-10 m²)", low: 1200, high: 2400, inTotal: true },
+            { item: "Afwerken en schilderen", low: 200, high: 450, inTotal: true },
+            { item: "Controle schoorsteenkap door dakdekker, zo nodig vervangen door geventileerde kap", low: 100, high: 650, note: "optioneel" }
+          ],
+          totalLabel: "Totaal Optie C (één schoorsteenboezem, twee verdiepingen, excl. kap)",
+          checks: [
+            { title: "1. Ventilatie achter de wand", desc: "Controleer dat er ventilatieopeningen onder en boven in de voorzetwand zitten." },
+            { title: "2. Rooster bereikbaar", desc: "Controleer dat het ventilatierooster van het kanaal niet achter de voorzetwand is verdwenen." },
+            { title: "3. Controle na enkele maanden", desc: "Controleer na enkele maanden of er geen vlekken door de naden of hoeken van de nieuwe wand komen." }
+          ]
+        }
       }
     };
 
@@ -2122,6 +2241,7 @@
       lateraal: "Vocht dat van buitenaf door de keldermuren en de naad tussen vloer en muur binnenkomt.",
       lekkage: "Een lekkage van een leiding, afvoer of kitvoeg; geen vocht van buiten of uit de grond.",
       schimmel: "Schimmel op een plek die kouder is dan de rest van de kamer (koudebrug).",
+      schoorsteen: "Vocht en roetzouten uit een dichtgezet rookkanaal dat niet wordt geventileerd, waardoor bruine of gelige vlekken door het stucwerk komen.",
       controle: "Op de gemeten plekken zijn op de dag van de meting geen verhoogde vochtwaarden aangetroffen."
     };
 
@@ -2160,6 +2280,11 @@
         "Verwijder zichtbare schimmel met waterstofperoxide (3%) of alcohol, niet met chloor; draag handschoenen.",
         "Zet meubels 5 tot 10 cm van buitenmuren, zodat warme lucht erachter kan komen.",
         "Ventileer continu en houd de luchtvochtigheid bij voorkeur tussen 40 en 60%."
+      ],
+      schoorsteen: [
+        "Zet geen kasten of andere meubels tegen de schoorsteenboezem, zodat de muur kan drogen.",
+        "Schilder de vlekken niet alleen over met gewone muurverf; ze komen daar binnen korte tijd doorheen.",
+        "Houd de luchtvochtigheid in huis bij voorkeur tussen 40 en 60%, bijvoorbeeld met een eenvoudige hygrometer."
       ],
       controle: [
         "Ventileer goed, zeker in de eerste maanden na het herstel, zodat eventueel restvocht kan drogen.",
