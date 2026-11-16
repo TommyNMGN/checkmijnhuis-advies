@@ -51,7 +51,7 @@
       customSituations = {}; customDuidingen = {};
       kb = JSON.parse(KB_DEFAULT_JSON);
       adviesState = {}; samenvatting = {}; urgentie = { niveau: "", tekst: "" }; fotoData = "";
-      controle = { herstel: "", opnieuw: false, termijn: "", reden: "" };
+      controle = { soort: "", herstel: "", opnieuw: false, termijn: "", reden: "" };
       bijkomend = [{ key: "", rec: 0, motivatie: "" }, { key: "", rec: 0, motivatie: "" }]; bijkVolgorde = "";
       obj = { type: "", bouwjaar: "", aanwezig: "", aanleiding: "" };
       waarnemingen = { lijst: [], overig: "" };

@@ -385,7 +385,7 @@
             <select id="bijk_key_1" class="kb-inp" onchange="setBijkomend(1, 'key', this.value)"></select>
           </div>
         </div>
-        <div id="ctl_herstelWrap" class="hidden"><label class="kb-lbl">Eerdere klacht en herstel, zoals gemeld (wat, door wie, wanneer)</label><textarea id="ctl_herstel" rows="2" class="kb-inp" style="resize:vertical" placeholder="bijv. Lekkage van de afvoer onder de douche, in augustus 2026 hersteld door de loodgieter; daarna is de vloer opnieuw betegeld." oninput="setControle('herstel', this.value)"></textarea></div>
+        <div id="ctl_herstelWrap" class="hidden space-y-2.5"><div><label class="kb-lbl">Soort controle</label><select id="ctl_soort" class="kb-inp" onchange="setControle('soort', this.value)"><option value="">Algemeen</option><option value="lekkage">Na lekkage</option><option value="opstijgend">Na opstijgend vocht</option><option value="doorslaand">Na doorslaand vocht</option><option value="kelder">Kelder</option><option value="schimmel">Na schimmel</option></select></div><div><label class="kb-lbl">Eerdere klacht en herstel, zoals gemeld (wat, door wie, wanneer)</label><textarea id="ctl_herstel" rows="2" class="kb-inp" style="resize:vertical" placeholder="bijv. Lekkage van de afvoer onder de douche, in augustus 2026 hersteld door de loodgieter; daarna is de vloer opnieuw betegeld." oninput="setControle('herstel', this.value)"></textarea></div></div>
         <div><label class="kb-lbl" id="lbl_oorzaak">Oorzaak in één zin (tik erin om de standaardzin aan te passen)</label><textarea id="sam_oorzaak" rows="2" class="kb-inp" style="resize:vertical" oninput="setSamField('oorzaak', this.value)"></textarea></div>
         <div><label class="kb-lbl">Bouwfysische duiding (tik erin om de standaardtekst aan te passen)</label><textarea id="tx_duiding" rows="4" class="kb-inp" style="resize:vertical" oninput="setDuidingTekst(this.value)"></textarea></div>
       </div>
@@ -517,7 +517,7 @@
       nat:         { label: "Nat",         cls: "bg-red-100 text-red-800 border-red-300" }
     };
 
-    // Vaste meetapparatuur. In het advies alleen type + functie (serienummers horen in het feitenrapport, optie 3).
+    // Vaste meetapparatuur. In het advies alleen type + functie, geen serienummers.
     const APPARATUUR = [
       { key: "rcm",   naam: "PCE-RCM 16",          functie: "temperatuur, RV, CO₂, fijnstof en TVOC" },
       { key: "vm128", naam: "Metofix VM128 bolmeter", functie: "indicatieve dieptemeting materiaalvocht" },
@@ -873,7 +873,7 @@
         if (s.urgentie && typeof s.urgentie === 'object') urgentie = Object.assign(urgentie, s.urgentie);
         if (Array.isArray(s.bijkomend)) bijkomend = [0, 1].map(i => Object.assign({ key: "", rec: 0, motivatie: "" }, s.bijkomend[i] || {}));
         if (typeof s.bijkVolgorde === 'string') bijkVolgorde = s.bijkVolgorde;
-        if (s.controle && typeof s.controle === 'object') controle = Object.assign({ herstel: "", opnieuw: false, termijn: "", reden: "" }, s.controle);
+        if (s.controle && typeof s.controle === 'object') controle = Object.assign({ soort: "", herstel: "", opnieuw: false, termijn: "", reden: "" }, s.controle);
         if (typeof s.fotoData === 'string' && s.fotoData.startsWith('data:image/')) fotoData = s.fotoData;
         if (s.obj && typeof s.obj === 'object') obj = Object.assign({ type: "", bouwjaar: "", aanwezig: "", aanleiding: "" }, s.obj);
         if (s.waarnemingen && typeof s.waarnemingen === 'object') waarnemingen = { lijst: Array.isArray(s.waarnemingen.lijst) ? s.waarnemingen.lijst : [], overig: s.waarnemingen.overig || "" };
@@ -2208,17 +2208,114 @@
     }
 
     // Controlemeting na herstel
-    let controle = { herstel: "", opnieuw: false, termijn: "", reden: "" };
+    let controle = { soort: "", herstel: "", opnieuw: false, termijn: "", reden: "" };
     function isControle() { return currentTemplateKey === 'controle'; }
 
+    // Soort controle: titel, signalen, uitleg na herstel en standaardtips per soort ("" = algemeen)
+    const CTL_SOORTEN = {
+      "": {
+        naam: "Algemeen",
+        titel: "Controlemeting na herstel",
+        na: "Na een herstel kunnen muren en vloeren nog enige tijd nadrogen. Hoe lang dat duurt, hangt af van de constructie, de afwerking en het seizoen; dat kan weken tot maanden zijn.",
+        signalen: [
+          "Nieuwe of terugkerende vochtplekken, verkleuring of kringen op muren, plafonds of vloeren.",
+          "Schimmel, een muffe geur of beslagen ramen op plekken waar dat eerder niet was.",
+          "Bladderende verf, loslatend behang of stucwerk, of een witte aanslag (zoutuitbloei).",
+          "Een vloer die loszit of opbolt, of houten plinten en kozijnen die zacht worden.",
+          "Na een eerdere lekkage: een watermeter die doorloopt terwijl alle kranen dicht zijn."
+        ],
+        tips: [
+          "Ventileer goed, zeker in de eerste maanden na het herstel, zodat eventueel restvocht kan drogen.",
+          "Maak foto's van de herstelde plekken met datum, zodat u later kunt vergelijken.",
+          "Bewaar de facturen en rapporten van het herstel bij uw woningpapieren."
+        ]
+      },
+      lekkage: {
+        naam: "Na lekkage",
+        titel: "Controlemeting na lekkage",
+        na: "Na een lekkage kunnen vloeren, dekvloeren en muren nog weken tot maanden nadrogen, vooral onder tegels of andere dichte afwerkingen. Een droog oppervlak betekent niet altijd dat de constructie eronder ook al droog is.",
+        signalen: [
+          "Nieuwe vochtplekken, kringen of verkleuring onder of naast leidingen, sanitair of de plek van de eerdere lekkage.",
+          "Loszittende of hol klinkende tegels, of voegen en kitvoegen die donker blijven.",
+          "Een vloer die opbolt of loszit, of plinten die zacht worden.",
+          "Een muffe geur of schimmel op plekken waar dat eerder niet was.",
+          "Een watermeter die doorloopt terwijl alle kranen dicht zijn."
+        ],
+        tips: [
+          "Controleer af en toe de watermeter: staan alle kranen dicht en loopt de meter toch, neem dan contact op met een loodgieter.",
+          "Houd kitvoegen rond bad, douche en aanrecht in goede staat en vervang ze als ze loslaten of verkleuren.",
+          "Ventileer goed, zeker in de eerste maanden na het herstel, zodat eventueel restvocht kan drogen."
+        ]
+      },
+      opstijgend: {
+        naam: "Na opstijgend vocht",
+        titel: "Controlemeting na opstijgend vocht",
+        na: "Na een behandeling tegen opstijgend vocht droogt een muur langzaam uit; dat kan vele maanden duren, afhankelijk van de muurdikte en het seizoen. Zouten die nog in de muur zitten, kunnen in die periode aan het oppervlak komen.",
+        signalen: [
+          "Vochtplekken of een donkere rand onderin de muur, boven de plint.",
+          "Een witte aanslag (zoutuitbloei) of afbladderende verf en stucwerk onderin de muur.",
+          "Houten plinten, vloerdelen of kozijnen die zacht worden of gaan schimmelen.",
+          "Een muffe geur in de ruimte of uit de kruipruimte."
+        ],
+        tips: [
+          "Zet geen kasten strak tegen de behandelde muur, zodat de muur kan uitdrogen.",
+          "Gebruik onderin de muur geen dampdichte verf of vinylbehang; kies een dampopen afwerking.",
+          "Houd de ventilatieopeningen van de kruipruimte open en vrij, als die er zijn."
+        ]
+      },
+      doorslaand: {
+        naam: "Na doorslaand vocht",
+        titel: "Controlemeting na doorslaand vocht",
+        na: "Na gevelherstel kan een muur nog enkele maanden nadrogen, afhankelijk van de muurdikte en het weer. Het effect van het herstel is het best te beoordelen na een periode met regen.",
+        signalen: [
+          "Vochtplekken of kringen aan de binnenkant van de buitenmuur, vooral na regen of harde wind.",
+          "Schimmel of verkleuring rond kozijnen en vensterbanken.",
+          "Afbladderende verf of loszittend stucwerk aan de binnenkant van de gevel.",
+          "Scheuren in voegwerk of gevel, of lekkende dakgoten en regenpijpen aan de buitenkant."
+        ],
+        tips: [
+          "Kijk na een flinke regenbui of er aan de binnenkant van de gevel nieuwe plekken zijn.",
+          "Houd dakgoten en regenpijpen schoon, zodat het water niet langs de gevel loopt.",
+          "Ventileer goed, zodat eventueel restvocht in de muur kan drogen."
+        ]
+      },
+      kelder: {
+        naam: "Kelder",
+        titel: "Controlemeting kelder na herstel",
+        na: "Een kelder droogt na herstel langzaam, omdat de muren dik zijn en tegen de grond staan. Ook het seizoen speelt mee: in warme, vochtige zomers kan het in een kelder vochtiger zijn dan in de winter.",
+        signalen: [
+          "Vochtplekken, natte plekken of plassen op de wanden of de vloer van de kelder.",
+          "Een witte aanslag (zoutuitbloei) of loslatende afwerking op de keldermuren.",
+          "Een muffe geur, schimmel op spullen of beslagen leidingen in de kelder.",
+          "Een luchtvochtigheid in de kelder die lange tijd boven ca. 70% blijft."
+        ],
+        tips: [
+          "Houd de luchtvochtigheid in de kelder bij met een eenvoudige hygrometer met geheugen.",
+          "Bewaar spullen niet direct tegen de muur of op de vloer, maar op een rek met wat ruimte erachter.",
+          "Ventileer in de zomer niet met warme buitenlucht; dat kan juist condensatie in de kelder geven."
+        ]
+      },
+      schimmel: {
+        naam: "Na schimmel",
+        titel: "Controlemeting na schimmelherstel",
+        na: "Of het herstel van een koude plek of de ventilatie werkt, blijkt vooral in het stookseizoen, als het buiten koud is. Een controle in de winter zegt daarom meer dan een controle in de zomer.",
+        signalen: [
+          "Nieuwe zwarte of grijze puntjes of vlekken op dezelfde plek of in hoeken van de buitenmuur.",
+          "Beslagen ramen of condens op koude plekken, vooral 's ochtends.",
+          "Een muffe geur in de kamer of in kasten tegen de buitenmuur.",
+          "Verkleuring of loslatend behang achter meubels."
+        ],
+        tips: [
+          "Ventileer continu en houd de luchtvochtigheid bij voorkeur tussen 40 en 60%.",
+          "Zet meubels niet strak tegen buitenmuren; houd een paar centimeter ruimte.",
+          "Verwarm alle ruimten een beetje, ook slaapkamers die weinig worden gebruikt."
+        ]
+      }
+    };
+    function ctlSoort() { return CTL_SOORTEN[controle.soort] || CTL_SOORTEN[""]; }
+    function tipsStandaard(key = currentTemplateKey) { return key === 'controle' ? ctlSoort().tips : (TIPS_STANDAARD[key] || []); }
+
     const CTL_UITLEG = "Wij hebben gemeten op de plekken waar het eerdere probleem zich voordeed en bij voorkeur ook op een droge referentieplek (zie hoofdstuk 2). Zijn de waarden op de eerdere probleemplekken vergelijkbaar met die van de referentie, dan wijst dat erop dat daar op dat moment geen verhoogd materiaalvocht aanwezig was. Metingen zonder breekwerk zijn indicatief: ze laten zien of een plek droog, verhoogd of nat is ten opzichte van de omgeving, maar geven geen exact vochtgehalte.";
-    const CTL_SIGNALEN = [
-      "Nieuwe of terugkerende vochtplekken, verkleuring of kringen op muren, plafonds of vloeren.",
-      "Schimmel, een muffe geur of beslagen ramen op plekken waar dat eerder niet was.",
-      "Bladderende verf, loslatend behang of stucwerk, of een witte aanslag (zoutuitbloei).",
-      "Een vloer die loszit of opbolt, of houten plinten en kozijnen die zacht worden.",
-      "Een watermeter die doorloopt terwijl alle kranen dicht zijn."
-    ];
 
     function getHerstelHtml() {
       if (!isControle()) return "";
@@ -2237,7 +2334,7 @@
       return `<div class="rounded-xl border border-blue-300 bg-blue-50/60 px-3 py-2 text-[10px] text-slate-800 leading-snug space-y-0.5">
         <p class="font-black text-blue-950 text-[10px] uppercase tracking-wider">Advies: opnieuw meten ${t ? 'over ' + escHtml(t) : '<span class="ph-hint normal-case" style="color:#d97706;font-style:italic">[termijn]</span>'}</p>
         ${r ? `<p>${escHtml(r).replace(/\n/g, '<br>')}</p>` : ''}
-        <p class="text-slate-600">Kort na een herstel kan een muur of vloer van binnen nog vocht bevatten terwijl het oppervlak al droog is. Een tweede meting laat zien of de constructie ook op langere termijn droog blijft. Dit is een aparte dienst.</p>
+        <p class="text-slate-600">Een tweede meting laat zien of de constructie ook op langere termijn droog blijft. Dit is een aparte dienst.</p>
       </div>`;
     }
     function updateControleBlokken() {
@@ -2251,6 +2348,7 @@
     }
     function setControle(field, val) {
       controle[field] = val;
+      if (field === 'soort') { refreshSamPanel(); rerenderKeepScroll(); return; }
       if (field === 'opnieuw') { const w = document.getElementById('ctl_opnieuwWrap'); if (w) w.classList.toggle('hidden', !val); }
       updateControleBlokken();
     }
@@ -2263,7 +2361,7 @@
       const lbl = document.getElementById('lbl_oorzaak');
       if (lbl) lbl.textContent = c ? "Uitkomst van de meting in één zin (tik erin om de standaardzin aan te passen)" : "Oorzaak in één zin (tik erin om de standaardzin aan te passen)";
       const sv = (id, v) => { const e = document.getElementById(id); if (e) e.value = v || ""; };
-      sv('ctl_herstel', controle.herstel); sv('ctl_termijn', controle.termijn); sv('ctl_reden', controle.reden);
+      sv('ctl_soort', controle.soort); sv('ctl_herstel', controle.herstel); sv('ctl_termijn', controle.termijn); sv('ctl_reden', controle.reden);
       const cb = document.getElementById('ctl_opnieuw'); if (cb) cb.checked = !!controle.opnieuw;
     }
 
@@ -2288,6 +2386,7 @@
               ${h2(3, 'bg-emerald-700', 'Wat de meting laat zien', 'text-emerald-900')}
               <div id="ctlUitkomstHolder">${getCtlUitkomstHtml()}</div>
               <p class="text-slate-700 leading-relaxed text-[10px]">${CTL_UITLEG}</p>
+              <p class="text-slate-700 leading-relaxed text-[10px]"><strong class="text-slate-900">Na het herstel:</strong> ${ctlSoort().na}</p>
               <div id="ctlOpnieuwHolder">${getCtlOpnieuwHtml()}</div>
             </div>
 
@@ -2295,7 +2394,7 @@
               ${h2(4, 'bg-amber-600', 'Waar u op kunt letten', 'text-amber-900')}
               <div class="rounded-xl border border-amber-200 bg-amber-50/40 px-3 py-2 space-y-1">
                 <ul class="space-y-1 text-[10px] text-slate-800 leading-snug">
-                  ${CTL_SIGNALEN.map(t => `<li class="flex gap-1.5"><span class="text-amber-600 font-black">!</span><span>${t}</span></li>`).join('')}
+                  ${ctlSoort().signalen.map(t => `<li class="flex gap-1.5"><span class="text-amber-600 font-black">!</span><span>${t}</span></li>`).join('')}
                 </ul>
                 <p class="text-[10px] text-slate-700 leading-snug pt-0.5">Ziet u een van deze signalen, neem dan contact op. Bij twijfel kunt u altijd even bellen.</p>
               </div>
@@ -2441,7 +2540,7 @@
     }
     function getTipsList(key = currentTemplateKey) {
       const t = (getSam(key).tips || "").trim();
-      return t ? t.split('\n').map(x => x.trim()).filter(Boolean) : (TIPS_STANDAARD[key] || []);
+      return t ? t.split('\n').map(x => x.trim()).filter(Boolean) : tipsStandaard(key);
     }
 
     function getSamenvattingHtml(data) {
@@ -2516,7 +2615,7 @@
       const o = document.getElementById('sam_oorzaak');
       if (o) { o.value = s.oorzaak || ""; o.placeholder = OORZAAK_STANDAARD[currentTemplateKey] || ""; }
       const t = document.getElementById('sam_tips');
-      if (t) { t.value = s.tips || ""; t.placeholder = (TIPS_STANDAARD[currentTemplateKey] || []).join('\n'); }
+      if (t) { t.value = s.tips || ""; t.placeholder = tipsStandaard().join('\n'); }
       const un = document.getElementById('sam_urgNiveau');
       if (un) un.value = urgentie.niveau || "";
       const ut = document.getElementById('sam_urgTekst');
@@ -2525,7 +2624,7 @@
     }
 
     function useStandaardTips() {
-      const t = (TIPS_STANDAARD[currentTemplateKey] || []).join('\n');
+      const t = tipsStandaard().join('\n');
       document.getElementById('sam_tips').value = t;
       setSamField('tips', t);
     }
@@ -2884,7 +2983,7 @@
 
     // RENDER DE EXACTE 3 PAGINA'S
     function renderAllPages() {
-      const data = DOSSIERS[currentTemplateKey] || DOSSIERS.condensatie;
+      const data = isControle() ? Object.assign({}, DOSSIERS.controle, { title: ctlSoort().titel }) : (DOSSIERS[currentTemplateKey] || DOSSIERS.condensatie);
       const customSit = customSituations[currentTemplateKey];
       const activeSituation = (customSit && customSit.trim()) ? escHtml(customSit).replace(/\n/g, '<br>') : data.defaultSituation;
       const customDuid = customDuidingen[currentTemplateKey];
@@ -3399,7 +3498,7 @@
       customSituations = {}; customDuidingen = {};
       kb = JSON.parse(KB_DEFAULT_JSON);
       adviesState = {}; samenvatting = {}; urgentie = { niveau: "", tekst: "" }; fotoData = "";
-      controle = { herstel: "", opnieuw: false, termijn: "", reden: "" };
+      controle = { soort: "", herstel: "", opnieuw: false, termijn: "", reden: "" };
       bijkomend = [{ key: "", rec: 0, motivatie: "" }, { key: "", rec: 0, motivatie: "" }]; bijkVolgorde = "";
       obj = { type: "", bouwjaar: "", aanwezig: "", aanleiding: "" };
       waarnemingen = { lijst: [], overig: "" };
