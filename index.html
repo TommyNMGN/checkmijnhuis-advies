@@ -1247,7 +1247,7 @@
           {
             name: "Bouwdroging na herstel",
             desc: "Na de reparatie zorgen bouwdrogers en ventilatoren dat vloeren en muren sneller droog worden.",
-            pros: "✓ Voorkomt schimmelvorming na de lekkage<br>✓ Verkort de hersteltijd aanzienlijk<br>✓ Vaak meeverzekerd als gevolgschade (afhankelijk van de polis)"
+            pros: "✓ Voorkomt schimmelvorming na de lekkage<br>✓ Verkort de hersteltijd aanzienlijk<br>✓ Kan onder de polis vallen (vraag uw verzekeraar)"
           }
         ],
         steps: `<strong>Stap 1: Niet-destructieve lekdetectie</strong><br>
@@ -1980,7 +1980,7 @@
           checks: [
             { title: "1. Lek eerst hersteld", desc: "Controleer dat het lek is hersteld voordat er wordt gedroogd." },
             { title: "2. Meten vóór herafwerking", desc: "Begin pas met herafwerking als de constructie aantoonbaar droog is gemeten." },
-            { title: "3. Kosten bewaren", desc: "Bewaar bonnen en facturen; bouwdroging is vaak meeverzekerd als gevolgschade, afhankelijk van uw polis." }
+            { title: "3. Kosten bewaren", desc: "Bewaar bonnen en facturen; vraag uw verzekeraar of bouwdroging onder uw polis valt." }
           ]
         }
       },
@@ -2116,7 +2116,7 @@
       return `
         <div class="rounded-xl border border-slate-300 bg-white px-3 py-2">
           <p class="text-[10.5px] font-black text-slate-950 mb-1">${nr}. ${escHtml(d.title)}</p>
-          ${rij('Oorzaak', escHtml(OORZAAK_STANDAARD[b.key] || ''))}
+          ${rij('Oorzaak', escHtml(OORZAAK_BIJKOMEND[b.key] || OORZAAK_STANDAARD[b.key] || ''))}
           ${rij('Ons advies', `<strong>Optie ${OPTION_LETTERS[r]}: ${escHtml(optionName(d.options[r]))}.</strong> ${inh.solution}`)}
           ${rij('Waarom', mot ? escHtml(mot).replace(/\n/g, '<br>') : '<span class="ph-hint" style="color:#d97706;font-style:italic">[Motivatie invullen in stap 7]</span>')}
           ${rij('Richtprijs', prijs)}
@@ -2474,6 +2474,11 @@
       schimmel: "Schimmel op een plek die kouder is dan de rest van de kamer (koudebrug).",
       schoorsteen: "Vocht en roetzouten uit een dichtgezet rookkanaal dat niet wordt geventileerd, waardoor bruine of gelige vlekken door het stucwerk komen.",
       controle: "Op de gemeten plekken zijn op de dag van de meting geen verhoogde vochtwaarden aangetroffen."
+    };
+
+    // Oorzaakzin op de pagina "Bijkomende oorzaken": zonder uitsluitingen die de hoofdoorzaak tegenspreken
+    const OORZAAK_BIJKOMEND = {
+      lekkage: "Vocht door een lekkage van een leiding, afvoer of kitvoeg, of restvocht nadat die is hersteld."
     };
 
     const TIPS_STANDAARD = {
