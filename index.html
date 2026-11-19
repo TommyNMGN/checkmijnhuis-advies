@@ -820,8 +820,9 @@
       if (!(getSam(key).tips || "").trim()) w.push("INFO|De tips bij 'Wat u zelf kunt doen' zijn nog de standaardtips. Heb je ter plaatse eigen tips gegeven, zet die er dan in.");
       if (key !== 'controle' && !(getSam(key).oorzaak || "").trim()) w.push("De <strong>oorzaak</strong> op pagina 1 is nog de standaardzin van het dossier. Klopt die voor deze woning? Pas hem anders aan bij 'Oorzaak in één zin'.");
       if (isGeenSchimmel(key) && (waarnemingen.lijst || []).includes('Schimmelvorming')) w.push("Je hebt <strong>geen schimmel aangetroffen</strong> aangevinkt, maar bij de waarnemingen staat <strong>Schimmelvorming</strong>. Pas een van beide aan.");
-      const geenSchade = isGeenSchimmel(key) || (waarnemingen.lijst || []).includes(GEEN_SCHADE) || (sit && /\bgeen\b[^.]*\b(schimmel|condens|schade|vochtplek)/i.test(sit));
-      if (!duid && geenSchade && ['condensatie', 'schimmel', 'opstijgend', 'doorslaand'].includes(key)) {
+      if (isGeenSchimmel(key) && duid && /schimmel/i.test(duid)) w.push("Je hebt <strong>geen schimmel aangetroffen</strong> aangevinkt. Controleer of je eigen <strong>duiding</strong> niet uitgaat van schimmel die er is.");
+      const geenSchade = (waarnemingen.lijst || []).includes(GEEN_SCHADE) || (sit && /\bgeen\b[^.]*\b(schimmel|condens|schade|vochtplek)/i.test(sit));
+      if (!duid && geenSchade && !isGeenSchimmel(key) && ['condensatie', 'schimmel', 'opstijgend', 'doorslaand'].includes(key)) {
         w.push("In de situatie staat dat er <strong>geen schade</strong> is waargenomen, terwijl de standaardduiding uitgaat van een schadebeeld. Pas de <strong>duiding</strong> aan (bijvoorbeeld: preventief advies).");
       }
       if (!sit) w.push("De <strong>situatie ter plaatse</strong> is nog de standaardtekst. Beschrijf wat je bij déze woning hebt gezien (ruimten, schadebeeld).");
@@ -1574,6 +1575,7 @@
     function motivatieSjablonen(key, rec) {
       if (rec === "none") return MOTIVATIE_GEEN_VOORKEUR;
       if (rec === EERST) return MOTIVATIE_EERST;
+      if (isGeenSchimmel(key) && GS_MOTIVATIE[rec]) return GS_MOTIVATIE[rec];
       return ((MOTIVATIE_SJABLONEN[key] || [])[rec] || []);
     }
     // termijn voor opnieuw meten (alleen als 'opnieuw meten' is aangevinkt)
@@ -2159,6 +2161,14 @@
     const GS_OORZAAK = "Een koude plek waar schimmel kan ontstaan; er is nu geen schimmel gezien.";
     const GS_STAP1 = `<strong>Stap 1: Schimmel verwijderen (alleen als die verschijnt)</strong><br>
           Er is geen schimmel gezien. Verschijnt die toch, reinig de plek dan met waterstofperoxide (3-5%) of alcohol (70-80%). Gebruik geen chloor op poreuze ondergronden.<br><br>`;
+    const GS_DUIDING = "Wat we zien en meten past bij een plek die kouder is dan de rest van de kamer. Ook als de luchtvochtigheid in de kamer redelijk is, kan zo'n koude plek lang vochtig blijven; dan kan daar schimmel ontstaan. Er is nu geen schimmel gezien. Voorkomen vraagt vooral om het warmer maken van de koude plek, door te verwarmen of te isoleren.";
+    // motivatiesjablonen per optie bij het vinkje (optie C past al en houdt zijn eigen sjabloon)
+    const GS_MOTIVATIE = {
+      0: ["Er is nog geen schimmel, maar de plek is koud genoeg om die te laten ontstaan. [Isolatie van de koude plek] voorkomt dat."],
+      1: ["De luchtvochtigheid in de ruimte is [structureel] te hoog, waardoor op koude plekken schimmel kan ontstaan. Betere ventilatie is hier de belangrijkste maatregel; lokale isolatie kan daarna alsnog nodig zijn."]
+    };
+    const GS_TIP = "Controleer koude hoeken regelmatig op zwarte puntjes; verwijder beginnende schimmel met waterstofperoxide (3%) of alcohol, niet met chloor.";
+    function standaardDuiding(key = currentTemplateKey) { return isGeenSchimmel(key) ? GS_DUIDING : DOSSIERS[key].analysisExtra; }
     const GS_CHECK1 = { title: "1. Schimmel voorkomen", desc: "Er is geen schimmel gezien. Verschijnt die vóór of tijdens het werk, laat die dan verwijderen met een geschikt middel, niet met chloor." };
     function metGeenSchimmel(o) {
       return Object.assign({}, o, {
@@ -2176,6 +2186,7 @@
     function setGeenSchimmel(val) {
       obj.geenSchimmel = !!val;
       refreshSamPanel();
+      refreshSjabloonList();
       if (typeof refreshTekstPanel === 'function') refreshTekstPanel();
       rerenderKeepScroll();
     }
@@ -2407,7 +2418,11 @@
       }
     };
     function ctlSoort() { return CTL_SOORTEN[controle.soort] || CTL_SOORTEN[""]; }
-    function tipsStandaard(key = currentTemplateKey) { return key === 'controle' ? ctlSoort().tips : (TIPS_STANDAARD[key] || []); }
+    function tipsStandaard(key = currentTemplateKey) {
+      if (key === 'controle') return ctlSoort().tips;
+      const t = TIPS_STANDAARD[key] || [];
+      return isGeenSchimmel(key) ? [GS_TIP].concat(t.slice(1)) : t;
+    }
 
     const CTL_UITLEG = "Wij hebben gemeten op de plekken waar het eerdere probleem zich voordeed en bij voorkeur ook op een droge referentieplek (zie hoofdstuk 2). Zijn de waarden op de eerdere probleemplekken vergelijkbaar met die van de referentie, dan wijst dat erop dat daar op dat moment geen verhoogd materiaalvocht aanwezig was. Metingen zonder breekwerk zijn indicatief: ze laten zien of een plek droog, verhoogd of nat is ten opzichte van de omgeving, maar geven geen exact vochtgehalte.";
 
@@ -3094,7 +3109,7 @@
       const customSit = customSituations[currentTemplateKey];
       const activeSituation = (customSit && customSit.trim()) ? situatieMetSchimmelZin(escHtml(customSit).replace(/\n/g, '<br>')) : standaardSituatie();
       const customDuid = customDuidingen[currentTemplateKey];
-      const activeDuiding = (customDuid && customDuid.trim()) ? escHtml(customDuid).replace(/\n/g, '<br>') : data.analysisExtra;
+      const activeDuiding = (customDuid && customDuid.trim()) ? escHtml(customDuid).replace(/\n/g, '<br>') : standaardDuiding();
       const optie = getOptieInhoud();
       const costTotals = getCostTotals(optie);
       const advies = getAdvies();
@@ -3912,7 +3927,7 @@ ${kopie.outerHTML}
       const d = DOSSIERS[currentTemplateKey];
       const s = document.getElementById('tx_situatie'), u = document.getElementById('tx_duiding');
       if (s) { s.value = customSituations[currentTemplateKey] || ""; s.placeholder = "Standaardtekst: " + standaardSituatie(); }
-      if (u) { u.value = customDuidingen[currentTemplateKey] || ""; u.placeholder = "Standaardtekst: " + d.analysisExtra.replace(/<[^>]+>/g, ''); }
+      if (u) { u.value = customDuidingen[currentTemplateKey] || ""; u.placeholder = "Standaardtekst: " + standaardDuiding().replace(/<[^>]+>/g, ''); }
     }
     function setSituatieTekst(val) {
       syncSituationText(val);
@@ -3923,7 +3938,7 @@ ${kopie.outerHTML}
     function setDuidingTekst(val) {
       syncDuidingText(val);
       const el = document.getElementById('docDuiding');
-      if (el) el.innerHTML = val.trim() ? escHtml(val).replace(/\n/g, '<br>') : DOSSIERS[currentTemplateKey].analysisExtra;
+      if (el) el.innerHTML = val.trim() ? escHtml(val).replace(/\n/g, '<br>') : standaardDuiding();
       checkPageOverflow();
     }
 
@@ -4071,7 +4086,7 @@ ${kopie.outerHTML}
     const zonderHaken = t => String(t || '').replace(/[\[\]]/g, '');
     function motivatieRicht(key, rec) {
       // geen voorkeur en "eerst controlemeting": dezelfde richtlengte (sjablonen geen voorkeur)
-      const s = recZonderOptie(rec) ? MOTIVATIE_GEEN_VOORKEUR : ((MOTIVATIE_SJABLONEN[key] || [])[rec] || []);
+      const s = recZonderOptie(rec) ? MOTIVATIE_GEEN_VOORKEUR : motivatieSjablonen(key, rec);
       return s.length ? rond10(Math.max(...s.map(t => zonderHaken(t).length)) * RICHT_MARGE) : RICHT_MOTIVATIE;
     }
     function richtVan(el) {

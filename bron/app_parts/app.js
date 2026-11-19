@@ -355,7 +355,7 @@ ${kopie.outerHTML}
       const d = DOSSIERS[currentTemplateKey];
       const s = document.getElementById('tx_situatie'), u = document.getElementById('tx_duiding');
       if (s) { s.value = customSituations[currentTemplateKey] || ""; s.placeholder = "Standaardtekst: " + standaardSituatie(); }
-      if (u) { u.value = customDuidingen[currentTemplateKey] || ""; u.placeholder = "Standaardtekst: " + d.analysisExtra.replace(/<[^>]+>/g, ''); }
+      if (u) { u.value = customDuidingen[currentTemplateKey] || ""; u.placeholder = "Standaardtekst: " + standaardDuiding().replace(/<[^>]+>/g, ''); }
     }
     function setSituatieTekst(val) {
       syncSituationText(val);
@@ -366,7 +366,7 @@ ${kopie.outerHTML}
     function setDuidingTekst(val) {
       syncDuidingText(val);
       const el = document.getElementById('docDuiding');
-      if (el) el.innerHTML = val.trim() ? escHtml(val).replace(/\n/g, '<br>') : DOSSIERS[currentTemplateKey].analysisExtra;
+      if (el) el.innerHTML = val.trim() ? escHtml(val).replace(/\n/g, '<br>') : standaardDuiding();
       checkPageOverflow();
     }
 
@@ -514,7 +514,7 @@ ${kopie.outerHTML}
     const zonderHaken = t => String(t || '').replace(/[\[\]]/g, '');
     function motivatieRicht(key, rec) {
       // geen voorkeur en "eerst controlemeting": dezelfde richtlengte (sjablonen geen voorkeur)
-      const s = recZonderOptie(rec) ? MOTIVATIE_GEEN_VOORKEUR : ((MOTIVATIE_SJABLONEN[key] || [])[rec] || []);
+      const s = recZonderOptie(rec) ? MOTIVATIE_GEEN_VOORKEUR : motivatieSjablonen(key, rec);
       return s.length ? rond10(Math.max(...s.map(t => zonderHaken(t).length)) * RICHT_MARGE) : RICHT_MOTIVATIE;
     }
     function richtVan(el) {
