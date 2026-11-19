@@ -99,6 +99,10 @@ shell = f'''  <!-- =============================================================
         <button data-nav="invullen" onclick="showView('invullen')" class="nav-btn"><i data-lucide="pencil" class="w-4 h-4"></i>Invullen</button>
         <button data-nav="voorbeeld" onclick="showView('voorbeeld')" class="nav-btn"><i data-lucide="eye" class="w-4 h-4"></i>Voorbeeld</button>
       </nav>
+      <div id="kleinMelding" class="klein-melding" hidden>
+        <span id="kleinMeldingTekst"></span>
+        <button type="button" onclick="showView('voorbeeld')">Voorbeeld</button>
+      </div>
     </div>
   </header>
 
@@ -172,6 +176,14 @@ R('''    /* Print Stijlen */''', '''    /* ---------- web-app ---------- */
     .chip { padding:7px 11px; border-radius:999px; border:1px solid #334155; background:#020617; color:#cbd5e1; font-size:13px; font-weight:600; }
     .chip.on { background:#2563eb; border-color:#2563eb; color:#fff; }
     .chip.on-groen { background:#059669; border-color:#059669; color:#fff; }
+    /* tekenteller onder tekstvelden: oranje boven de richtlengte (geen harde grens) */
+    .teller { font-size:11.5px; color:#64748b; text-align:right; margin-top:3px; font-variant-numeric:tabular-nums; }
+    .teller.over { color:#fbbf24; font-weight:700; }
+    /* melding in de bovenbalk als het rapport kleiner wordt gedrukt dan normaal (alleen bij invullen) */
+    .klein-melding { display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:10px; background:rgba(69,26,3,.55); border:1px solid rgba(180,83,9,.7); color:#fde68a; font-size:12.5px; line-height:1.35; }
+    .klein-melding[hidden], body:not(.view-invullen) .klein-melding { display:none; }
+    .klein-melding span { flex:1; }
+    .klein-melding button { flex-shrink:0; padding:5px 10px; border-radius:8px; background:#b45309; color:#fff; font-weight:700; font-size:12.5px; }
     .seg { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
     .seg button { padding:8px 4px; border-radius:10px; border:1px solid #334155; background:#020617; color:#cbd5e1; font-size:13px; font-weight:700; }
     .seg button.on-droog { background:#059669; border-color:#059669; color:#fff; }

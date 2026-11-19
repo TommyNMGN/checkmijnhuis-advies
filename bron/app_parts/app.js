@@ -503,9 +503,82 @@ ${kopie.outerHTML}
       }
     });
 
+    // ---------- tekenteller per tekstveld ----------
+    // Richtlengte = ongeveer de lengte van de standaardtekst van dat veld (+15%, afgerond op 10).
+    // Geen harde grens: boven de richtlengte kleurt de teller oranje, typen blijft gewoon mogelijk.
+    const RICHT_MARGE = 1.15;
+    const RICHT_VAST = { obj_aanleiding: 250, kb_luchtToel: 80, ctl_herstel: 150, ctl_reden: 120 };
+    const RICHT_MOTIVATIE = 230;            // als er geen sjabloon is
+    const TIPS_MIN = 3, TIPS_MAX = 5, TIPS_TEKENS = 400;   // richtlijn 3 à 5 tips; samen ca. 400 tekens (bijv. 4 x 100 of 5 x 80)
+    const rond10 = n => Math.ceil(n / 10) * 10;
+    const zonderHaken = t => String(t || '').replace(/[\[\]]/g, '');
+    function motivatieRicht(key, rec) {
+      const s = rec === "none" ? MOTIVATIE_GEEN_VOORKEUR : ((MOTIVATIE_SJABLONEN[key] || [])[rec] || []);
+      return s.length ? rond10(Math.max(...s.map(t => zonderHaken(t).length)) * RICHT_MARGE) : RICHT_MOTIVATIE;
+    }
+    function richtVan(el) {
+      if (RICHT_VAST[el.id]) return RICHT_VAST[el.id];
+      if (el.id === 'sam_tips') return TIPS_TEKENS;
+      if (el.id === 'adv_motivatie') return motivatieRicht(currentTemplateKey, (adviesState[currentTemplateKey] || {}).rec);
+      const m = (el.getAttribute('oninput') || '').match(/setBijkomend\((\d+), 'motivatie'/);
+      if (m) { const b = (bijkomend || [])[+m[1]] || {}; return motivatieRicht(b.key, b.rec); }
+      const std = stdTekst(el);
+      return std ? rond10(std.length * RICHT_MARGE) : 0;
+    }
+    // alleen velden met een echte standaardtekst (niet een 'bijv.'-voorbeeld in het veld)
+    function stdTekst(el) { return STD_VELDEN.includes(el.id) ? standaardVan(el).trim() : ''; }
+    function tellerBijwerken(el) {
+      if (!el || el.tagName !== 'TEXTAREA') return;
+      let t = el.nextElementSibling;
+      if (!t || !t.classList.contains('teller')) {
+        t = document.createElement('p');
+        t.className = 'teller';
+        el.insertAdjacentElement('afterend', t);
+      }
+      const richt = richtVan(el);
+      const n = el.value.trim().length;
+      if (!richt) { t.textContent = n ? `${n} tekens` : ''; t.classList.remove('over'); return; }
+      if (!n && stdTekst(el)) {
+        t.textContent = 'leeg: de standaardtekst wordt gebruikt';
+        t.classList.remove('over');
+        return;
+      }
+      let over = n > richt, txt = `${n} / ${richt} tekens`;
+      if (el.id === 'sam_tips') {
+        const tips = el.value.split('\n').filter(x => x.trim()).length;
+        over = over || tips > TIPS_MAX;
+        txt = `${tips} ${tips === 1 ? 'tip' : 'tips'} (richtlijn ${TIPS_MIN} à ${TIPS_MAX}) · ${txt}`;
+      }
+      t.textContent = txt;
+      t.classList.toggle('over', over);
+    }
+    function tellersBijwerken() { document.querySelectorAll('#view-invullen textarea').forEach(tellerBijwerken); }
+    document.addEventListener('input', e => tellerBijwerken(e.target));
+
+    // ---------- melding: rapport wordt kleiner gedrukt dan normaal ----------
+    // De app verkleint de letters automatisch zodat alles op 5 pagina's past (6 met bijkomende oorzaken).
+    // Gemeten over alle types en opties met standaardteksten (v1.4.6):
+    //   adviesrapport: schaal 1,14-1,22 (grootste = 1,22)  -> melding onder 1,10 (ca. 10% kleiner)
+    //   controlemeting: schaal 1,00-1,08 (pagina 3 is altijd vol) -> melding onder 1,00 (dan worden ook de foto's kleiner)
+    const LETTER_NORMAAL = { advies: FIT.maxScale, controle: 1.08 };
+    const LETTER_DREMPEL = { advies: 1.10, controle: 1.00 };
+    function kleinMeldingBijwerken() {
+      const box = document.getElementById('kleinMelding');
+      if (!box || typeof laatsteFit === 'undefined') return;
+      const soort = isControle() ? 'controle' : 'advies';
+      const klein = laatsteFit.schaal < LETTER_DREMPEL[soort] - 0.001;
+      box.hidden = !klein;
+      if (klein) {
+        const pct = Math.max(1, Math.round((1 - laatsteFit.schaal / LETTER_NORMAAL[soort]) * 100));
+        const foto = laatsteFit.foto < FOTO_HOOGTES[0] ? " Ook de foto's worden kleiner." : "";
+        document.getElementById('kleinMeldingTekst').textContent =
+          `Let op: het rapport wordt kleiner gedrukt dan normaal (letters ca. ${pct}% kleiner).${foto} Kort teksten in of controleer het voorbeeld.`;
+      }
+    }
+
     (function koppel() {
       const _cpo = checkPageOverflow;
-      checkPageOverflow = function () { const r = _cpo(); scheduleSave(); return r; };
+      checkPageOverflow = function () { const r = _cpo(); kleinMeldingBijwerken(); tellersBijwerken(); scheduleSave(); return r; };
       const _sw = switchTemplate;
       switchTemplate = function (key) { _sw(key); refreshTekstPanel(); scheduleSave(); };
       const _ss = syncSituationText;

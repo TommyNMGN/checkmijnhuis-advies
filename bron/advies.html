@@ -684,15 +684,20 @@
 
     // Foto's zo groot mogelijk (hele foto zichtbaar); alleen kleiner als de tekst anders te klein zou worden
     const FOTO_HOOGTES = [250, 225, 200, 175, 150];
+    // Laatste uitkomst van de paginavulling: gemeenschappelijke lettergrootte en fotohoogte.
+    // Gebruikt voor de melding in de invulstappen als het rapport kleiner wordt gedrukt dan normaal.
+    let laatsteFit = { schaal: FIT.maxScale, foto: FOTO_HOOGTES[0] };
     function fitPages() {
       const pages = Array.from(document.querySelectorAll('.a4-page'));
       if (!pages.length) return;
-      let sc = FIT.minScale;
+      let sc = FIT.minScale, foto = FOTO_HOOGTES[0];
       for (const fh of FOTO_HOOGTES) {
+        foto = fh;
         pages.forEach(p => p.style.setProperty('--fh', fh + 'px'));
         sc = fitPagesBij();
         if (sc >= 1.0) break;
       }
+      laatsteFit = { schaal: sc, foto };
       return sc;
     }
     function fitPagesBij() {
