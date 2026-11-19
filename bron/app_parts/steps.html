@@ -94,6 +94,7 @@
       <summary><span class="stap-nr">6</span><span class="stap-titel">Situatie &amp; diagnose</span><span class="stap-sub">wat is er aan de hand</span></summary>
       <div class="stap-body space-y-2.5">
         <div><label class="kb-lbl">Type advies</label>%%SELECTOR%%</div>
+        <label id="gs_wrap" class="hidden flex items-center gap-2 text-[14px] text-slate-200 font-semibold"><input type="checkbox" id="obj_geenSchimmel" class="accent-amber-400 w-4 h-4" onchange="setGeenSchimmel(this.checked)"> Geen schimmel aangetroffen</label>
         <div><label class="kb-lbl">Wat heb je bij deze woning gezien? (ruimten, schadebeeld)</label><textarea id="tx_situatie" rows="4" class="kb-inp" style="resize:vertical" oninput="setSituatieTekst(this.value)"></textarea></div>
         <div id="bijk_wrap" class="space-y-1.5">
           <label class="kb-lbl">Bijkomende oorzaken (alleen als die een eigen aanpak nodig hebben)</label>
@@ -114,11 +115,6 @@
       <div class="stap-body space-y-2.5">
         <div id="adv_controle" class="hidden space-y-2.5">
           <p class="text-[12px] text-slate-400 leading-snug">Bij een controlemeting zijn er geen opties, kosten of urgentie. Adviseer alleen een nieuwe meting als dat echt iets toevoegt, bijvoorbeeld bij een meting kort na het herstel of een constructie die langzaam droogt.</p>
-          <label class="flex items-center gap-2 text-[14px] text-slate-200 font-semibold"><input type="checkbox" id="ctl_opnieuw" class="accent-amber-400 w-4 h-4" onchange="setControle('opnieuw', this.checked)"> Opnieuw meten adviseren</label>
-          <div id="ctl_opnieuwWrap" class="hidden space-y-2.5">
-            <div><label class="kb-lbl">Termijn</label><input type="text" id="ctl_termijn" class="kb-inp" placeholder="bijv. 3 maanden" oninput="setControle('termijn', this.value)"></div>
-            <div><label class="kb-lbl">Reden (kort)</label><textarea id="ctl_reden" rows="2" class="kb-inp" style="resize:vertical" placeholder="bijv. De meting is kort na het herstel gedaan; de dekvloer onder de tegels kan nog drogen." oninput="setControle('reden', this.value)"></textarea></div>
-          </div>
         </div>
         <div id="adv_normaal" class="space-y-2.5">
         <div><label class="kb-lbl">Aanbevolen optie</label><select id="adv_rec" class="kb-inp" onchange="setAdviesRec(this.value)"></select></div>
@@ -133,6 +129,13 @@
           <div><label class="kb-lbl">Toelichting urgentie (tik erin om de standaardtekst aan te passen)</label><textarea id="sam_urgTekst" rows="2" class="kb-inp" style="resize:vertical" oninput="setUrgentie('tekst', this.value)"></textarea></div>
         </div>
         <div id="bijk_adv" class="hidden space-y-2.5"></div>
+        </div>
+        <div id="adv_opnieuw" class="hidden space-y-2.5">
+          <label class="flex items-center gap-2 text-[14px] text-slate-200 font-semibold"><input type="checkbox" id="ctl_opnieuw" class="accent-amber-400 w-4 h-4" onchange="setControle('opnieuw', this.checked)"> Opnieuw meten adviseren</label>
+          <div id="ctl_opnieuwWrap" class="hidden space-y-2.5">
+            <div><label class="kb-lbl">Termijn</label><input type="text" id="ctl_termijn" class="kb-inp" placeholder="bijv. 3 maanden" oninput="setControle('termijn', this.value)"></div>
+            <div><label class="kb-lbl">Reden (kort)</label><textarea id="ctl_reden" rows="2" class="kb-inp" style="resize:vertical" placeholder="bijv. De meting is kort na het herstel gedaan; de dekvloer onder de tegels kan nog drogen." oninput="setControle('reden', this.value)"></textarea></div>
+          </div>
         </div>
         <div>
           <label class="kb-lbl flex items-center justify-between gap-2"><span>Wat de klant zelf kan doen (één tip per regel)</span>

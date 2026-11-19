@@ -53,7 +53,7 @@
       adviesState = {}; samenvatting = {}; urgentie = { niveau: "", tekst: "" }; fotoData = "";
       controle = { soort: "", herstel: "", opnieuw: false, termijn: "", reden: "" };
       bijkomend = [{ key: "", rec: 0, motivatie: "" }, { key: "", rec: 0, motivatie: "" }]; bijkVolgorde = "";
-      obj = { type: "", bouwjaar: "", aanwezig: "", aanleiding: "" };
+      obj = { type: "", bouwjaar: "", aanwezig: "", aanleiding: "", geenSchimmel: false };
       waarnemingen = { lijst: [], overig: "" };
       detailFotos = [];
       kb.mp = [];
@@ -354,13 +354,13 @@ ${kopie.outerHTML}
     function refreshTekstPanel() {
       const d = DOSSIERS[currentTemplateKey];
       const s = document.getElementById('tx_situatie'), u = document.getElementById('tx_duiding');
-      if (s) { s.value = customSituations[currentTemplateKey] || ""; s.placeholder = "Standaardtekst: " + d.defaultSituation; }
+      if (s) { s.value = customSituations[currentTemplateKey] || ""; s.placeholder = "Standaardtekst: " + standaardSituatie(); }
       if (u) { u.value = customDuidingen[currentTemplateKey] || ""; u.placeholder = "Standaardtekst: " + d.analysisExtra.replace(/<[^>]+>/g, ''); }
     }
     function setSituatieTekst(val) {
       syncSituationText(val);
       const el = document.getElementById('docSituation');
-      if (el) el.innerHTML = val.trim() ? escHtml(val).replace(/\n/g, '<br>') : DOSSIERS[currentTemplateKey].defaultSituation;
+      if (el) el.innerHTML = val.trim() ? situatieMetSchimmelZin(escHtml(val).replace(/\n/g, '<br>')) : standaardSituatie();
       checkPageOverflow();
     }
     function setDuidingTekst(val) {
@@ -513,7 +513,8 @@ ${kopie.outerHTML}
     const rond10 = n => Math.ceil(n / 10) * 10;
     const zonderHaken = t => String(t || '').replace(/[\[\]]/g, '');
     function motivatieRicht(key, rec) {
-      const s = rec === "none" ? MOTIVATIE_GEEN_VOORKEUR : ((MOTIVATIE_SJABLONEN[key] || [])[rec] || []);
+      // geen voorkeur en "eerst controlemeting": dezelfde richtlengte (sjablonen geen voorkeur)
+      const s = recZonderOptie(rec) ? MOTIVATIE_GEEN_VOORKEUR : ((MOTIVATIE_SJABLONEN[key] || [])[rec] || []);
       return s.length ? rond10(Math.max(...s.map(t => zonderHaken(t).length)) * RICHT_MARGE) : RICHT_MOTIVATIE;
     }
     function richtVan(el) {
