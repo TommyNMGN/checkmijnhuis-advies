@@ -507,7 +507,11 @@ ${kopie.outerHTML}
     // Richtlengte = ongeveer de lengte van de standaardtekst van dat veld (+15%, afgerond op 10).
     // Geen harde grens: boven de richtlengte kleurt de teller oranje, typen blijft gewoon mogelijk.
     const RICHT_MARGE = 1.15;
-    const RICHT_VAST = { obj_aanleiding: 250, kb_luchtToel: 80, ctl_herstel: 150, ctl_reden: 120 };
+    const RICHT_VAST = { obj_aanleiding: 350, kb_luchtToel: 100, ctl_herstel: 150, ctl_reden: 120 };
+    // Ondergrens per veld (v1.4.9): gemeten over alle types, opties A/B/C, geen voorkeur, eerst controlemeting
+    // en 0-2 bijkomende oorzaken, met alle velden tegelijk op hun richtlengte (+5% marge), 4 meetpunten,
+    // 4 foto's en alle apparatuur: schaal blijft 1,10 of hoger. Is de standaardtekst + 15% langer, dan geldt die.
+    const RICHT_MIN = { tx_situatie: 350, tx_duiding: 600, sam_oorzaak: 160, sam_urgTekst: 120, adv_motivatie: 400, bijk_motivatie: 350, bijk_volgorde: 600 };
     const RICHT_MOTIVATIE = 230;            // als er geen sjabloon is
     const TIPS_MIN = 3, TIPS_MAX = 5, TIPS_TEKENS = 400;   // richtlijn 3 à 5 tips; samen ca. 400 tekens (bijv. 4 x 100 of 5 x 80)
     const rond10 = n => Math.ceil(n / 10) * 10;
@@ -520,11 +524,12 @@ ${kopie.outerHTML}
     function richtVan(el) {
       if (RICHT_VAST[el.id]) return RICHT_VAST[el.id];
       if (el.id === 'sam_tips') return TIPS_TEKENS;
-      if (el.id === 'adv_motivatie') return motivatieRicht(currentTemplateKey, (adviesState[currentTemplateKey] || {}).rec);
+      if (el.id === 'adv_motivatie') return Math.max(RICHT_MIN.adv_motivatie, motivatieRicht(currentTemplateKey, (adviesState[currentTemplateKey] || {}).rec));
       const m = (el.getAttribute('oninput') || '').match(/setBijkomend\((\d+), 'motivatie'/);
-      if (m) { const b = (bijkomend || [])[+m[1]] || {}; return motivatieRicht(b.key, b.rec); }
+      if (m) { const b = (bijkomend || [])[+m[1]] || {}; return Math.max(RICHT_MIN.bijk_motivatie, motivatieRicht(b.key, b.rec)); }
       const std = stdTekst(el);
-      return std ? rond10(std.length * RICHT_MARGE) : 0;
+      const vast = isControle() ? 0 : (RICHT_MIN[el.id] || 0);   // controlemeting: pagina 3 staat al vol, daar niet ophogen
+      return std ? Math.max(vast, rond10(std.length * RICHT_MARGE)) : vast;
     }
     // alleen velden met een echte standaardtekst (niet een 'bijv.'-voorbeeld in het veld)
     function stdTekst(el) { return STD_VELDEN.includes(el.id) ? standaardVan(el).trim() : ''; }

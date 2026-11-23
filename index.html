@@ -1055,17 +1055,16 @@
         icon: "cloud-rain",
         framework: "Bouwfysische praktijk • productbladen",
         defaultSituation: "Gezien aan de kant van het huis die de meeste regen en wind vangt (meestal zuid/west). Wat we zagen: verweerde, poreuze of gescheurde voegen, afbrokkelende stenen en vochtplekken aan de binnenkant van dezelfde muur.",
-        problem: `Bij regen met harde wind dringt water via poreuze stenen, haarscheurtjes en uitgesleten voegen de gevel in. Ligt er puin in de spouw (de ruimte tussen binnen- en buitenmuur), of is de buitenmuur helemaal doorweekt, dan kan het vocht doorlopen naar de binnenmuur.<br><br>
-        Zonder goede bescherming wordt ook eventuele spouwisolatie nat. Die isoleert dan slechter, en in de winter kan bevriezend water stukjes van de stenen laten afspringen.`,
+        problem: `Bij regen, zeker met harde wind, neemt de gevel water op via poreuze stenen, scheurtjes, uitgesleten voegen of een beschadigde pleisterlaag. Een massieve muur heeft geen spouw (luchtlaag) die het water tegenhoudt; het vocht trekt dan door naar binnen. Bij een spouwmuur kan dat via puin in de spouw of een doorweekte buitenmuur.`,
         analysisExtra: `Wat we zien en onze metingen passen bij regenwater dat via de gevel binnendringt, waarschijnlijk via verweerde voegen of poreuze stenen. Dit vocht hangt af van het weer en is daarom niet bij elke meting even goed te zien. Een eenvoudige test die meet hoeveel water de gevel opneemt (buis van Karsten) kan dit vooraf bevestigen.`,
         risks: [
           {
-            title: "1. Vorstschade metselwerk",
-            desc: "Water in de stenen zet uit als het vriest. Daardoor kunnen op den duur stukjes van de stenen afspringen."
+            title: "1. Vorstschade aan de gevel",
+            desc: "Water in steen of pleister zet uit als het vriest; daardoor kunnen stukjes afspringen of laat de pleisterlaag los."
           },
           {
-            title: "2. Minder isolatiewaarde",
-            desc: "Natte isolatie isoleert minder goed, waardoor u meer stookt."
+            title: "2. Hogere stookkosten",
+            desc: "Een natte muur isoleert slechter; bij een spouwmuur geldt dat ook voor natte spouwisolatie."
           },
           {
             title: "3. Schade aan binnenafwerking",
@@ -1100,7 +1099,8 @@
           { item: "Gevelreiniging (ca. 50 m² geveloppervlak)", low: 750, high: 1250, inTotal: true },
           { item: "Uithakken & opnieuw voegen van ondeugdelijk voegwerk", low: 1800, high: 3200, inTotal: true },
           { item: "Dampopen hydrofobering (silaan/siloxaan, ca. 50 m²)", low: 850, high: 1500, inTotal: true },
-          { item: "Steiger, afplakken kozijnen en eventuele ontheffing openbare weg", low: 400, high: 900, inTotal: true }
+          { item: "Steiger, afplakken kozijnen en eventuele ontheffing openbare weg", low: 400, high: 900, inTotal: true },
+          { item: "Herstel goot, vergaarbak of raamdorpel (indien nodig)", offerte: true, low: 0, high: 0, note: "optioneel" }
         ],
         totalLabel: "Totaal Optie A (ca. 50 m² gevel)",
         checks: [
@@ -1260,7 +1260,7 @@
           {
             name: "Optie A: Lekdetectie + gerichte reparatie",
             desc: "Een lekzoeker spoort het lek op met geluidsapparatuur, opsporingsgas of een camera. Daarna maakt de loodgieter op één plek een kleine opening om te repareren.",
-            pros: "✓ Minimaal hak- en breekwerk<br>✓ Vaak (deels) gedekt door de opstalverzekering, afhankelijk van de polis<br>✓ Het lek wordt precies gevonden"
+            pros: "✓ Minimaal hak- en breekwerk<br>✓ Kan onder de polis vallen (vraag uw verzekeraar)<br>✓ Het lek wordt precies gevonden"
           },
           {
             name: "Kitvoegen in de badkamer vernieuwen",
@@ -1287,8 +1287,8 @@
         ],
         totalLabel: "Totaal detectie, reparatie & droging",
         checks: [
-          { title: "1. Polis controleren", desc: "Meld de lekkage direct bij uw opstalverzekering; lekdetectie en gevolgschade worden vaak vergoed, afhankelijk van uw polisvoorwaarden." },
-          { title: "2. Druktest na reparatie", desc: "Laat de installateur na de reparatie een druktest uitvoeren om te controleren dat de leiding weer dicht is." },
+          { title: "1. Polis", desc: "Vraag uw verzekeraar, of bij een appartement de VvE, of lekdetectie en herstel onder de polis vallen." },
+          { title: "2. Controle na reparatie", desc: "Laat na de reparatie controleren of het lek is verholpen, bij een leiding met een druktest." },
           { title: "3. Droogtijd respecteren", desc: "Begin pas met stuc- of tegelherstel als de constructie aantoonbaar droog is gemeten." }
         ]
       },
@@ -1889,7 +1889,7 @@
         1: {
           solution: `De gevel beschermen met een rekbare gevelverf die kleine scheurtjes afdekt, regen buiten houdt en vocht van binnenuit wel laat ontsnappen.`,
           steps: `<strong>Stap 1: Reinigen &amp; voorbereiden</strong><br>
-          Reinig de gevel en verwijder losse delen. Herstel scheuren groter dan een haarscheur en beschadigde voegen vooraf. Laat de gevel goed drogen.<br><br>
+          Reinig de gevel en verwijder losse delen, loszittende pleister (raaplaag) en verflagen die loslaten of niet dampopen zijn. Herstel scheuren groter dan een haarscheur, beschadigde voegen en pleisterwerk vooraf. Laat de gevel goed drogen.<br><br>
           <strong>Stap 2: Grondlaag</strong><br>
           Breng een voorstrijk of grondlaag aan die bij het coatingsysteem hoort, volgens het productblad.<br><br>
           <strong>Stap 3: Gevelcoating</strong><br>
@@ -1897,12 +1897,13 @@
           costs: [
             { item: "Gevelreiniging & voorbereiding (ca. 50 m²)", low: 750, high: 1250, inTotal: true },
             { item: "Dampopen gevelcoating, 2 lagen incl. grondlaag (ca. 50 m²)", low: 1250, high: 2000, inTotal: true },
-            { item: "Steiger, afplakken kozijnen en eventuele ontheffing openbare weg", low: 400, high: 900, inTotal: true }
+            { item: "Steiger, afplakken kozijnen en eventuele ontheffing openbare weg", low: 400, high: 900, inTotal: true },
+          { item: "Herstel goot, vergaarbak of raamdorpel (indien nodig)", offerte: true, low: 0, high: 0, note: "optioneel" }
           ],
           totalLabel: "Totaal Optie B (ca. 50 m² gevel)",
           checks: [
             { title: "1. Muur moet kunnen ademen", desc: "Vraag om het productblad en controleer dat de gevelverf 'dampopen' is, zodat vocht niet in de muur wordt opgesloten." },
-            { title: "2. Scheuren vooraf herstellen", desc: "Controleer dat scheuren en slechte voegen vóór het coaten worden hersteld." },
+            { title: "2. Scheuren vooraf herstellen", desc: "Controleer dat scheuren, slechte voegen en losse pleister vóór het coaten zijn hersteld." },
             { title: "3. Lagen &amp; weersomstandigheden", desc: "Controleer dat minimaal twee lagen worden aangebracht, bij droog weer en boven circa 5 °C." }
           ]
         },
@@ -1917,7 +1918,8 @@
           costs: [
             { item: "Steiger, reiniging & voorbereiding", low: 600, high: 900, inTotal: true },
             { item: "Isolatieplaten, wapening & minerale sierpleister (ca. 50 m²)", low: 4600, high: 7100, inTotal: true },
-            { item: "Aansluitingen kozijnen, dorpels & hemelwaterafvoer", low: 800, high: 1000, inTotal: true }
+            { item: "Aansluitingen kozijnen, dorpels & hemelwaterafvoer", low: 800, high: 1000, inTotal: true },
+          { item: "Herstel goot, vergaarbak of raamdorpel (indien nodig)", offerte: true, low: 0, high: 0, note: "optioneel" }
           ],
           totalLabel: "Totaal Optie C (ca. 50 m² gevel)",
           checks: [
@@ -4079,7 +4081,11 @@ ${kopie.outerHTML}
     // Richtlengte = ongeveer de lengte van de standaardtekst van dat veld (+15%, afgerond op 10).
     // Geen harde grens: boven de richtlengte kleurt de teller oranje, typen blijft gewoon mogelijk.
     const RICHT_MARGE = 1.15;
-    const RICHT_VAST = { obj_aanleiding: 250, kb_luchtToel: 80, ctl_herstel: 150, ctl_reden: 120 };
+    const RICHT_VAST = { obj_aanleiding: 350, kb_luchtToel: 100, ctl_herstel: 150, ctl_reden: 120 };
+    // Ondergrens per veld (v1.4.9): gemeten over alle types, opties A/B/C, geen voorkeur, eerst controlemeting
+    // en 0-2 bijkomende oorzaken, met alle velden tegelijk op hun richtlengte (+5% marge), 4 meetpunten,
+    // 4 foto's en alle apparatuur: schaal blijft 1,10 of hoger. Is de standaardtekst + 15% langer, dan geldt die.
+    const RICHT_MIN = { tx_situatie: 350, tx_duiding: 600, sam_oorzaak: 160, sam_urgTekst: 120, adv_motivatie: 400, bijk_motivatie: 350, bijk_volgorde: 600 };
     const RICHT_MOTIVATIE = 230;            // als er geen sjabloon is
     const TIPS_MIN = 3, TIPS_MAX = 5, TIPS_TEKENS = 400;   // richtlijn 3 à 5 tips; samen ca. 400 tekens (bijv. 4 x 100 of 5 x 80)
     const rond10 = n => Math.ceil(n / 10) * 10;
@@ -4092,11 +4098,12 @@ ${kopie.outerHTML}
     function richtVan(el) {
       if (RICHT_VAST[el.id]) return RICHT_VAST[el.id];
       if (el.id === 'sam_tips') return TIPS_TEKENS;
-      if (el.id === 'adv_motivatie') return motivatieRicht(currentTemplateKey, (adviesState[currentTemplateKey] || {}).rec);
+      if (el.id === 'adv_motivatie') return Math.max(RICHT_MIN.adv_motivatie, motivatieRicht(currentTemplateKey, (adviesState[currentTemplateKey] || {}).rec));
       const m = (el.getAttribute('oninput') || '').match(/setBijkomend\((\d+), 'motivatie'/);
-      if (m) { const b = (bijkomend || [])[+m[1]] || {}; return motivatieRicht(b.key, b.rec); }
+      if (m) { const b = (bijkomend || [])[+m[1]] || {}; return Math.max(RICHT_MIN.bijk_motivatie, motivatieRicht(b.key, b.rec)); }
       const std = stdTekst(el);
-      return std ? rond10(std.length * RICHT_MARGE) : 0;
+      const vast = isControle() ? 0 : (RICHT_MIN[el.id] || 0);   // controlemeting: pagina 3 staat al vol, daar niet ophogen
+      return std ? Math.max(vast, rond10(std.length * RICHT_MARGE)) : vast;
     }
     // alleen velden met een echte standaardtekst (niet een 'bijv.'-voorbeeld in het veld)
     function stdTekst(el) { return STD_VELDEN.includes(el.id) ? standaardVan(el).trim() : ''; }
