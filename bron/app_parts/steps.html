@@ -95,6 +95,7 @@
       <div class="stap-body space-y-2.5">
         <div><label class="kb-lbl">Type advies</label>%%SELECTOR%%</div>
         <label id="gs_wrap" class="hidden flex items-center gap-2 text-[14px] text-slate-200 font-semibold"><input type="checkbox" id="obj_geenSchimmel" class="accent-amber-400 w-4 h-4" onchange="setGeenSchimmel(this.checked)"> Geen schimmel aangetroffen</label>
+        <label id="rk_wrap" class="hidden flex items-center gap-2 text-[14px] text-slate-200 font-semibold"><input type="checkbox" id="obj_raamKozijn" class="accent-amber-400 w-4 h-4" onchange="setRaamKozijn(this.checked)"> Koude plek is raam of kozijn</label>
         <div><label class="kb-lbl">Wat heb je bij deze woning gezien? (ruimten, schadebeeld)</label><textarea id="tx_situatie" rows="4" class="kb-inp" style="resize:vertical" oninput="setSituatieTekst(this.value)"></textarea></div>
         <div id="bijk_wrap" class="space-y-1.5">
           <label class="kb-lbl">Bijkomende oorzaken (alleen als die een eigen aanpak nodig hebben)</label>

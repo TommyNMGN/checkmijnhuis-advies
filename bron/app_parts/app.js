@@ -53,7 +53,7 @@
       adviesState = {}; samenvatting = {}; urgentie = { niveau: "", tekst: "" }; fotoData = "";
       controle = { soort: "", herstel: "", opnieuw: false, termijn: "", reden: "" };
       bijkomend = [{ key: "", rec: 0, motivatie: "" }, { key: "", rec: 0, motivatie: "" }]; bijkVolgorde = "";
-      obj = { type: "", bouwjaar: "", aanwezig: "", aanleiding: "", geenSchimmel: false };
+      obj = { type: "", bouwjaar: "", aanwezig: "", aanleiding: "", geenSchimmel: false, raamKozijn: false };
       waarnemingen = { lijst: [], overig: "" };
       detailFotos = [];
       kb.mp = [];

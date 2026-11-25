@@ -390,6 +390,7 @@
             <option value="controle">9. Controlemeting na herstel</option>
           </select></div>
         <label id="gs_wrap" class="hidden flex items-center gap-2 text-[14px] text-slate-200 font-semibold"><input type="checkbox" id="obj_geenSchimmel" class="accent-amber-400 w-4 h-4" onchange="setGeenSchimmel(this.checked)"> Geen schimmel aangetroffen</label>
+        <label id="rk_wrap" class="hidden flex items-center gap-2 text-[14px] text-slate-200 font-semibold"><input type="checkbox" id="obj_raamKozijn" class="accent-amber-400 w-4 h-4" onchange="setRaamKozijn(this.checked)"> Koude plek is raam of kozijn</label>
         <div><label class="kb-lbl">Wat heb je bij deze woning gezien? (ruimten, schadebeeld)</label><textarea id="tx_situatie" rows="4" class="kb-inp" style="resize:vertical" oninput="setSituatieTekst(this.value)"></textarea></div>
         <div id="bijk_wrap" class="space-y-1.5">
           <label class="kb-lbl">Bijkomende oorzaken (alleen als die een eigen aanpak nodig hebben)</label>
@@ -820,6 +821,8 @@
       if (!(getSam(key).tips || "").trim()) w.push("INFO|De tips bij 'Wat u zelf kunt doen' zijn nog de standaardtips. Heb je ter plaatse eigen tips gegeven, zet die er dan in.");
       if (key !== 'controle' && !(getSam(key).oorzaak || "").trim()) w.push("De <strong>oorzaak</strong> op pagina 1 is nog de standaardzin van het dossier. Klopt die voor deze woning? Pas hem anders aan bij 'Oorzaak in één zin'.");
       if (isGeenSchimmel(key) && (waarnemingen.lijst || []).includes('Schimmelvorming')) w.push("Je hebt <strong>geen schimmel aangetroffen</strong> aangevinkt, maar bij de waarnemingen staat <strong>Schimmelvorming</strong>. Pas een van beide aan.");
+      if (isRaamKozijn(key) && getAdvies(key).rec === 2) w.push("Wandverwarming past meestal niet bij een raam of kozijn. Kies optie A of B, of licht de keuze toe in de motivatie.");
+      if (isRaamKozijn(key) && !(waarnemingen.lijst || []).includes('Schimmelvorming')) w.push("INFO|Leg de schimmel bij het raam vast met een foto of waarneming.");
       if (isGeenSchimmel(key) && duid && /schimmel/i.test(duid)) w.push("Je hebt <strong>geen schimmel aangetroffen</strong> aangevinkt. Controleer of je eigen <strong>duiding</strong> niet uitgaat van schimmel die er is.");
       const geenSchade = (waarnemingen.lijst || []).includes(GEEN_SCHADE) || (sit && /\bgeen\b[^.]*\b(schimmel|condens|schade|vochtplek)/i.test(sit));
       if (!duid && geenSchade && !isGeenSchimmel(key) && ['condensatie', 'schimmel', 'opstijgend', 'doorslaand'].includes(key)) {
@@ -898,7 +901,7 @@
         if (typeof s.bijkVolgorde === 'string') bijkVolgorde = s.bijkVolgorde;
         if (s.controle && typeof s.controle === 'object') controle = Object.assign({ soort: "", herstel: "", opnieuw: false, termijn: "", reden: "" }, s.controle);
         if (typeof s.fotoData === 'string' && s.fotoData.startsWith('data:image/')) fotoData = s.fotoData;
-        if (s.obj && typeof s.obj === 'object') obj = Object.assign({ type: "", bouwjaar: "", aanwezig: "", aanleiding: "", geenSchimmel: false }, s.obj);
+        if (s.obj && typeof s.obj === 'object') obj = Object.assign({ type: "", bouwjaar: "", aanwezig: "", aanleiding: "", geenSchimmel: false, raamKozijn: false }, s.obj);
         if (s.waarnemingen && typeof s.waarnemingen === 'object') waarnemingen = { lijst: Array.isArray(s.waarnemingen.lijst) ? s.waarnemingen.lijst : [], overig: s.waarnemingen.overig || "" };
         if (Array.isArray(s.detailFotos)) detailFotos = s.detailFotos.filter(f => f && typeof f.data === 'string' && f.data.startsWith('data:image/')).slice(0, MAX_DETAILFOTOS);
         migreerMeetpunten();
@@ -1576,6 +1579,7 @@
       if (rec === "none") return MOTIVATIE_GEEN_VOORKEUR;
       if (rec === EERST) return MOTIVATIE_EERST;
       if (isGeenSchimmel(key) && GS_MOTIVATIE[rec]) return GS_MOTIVATIE[rec];
+      if (isRaamKozijn(key) && RK_MOTIVATIE[rec]) return RK_MOTIVATIE[rec];
       return ((MOTIVATIE_SJABLONEN[key] || [])[rec] || []);
     }
     // termijn voor opnieuw meten (alleen als 'opnieuw meten' is aangevinkt)
@@ -1609,7 +1613,7 @@
 
     // Paneel bovenin opnieuw vullen bij laden of wisselen van dossier
     function refreshAdviesPanel() {
-      const data = DOSSIERS[currentTemplateKey];
+      const data = dossierVoor(currentTemplateKey);
       const a = getAdvies();
       const recSel = document.getElementById('adv_rec');
       if (recSel) {
@@ -1675,11 +1679,11 @@
 
     function updateAdviesBox() {
       const holder = document.getElementById('adviesHolder');
-      if (holder) holder.innerHTML = getAdviesBoxHtml(DOSSIERS[currentTemplateKey]);
+      if (holder) holder.innerHTML = getAdviesBoxHtml(dossierVoor());
       const costNote = document.getElementById('costRecHolder');
-      if (costNote) costNote.innerHTML = getCostRecHtml(DOSSIERS[currentTemplateKey]);
+      if (costNote) costNote.innerHTML = getCostRecHtml(dossierVoor());
       const sam = document.getElementById('samenvattingHolder');
-      if (sam) sam.innerHTML = getSamenvattingHtml(DOSSIERS[currentTemplateKey]);
+      if (sam) sam.innerHTML = getSamenvattingHtml(dossierVoor());
       if (window.lucide) lucide.createIcons();
       checkPageOverflow();
     }
@@ -2150,15 +2154,19 @@
     }
 
     function getOptieInhoud(key = currentTemplateKey, idx = getUitgewerkteOptie(key)) {
-      const d = DOSSIERS[key];
+      const d = dossierVoor(key);
       const u = idx > 0 && OPTIE_UITWERKING[key] && OPTIE_UITWERKING[key][idx];
-      const inhoud = u || { solution: d.solution, steps: d.steps, costs: d.costs, totalLabel: d.totalLabel, checks: d.checks };
+      let inhoud = u || { solution: d.solution, steps: d.steps, costs: d.costs, totalLabel: d.totalLabel, checks: d.checks };
+      if (isRaamKozijn(key) && idx === 1) inhoud = Object.assign({}, inhoud, {
+        steps: inhoud.steps.replace(/Controleer na het stookseizoen of de schimmel wegblijft;[^<]*$/, RK_B_STAP3_SLOT),
+        checks: inhoud.checks.map(c => /^3\. Controle na de winter/.test(c.title) ? RK_B_CHECK3 : c)
+      });
       return isGeenSchimmel(key) ? metGeenSchimmel(inhoud) : inhoud;
     }
 
     // Type 7 met vinkje "Geen schimmel aangetroffen": stap 1 alleen als er schimmel verschijnt,
     // schimmelreiniging buiten het totaal ("indien nodig") en controlepunt 1 aangepast.
-    function isGeenSchimmel(key = currentTemplateKey) { return key === 'schimmel' && currentTemplateKey === 'schimmel' && !!obj.geenSchimmel; }
+    function isGeenSchimmel(key = currentTemplateKey) { return key === 'schimmel' && currentTemplateKey === 'schimmel' && !!obj.geenSchimmel && !obj.raamKozijn; }
     const GS_SITUATIE = "Gecontroleerd op schimmel op koude plekken, zoals hoeken van buitenmuren en rond ramen: er is geen schimmel gezien.";
     const GS_OORZAAK = "Een koude plek waar schimmel kan ontstaan; er is nu geen schimmel gezien.";
     const GS_STAP1 = `<strong>Stap 1: Schimmel verwijderen (alleen als die verschijnt)</strong><br>
@@ -2170,7 +2178,7 @@
       1: ["De luchtvochtigheid in de ruimte is [structureel] te hoog, waardoor op koude plekken schimmel kan ontstaan. Betere ventilatie is hier de belangrijkste maatregel; lokale isolatie kan daarna alsnog nodig zijn."]
     };
     const GS_TIP = "Controleer koude hoeken regelmatig op zwarte puntjes; verwijder beginnende schimmel met waterstofperoxide (3%) of alcohol, niet met chloor.";
-    function standaardDuiding(key = currentTemplateKey) { return isGeenSchimmel(key) ? GS_DUIDING : DOSSIERS[key].analysisExtra; }
+    function standaardDuiding(key = currentTemplateKey) { return isGeenSchimmel(key) ? GS_DUIDING : dossierVoor(key).analysisExtra; }
     const GS_CHECK1 = { title: "1. Schimmel voorkomen", desc: "Er is geen schimmel gezien. Verschijnt die vóór of tijdens het werk, laat die dan verwijderen met een geschikt middel, niet met chloor." };
     function metGeenSchimmel(o) {
       return Object.assign({}, o, {
@@ -2179,7 +2187,83 @@
         checks: o.checks ? o.checks.map(c => /^1\. Juist schoonmaakmiddel/.test(c.title) ? GS_CHECK1 : c) : o.checks
       });
     }
-    function standaardSituatie(key = currentTemplateKey) { return isGeenSchimmel(key) ? GS_SITUATIE : DOSSIERS[key].defaultSituation; }
+    // ---------- Type 7 met vinkje "Koude plek is raam of kozijn" ----------
+    // Zelfde patroon als "Geen schimmel aangetroffen"; de twee vinkjes sluiten elkaar uit.
+    // Optie A wordt ventilatieroosters + kitnaad; optie B krijgt een aangepaste stap 3 en controlepunt 3;
+    // optie C (wandverwarming) blijft, met een melding.
+    function isRaamKozijn(key = currentTemplateKey) { return key === 'schimmel' && currentTemplateKey === 'schimmel' && !!obj.raamKozijn; }
+    const RK_SITUATIE = "Gezien bij de ramen: de kitnaad en het glaslatje aan de onderkant van het glas. Wat we zagen: zwarte puntjes (schimmel), soms met condens op het glas.";
+    const RK_OORZAAK = "Condensatie aan de onderrand van het glas, de koudste plek van het raam, waardoor schimmel in de kitnaad groeit.";
+    const RK_DUIDING = "Wat we zien past bij condens aan de onderrand van het glas. Daar is een raam het koudst, zeker bij een metalen afstandhouder tussen de ruiten. Ook als de luchtvochtigheid in de kamer redelijk is, kan de lucht vlak bij die rand zo vochtig worden dat er schimmel in de kitnaad gaat groeien. Een glasrand is achteraf niet te isoleren. Het herstel richt zich daarom op minder vocht in de lucht en meer warmte bij het glas.";
+    const RK_PROBLEM = `Schimmelsporen zitten altijd in de lucht, binnen en buiten. Ze gaan pas groeien als er voedsel is (zoals stof of vuil in een kitnaad) én het oppervlak lang vochtig blijft: <strong>vanaf een luchtvochtigheid van circa 80% vlak tegen het oppervlak</strong>.<br><br>
+        De onderrand van het glas is de koudste plek van een raam. Het glas is daar via de afstandhouder tussen de ruiten verbonden met de koude buitenkant, en koude lucht zakt langs het glas naar beneden. Condens loopt naar de kitnaad en blijft daar staan. Gordijnen voor het raam houden de warmte van de verwarming weg bij het glas, waardoor het daar nog kouder en vochtiger wordt. <em>Alleen schoonmaken helpt daarom maar even: zolang er veel vocht in de lucht zit en het glas koud blijft, komt de schimmel terug.</em>`;
+    const RK_SOLUTION = "Zorgen dat er minder vocht bij het glas komt: de schimmel verwijderen, de kitnaad vernieuwen en ventilatieroosters in de ramen laten plaatsen, zodat vochtige lucht continu wordt afgevoerd. Daarnaast de warmte van de verwarming bij het glas laten komen.";
+    const RK_OPTIE_A = {
+      name: "Optie A: Ventilatieroosters + kitnaad vernieuwen",
+      desc: "Schimmel verwijderen, de aangetaste kitnaad vervangen door schimmelwerende kit en ventilatieroosters in de ramen laten plaatsen.",
+      pros: "✓ Eenvoudige, betaalbare maatregel<br>✓ Continu verse lucht, ook 's nachts<br>✕ Werkt alleen als de roosters openstaan"
+    };
+    function rkStappen() {
+      return `<strong>Stap 1: Schimmel verwijderen</strong><br>
+        Reinig glas, glaslatje en kozijn rond de aangetaste kitnaad met waterstofperoxide (3-5%) of alcohol (70-80%). Vermijd chloor. Draag handschoenen.<br><br>
+        <strong>Stap 2: Kitnaad vernieuwen</strong><br>
+        Verwijder de aangetaste kit volledig, reinig en ontvet de naad en laat die drogen. Breng een schimmelwerende kit aan die geschikt is voor glas en kozijn. Niet over de oude kit heen kitten.<br><br>
+        <strong>Stap 3: Ventilatieroosters plaatsen</strong><br>
+        Plaats ventilatieroosters in de ramen of het kozijn van de ruimten met schimmel, bij voorkeur boven in het raam. Of het rooster in het kozijn, op het glas of met vervanging van het glas wordt geplaatst, bepaalt de uitvoerder.`;
+    }
+    const RK_COSTS = [
+      { item: "Schimmelreiniging en desinfectie (per kamer)", low: 200, high: 450, inTotal: true },
+      { item: "Ventilatieroosters in bestaande ramen (2 stuks, incl. plaatsing)", low: 220, high: 510, inTotal: true },
+      { item: "Kitnaad glas vernieuwen (ca. 10-15 m, incl. voorrijden)", low: 150, high: 300, inTotal: true },
+      { item: "Glas vervangen als het rooster op het glas moet (HR++, per m²)", low: 75, high: 130, note: "indien nodig" }
+    ];
+    const RK_CHECKS_A = [
+      null, // 1. Juist schoonmaakmiddel (ongewijzigd)
+      { title: "2. Kit volledig vervangen", desc: "Controleer dat de oude kit helemaal is verwijderd en er niet alleen nieuwe kit overheen is gezet." },
+      { title: "3. Roosters in de juiste ruimten", desc: "Controleer dat er roosters zitten in de ruimten met schimmel en dat ze goed open en dicht kunnen." }
+    ];
+    const RK_B_STAP3_SLOT = "Controleer na het stookseizoen of de schimmel bij de ramen wegblijft; zo niet, laat de ventilatie of de beglazing opnieuw beoordelen.";
+    const RK_B_CHECK3 = { title: "3. Controle na de winter", desc: "Controleer na de winter of de schimmel bij de ramen wegblijft; zo niet, laat de ventilatie of de beglazing opnieuw beoordelen." };
+    const RK_MOTIVATIE = {
+      0: ["De schimmel zit in de kitnaad aan de onderrand van het glas, terwijl de luchtvochtigheid in de ruimte zelf [redelijk] is. Ventilatieroosters en een nieuwe kitnaad zijn hier een eenvoudige, betaalbare eerste stap."],
+      1: ["De schimmel zit bij meerdere ramen en de luchtvochtigheid is te hoog voor deze koude plekken. Een ventilatie-unit met warmteterugwinning houdt de luchtvochtigheid beter onder controle, ook 's nachts en zonder dat u erop hoeft te letten."]
+    };
+    const RK_TIPS = [
+      "Laat gordijnen 's nachts niet voor het raam en de verwarming hangen, zodat warme lucht langs het glas kan.",
+      "Veeg condens 's ochtends van het glas en de kitnaad.",
+      "Verwijder zichtbare schimmel met waterstofperoxide (3%) of alcohol, niet met chloor; draag handschoenen.",
+      "Zet ventilatieroosters en klepramen open, ook 's nachts, en ventileer extra na douchen en koken."
+    ];
+    // Dossier van het huidige type, met de raam/kozijn-teksten als het vinkje aan staat
+    function dossierVoor(key = currentTemplateKey) {
+      const d = DOSSIERS[key];
+      if (!d || !isRaamKozijn(key)) return d;
+      const checks = d.checks.map((c, i) => RK_CHECKS_A[i] || c);
+      return Object.assign({}, d, {
+        defaultSituation: RK_SITUATIE, problem: RK_PROBLEM, analysisExtra: RK_DUIDING, solution: RK_SOLUTION,
+        options: [RK_OPTIE_A, d.options[1], d.options[2]],
+        steps: rkStappen(), costs: RK_COSTS, totalLabel: "Totaal Optie A (per kamer)", checks
+      });
+    }
+    function setRaamKozijn(val) {
+      obj.raamKozijn = !!val;
+      if (obj.raamKozijn) obj.geenSchimmel = false;
+      vinkjesType7Bijwerken();
+      refreshSamPanel();
+      refreshAdviesPanel();
+      if (typeof refreshTekstPanel === 'function') refreshTekstPanel();
+      rerenderKeepScroll();
+    }
+    function vinkjesType7Bijwerken() {
+      const gs = document.getElementById('obj_geenSchimmel'); if (gs) gs.checked = !!obj.geenSchimmel;
+      const rk = document.getElementById('obj_raamKozijn'); if (rk) rk.checked = !!obj.raamKozijn;
+    }
+    function standaardOorzaak(key = currentTemplateKey) {
+      if (isRaamKozijn(key)) return RK_OORZAAK;
+      return (isGeenSchimmel(key) ? GS_OORZAAK : OORZAAK_STANDAARD[key]) || "";
+    }
+
+    function standaardSituatie(key = currentTemplateKey) { return isGeenSchimmel(key) ? GS_SITUATIE : dossierVoor(key).defaultSituation; }
     // eigen tekst bij het vinkje: "Er is geen schimmel gezien." erachter, tenzij dat er al in staat
     function situatieMetSchimmelZin(html, key = currentTemplateKey) {
       if (!isGeenSchimmel(key) || /geen schimmel/i.test(html)) return html;
@@ -2187,6 +2271,9 @@
     }
     function setGeenSchimmel(val) {
       obj.geenSchimmel = !!val;
+      if (obj.geenSchimmel) obj.raamKozijn = false;
+      vinkjesType7Bijwerken();
+      refreshAdviesPanel();
       refreshSamPanel();
       refreshSjabloonList();
       if (typeof refreshTekstPanel === 'function') refreshTekstPanel();
@@ -2273,7 +2360,7 @@
     function updateBijkBlokken() {
       getBijkomend().forEach((b, i) => { const e = document.getElementById('bijkKaart' + i); if (e) e.innerHTML = getBijkKaartHtml(b, i + 1); });
       const v = document.getElementById('bijkVolgordeHolder'); if (v) v.innerHTML = getBijkVolgordeHtml();
-      const sv = document.getElementById('samenvattingHolder'); if (sv) sv.innerHTML = getSamenvattingHtml(DOSSIERS[currentTemplateKey]);
+      const sv = document.getElementById('samenvattingHolder'); if (sv) sv.innerHTML = getSamenvattingHtml(dossierVoor());
       if (window.lucide) lucide.createIcons();
       checkPageOverflow();
     }
@@ -2423,6 +2510,7 @@
     function tipsStandaard(key = currentTemplateKey) {
       if (key === 'controle') return ctlSoort().tips;
       const t = TIPS_STANDAARD[key] || [];
+      if (isRaamKozijn(key)) return RK_TIPS;
       return isGeenSchimmel(key) ? [GS_TIP].concat(t.slice(1)) : t;
     }
 
@@ -2453,7 +2541,7 @@
       set('herstelHolder', getHerstelHtml());
       set('ctlUitkomstHolder', getCtlUitkomstHtml());
       set('ctlOpnieuwHolder', getCtlOpnieuwHtml());
-      set('samenvattingHolder', getSamenvattingHtml(DOSSIERS[currentTemplateKey]));
+      set('samenvattingHolder', getSamenvattingHtml(dossierVoor()));
       if (window.lucide) lucide.createIcons();
       checkPageOverflow();
     }
@@ -2474,7 +2562,8 @@
       tog('adv_opnieuw', c || e);
       tog('ctl_opnieuwWrap', (c || e) && !!controle.opnieuw);
       tog('gs_wrap', currentTemplateKey === 'schimmel');
-      const gs = document.getElementById('obj_geenSchimmel'); if (gs) gs.checked = !!obj.geenSchimmel;
+      tog('rk_wrap', currentTemplateKey === 'schimmel');
+      vinkjesType7Bijwerken();
       const lbl = document.getElementById('lbl_oorzaak');
       if (lbl) lbl.textContent = c ? "Uitkomst van de meting in één zin (tik erin om de standaardzin aan te passen)" : "Oorzaak in één zin (tik erin om de standaardzin aan te passen)";
       const sv = (id, v) => { const e = document.getElementById(id); if (e) e.value = v || ""; };
@@ -2658,7 +2747,7 @@
     }
     function getOorzaak(key = currentTemplateKey) {
       const o = (getSam(key).oorzaak || "").trim();
-      return o || (isGeenSchimmel(key) ? GS_OORZAAK : OORZAAK_STANDAARD[key]) || "";
+      return o || standaardOorzaak(key);
     }
     function getTipsList(key = currentTemplateKey) {
       const t = (getSam(key).tips || "").trim();
@@ -2713,7 +2802,7 @@
     }
 
     function updateSamenvatting() {
-      const data = DOSSIERS[currentTemplateKey];
+      const data = dossierVoor(currentTemplateKey);
       const h = document.getElementById('samenvattingHolder');
       if (h) h.innerHTML = getSamenvattingHtml(data);
       const t = document.getElementById('tipsHolder');
@@ -2737,7 +2826,7 @@
     function refreshSamPanel() {
       const s = getSam();
       const o = document.getElementById('sam_oorzaak');
-      if (o) { o.value = s.oorzaak || ""; o.placeholder = (isGeenSchimmel() ? GS_OORZAAK : OORZAAK_STANDAARD[currentTemplateKey]) || ""; }
+      if (o) { o.value = s.oorzaak || ""; o.placeholder = standaardOorzaak(); }
       const t = document.getElementById('sam_tips');
       if (t) { t.value = s.tips || ""; t.placeholder = tipsStandaard().join('\n'); }
       const un = document.getElementById('sam_urgNiveau');
@@ -2795,7 +2884,7 @@
     // ============================================================
     // OBJECT, WAARNEMINGEN, MEETPUNTEN & DETAILFOTO'S
     // ============================================================
-    let obj = { type: "", bouwjaar: "", aanwezig: "", aanleiding: "", geenSchimmel: false };
+    let obj = { type: "", bouwjaar: "", aanwezig: "", aanleiding: "", geenSchimmel: false, raamKozijn: false };
     let waarnemingen = { lijst: [], overig: "" };
     let detailFotos = [];               // [{ data, bijschrift }], max. 4
     const MAX_DETAILFOTOS = 4, MAX_MEETPUNTEN = 4;
@@ -3107,7 +3196,7 @@
 
     // RENDER DE EXACTE 3 PAGINA'S
     function renderAllPages() {
-      const data = isControle() ? Object.assign({}, DOSSIERS.controle, { title: ctlSoort().titel }) : (DOSSIERS[currentTemplateKey] || DOSSIERS.condensatie);
+      const data = isControle() ? Object.assign({}, DOSSIERS.controle, { title: ctlSoort().titel }) : (dossierVoor(currentTemplateKey) || DOSSIERS.condensatie);
       const customSit = customSituations[currentTemplateKey];
       const activeSituation = (customSit && customSit.trim()) ? situatieMetSchimmelZin(escHtml(customSit).replace(/\n/g, '<br>')) : standaardSituatie();
       const customDuid = customDuidingen[currentTemplateKey];
@@ -3627,7 +3716,7 @@ ${eerst ? getVolgendeStappenEerstHtml(heeftBijk) : `              <div class="gr
       adviesState = {}; samenvatting = {}; urgentie = { niveau: "", tekst: "" }; fotoData = "";
       controle = { soort: "", herstel: "", opnieuw: false, termijn: "", reden: "" };
       bijkomend = [{ key: "", rec: 0, motivatie: "" }, { key: "", rec: 0, motivatie: "" }]; bijkVolgorde = "";
-      obj = { type: "", bouwjaar: "", aanwezig: "", aanleiding: "", geenSchimmel: false };
+      obj = { type: "", bouwjaar: "", aanwezig: "", aanleiding: "", geenSchimmel: false, raamKozijn: false };
       waarnemingen = { lijst: [], overig: "" };
       detailFotos = [];
       kb.mp = [];
