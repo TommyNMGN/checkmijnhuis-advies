@@ -760,6 +760,24 @@
       return 6.112 * Math.exp(17.67 * T / (T + 243.5)) * RV * 2.1674 / (273.15 + T);
     }
 
+    // Bedragen uit een vrij ingevulde prijs halen, bijv. "€ 4.000,- tot € 7.000,- voor 4 kamers" -> [4000, 7000]
+    function bedragenUit(t) {
+      return (String(t).match(/\d{1,3}(?:\.\d{3})+|\d{3,}/g) || []).map(x => parseInt(x.replace(/\./g, ''), 10));
+    }
+    function eigenPrijsAfwijking(key = currentTemplateKey) {
+      if (key === 'controle') return "";
+      const a = getAdvies(key);
+      const eigen = (a.prijs || "").trim();
+      if (!eigen || recZonderOptie(a.rec)) return "";
+      const tot = getCostTotals({ costs: getOptieInhoud(key, a.rec).costs });
+      if (!tot.low && !tot.high) return "";
+      const b = bedragenUit(eigen);
+      if (b.length >= 2 && b[0] === tot.low && b[1] === tot.high) return "";
+      const kort = eigen.length > 60 ? eigen.slice(0, 61).replace(/\s+\S*$/, '') + " …" : eigen;
+      const basis = prijsBasis(key, a.rec);
+      return `Op pagina 1 staat je eigen prijs: ${escHtml(kort)}. De detailraming in hoofdstuk 9 komt uit op ${fmtEuro(tot.low)} tot ${fmtEuro(tot.high)}${basis ? ` (uitgangspunt ${escHtml(basis)})` : ''}. Het rapport legt uit dat de detailraming van dat uitgangspunt uitgaat. Noem in je eigen prijs waarop die is gebaseerd, bijvoorbeeld "voor 4 kamers".`;
+    }
+
     function getConsistencyWarnings() {
       const w = [];
       const key = currentTemplateKey;
@@ -791,6 +809,9 @@
       if (!(getSam(key).tips || "").trim()) w.push("INFO|De tips bij 'Wat u zelf kunt doen' zijn nog de standaardtips. Heb je ter plaatse eigen tips gegeven, zet die er dan in.");
       if (key !== 'controle' && !(getSam(key).oorzaak || "").trim()) w.push("De <strong>oorzaak</strong> op pagina 1 is nog de standaardzin van het dossier. Klopt die voor deze woning? Pas hem anders aan bij 'Oorzaak in één zin'.");
       if (isGeenSchimmel(key) && (waarnemingen.lijst || []).includes('Schimmelvorming')) w.push("Je hebt <strong>geen schimmel aangetroffen</strong> aangevinkt, maar bij de waarnemingen staat <strong>Schimmelvorming</strong>. Pas een van beide aan.");
+      // Eigen prijs op pagina 1 wijkt af van het totaal van de detailraming in hoofdstuk 9
+      const eigenPrijsMelding = eigenPrijsAfwijking(key);
+      if (eigenPrijsMelding) w.push("INFO|" + eigenPrijsMelding);
       if (isRaamKozijn(key) && getAdvies(key).rec === 2) w.push("Wandverwarming past meestal niet bij een raam of kozijn. Kies optie A of B, of licht de keuze toe in de motivatie.");
       if (isRaamKozijn(key) && !(waarnemingen.lijst || []).includes('Schimmelvorming')) w.push("INFO|Leg de schimmel bij het raam vast met een foto of waarneming.");
       if (isGeenSchimmel(key) && duid && /schimmel/i.test(duid)) w.push("Je hebt <strong>geen schimmel aangetroffen</strong> aangevinkt. Controleer of je eigen <strong>duiding</strong> niet uitgaat van schimmel die er is.");
